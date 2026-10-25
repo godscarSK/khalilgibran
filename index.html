@@ -623,6 +623,10 @@ async function load(force) {
    Los valores viajan cifrados con la contraseña de la página. */
 const EST_KEY = "equipo:est", EST_DIRTY_KEY = "equipo:estdirty";
 const EST_OPTS = ["GK", "DEF", "MID", "ATT", "ENT", "EXTRA"];
+// Al sincronizar, EXTRA viaja con un código de 3 letras: así el valor cifrado mide lo mismo que el de las otras opciones.
+const EST_CODE = { EXTRA: "EXT" };
+const estEncode = v => EST_CODE[v] || v;
+const estDecode = v => Object.keys(EST_CODE).find(k => EST_CODE[k] === v) || v;
 let estMap = {};      // pid → { v, t }   (t = momento del último cambio, en ms)
 const sync = { detail: "", key: null, token: "", dirty: new Set(), busy: false, state: "local", jsonp: false, fetchErr: "" };
 try {
@@ -721,7 +725,7 @@ async function pushDirty() {
     for (const pid of [...sync.dirty]) {
       const e = estMap[pid];
       if (!e) { sync.dirty.delete(pid); continue; }
-      await estCall({ action: "set", pid, v: await encV(e.v), t: e.t, token: sync.token });
+      await estCall({ action: "set", pid, v: await encV(estEncode(e.v)), t: e.t, token: sync.token });
       if (estMap[pid] === e) sync.dirty.delete(pid);
       saveEst();
     }
@@ -739,7 +743,13 @@ async function pullEst() {
     for (const it of j.items || []) {
       const pid = String(it.pid), t = Number(it.t) || 0;
       remote.add(pid);
-      let v; try { v = await decV(it.v); } catch { continue; }
+      let v;
+      try { v = estDecode(await decV(it.v)); }
+      catch {
+        // El valor guardado en el servicio no se puede leer (p. ej. quedó cortado): se vuelve a enviar el de este dispositivo.
+        if (estMap[pid]) { estMap[pid] = { v: estMap[pid].v, t: Date.now() }; sync.dirty.add(pid); }
+        continue;
+      }
       const loc = estMap[pid];
       if (!loc || t > loc.t) { estMap[pid] = { v: EST_OPTS.includes(v) ? v : "", t }; sync.dirty.delete(pid); changed = true; }
       else if (loc.t > t) sync.dirty.add(pid);
