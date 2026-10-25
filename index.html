@@ -63,6 +63,9 @@ h1 {
 }
 .headrow { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 16px 24px; }
 .headtext { flex: 1 1 360px; min-width: 0; }
+.brand { display: flex; align-items: center; gap: clamp(10px, 2vw, 20px); }
+.brand .logo { flex: none; width: clamp(64px, 11vw, 104px); height: auto; filter: drop-shadow(0 2px 4px rgba(0,0,0,.25)); }
+.brand h1 { min-width: 0; }
 .summary { flex: 0 0 auto; margin-right: 56px; min-width: 250px; padding: 10px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; font-variant-numeric: tabular-nums; }
 .summary dl { margin: 0; display: grid; grid-template-columns: auto auto; gap: 3px 22px; }
 .summary dt { color: var(--muted); font-size: .875rem; }
@@ -226,7 +229,10 @@ dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
   <header class="top">
     <div class="headrow">
       <div class="headtext">
-        <h1 id="title">MI EQUIPO</h1>
+        <div class="brand">
+          <img class="logo" src="logo.png" alt="Escudo del equipo" width="300" height="300" onerror="this.hidden=true">
+          <h1 id="title">MI EQUIPO</h1>
+        </div>
         <p class="lede" id="lede">Cargando jugadores…</p>
       </div>
       <aside class="summary" id="summary" aria-label="Resumen del equipo" hidden></aside>
