@@ -152,6 +152,7 @@ select.est[data-v="ENT"] { background: #e6dcf5; border-color: #8a6cc0; font-weig
 td.c-name .sel { margin-left: 8px; padding: 1px 5px; border-radius: 3px; font-size: .62rem; font-weight: 700; background: var(--call); color: var(--call-ink); letter-spacing: .03em; }
 td.c-name .inj { margin-left: 8px; display: inline-flex; align-items: center; gap: 3px; font-size: .68rem; font-weight: 700; color: var(--inj); white-space: nowrap; vertical-align: middle; }
 td.c-name .inj svg { width: 13px; height: 13px; fill: var(--inj); }
+td.c-name .redcard { display: inline-block; margin-left: 8px; width: 11px; height: 15px; border-radius: 2px; background: #d6232a; border: 1px solid rgba(0,0,0,.35); vertical-align: middle; transform: rotate(8deg); }
 td.c-name .copypid {
   all: unset; box-sizing: border-box; margin-left: 8px; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center;
   vertical-align: middle; cursor: pointer; color: var(--muted); border: 1px solid var(--line); border-radius: 4px;
@@ -235,8 +236,9 @@ dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
     </div>
     <div class="actions" role="group" aria-label="Acciones y filtros">
       <button class="btn" id="forgetPw" type="button" hidden title="Olvidar la contraseña en este navegador">Bloquear</button>
-      <button class="btn" id="hideVal" type="button" aria-pressed="false" title="Ocultar o mostrar la columna Valor">Ocultar Valor</button>
+      <button class="btn" id="hideVal" type="button" aria-pressed="false" title="Ocultar o mostrar las columnas Valor y Salario">Ocultar Val/Sal</button>
       <button class="btn" id="onlyInjured" type="button" aria-pressed="false" title="Mostrar solo los jugadores lesionados">Lesionados</button>
+      <button class="btn" id="onlySusp" type="button" aria-pressed="false" title="Mostrar solo los jugadores con tarjeta roja">Suspendidos</button>
       <button class="btn" id="onlySel" type="button" aria-pressed="false" title="Mostrar solo los jugadores citados a la selección">Selección</button>
       <button class="btn primary" id="copy" type="button" title="Copiar la tabla visible para pegarla en una planilla">CSV</button>
     </div>
@@ -334,7 +336,7 @@ const COLS = [
   { key: "name",     label: "Jugador", cls: "c-name", left: true },
   { key: "age",      label: "Edad" },
   { key: "value",    label: "Valor", cls: "c-val" },
-  { key: "wage",     label: "Salario", title: "Salario" },
+  { key: "wage",     label: "Salario", cls: "c-val", title: "Salario" },
   { key: "form",     label: "Forma" },
   ...SKILL_COLUMNS.map(s => ({ key: "sk_" + s.skill, label: s.label, title: s.title, skill: s.skill })),
   { key: "c_sum", label: "Suma", title: "Suma de las 8 skills", comp: SUM_COMP },
@@ -400,6 +402,11 @@ function findSkillsSource(info) {
   return bestScore >= 3 ? best : (info.skills || {});
 }
 
+// Tarjetas rojas del jugador en tu equipo: stats.cards.red (no se usa nationalStats, que son las de la selección).
+function findRed(info) {
+  const n = num(info.stats?.cards?.red);
+  return n > 0 ? n : 0;
+}
 // Busca el salario del jugador en cualquier parte de sus datos (wage, salary…), hasta 4 niveles de profundidad.
 function findWage(info) {
   const re = /^(wage|wages|salary|weeklywage|weeklysalary|sueldo)$/i;
@@ -429,7 +436,7 @@ function normalize(row, api) {
   const p = {
     n: row.n, name: row.name, pid: row.pid, link: "https://sokker.org/player/PID/" + row.pid,
     loaded: false, age: null, callUp: false, value: null, currency: "",
-    form: null, wage: null, wageCurrency: "", injury: 0, skills: null, skillKeys: []
+    form: null, wage: null, wageCurrency: "", injury: 0, red: 0, skills: null, skillKeys: []
   };
   const i = api && api.info;
   if (i) {
@@ -444,6 +451,7 @@ function normalize(row, api) {
     const w = findWage(i);
     if (w) { p.wage = w.value; p.wageCurrency = w.currency || p.currency; }
     p.injury = num(i.injury?.daysRemaining) > 0 ? i.injury.daysRemaining : 0;
+    p.red = findRed(i);
     const src = findSkillsSource(i);
     p.skillKeys = Object.keys(src);
     p.skills = pickSkills(src);
@@ -453,7 +461,7 @@ function normalize(row, api) {
 
 /* ─────────────── Estado ─────────────── */
 const state = {
-  players: [], pos: new Set(), hideVal: false, onlyInjured: false, onlySel: false, q: "",
+  players: [], pos: new Set(), hideVal: false, onlyInjured: false, onlySusp: false, onlySel: false, q: "",
   ageMin: null, ageMax: null, sort: { key: "n", dir: 1 }, stamp: null, prevStamp: null, teamName: ""
 };
 
@@ -764,6 +772,7 @@ function visibleRows() {
     if (state.ageMax != null && (p.age == null || p.age > state.ageMax)) return false;
     if (state.pos.size && !state.pos.has(estOf(p))) return false;
     if (state.onlyInjured && !p.injury) return false;
+    if (state.onlySusp && !p.red) return false;
     if (state.onlySel && !p.callUp) return false;
     return true;
   });
@@ -823,7 +832,7 @@ function savePrefs() {
   try {
     localStorage.setItem(PREFS_KEY, JSON.stringify({
       ageMin: state.ageMin, ageMax: state.ageMax, pos: [...state.pos], onlyInjured: state.onlyInjured,
-      onlySel: state.onlySel, hideVal: state.hideVal, sort: state.sort
+      onlySel: state.onlySel, onlySusp: state.onlySusp, hideVal: state.hideVal, sort: state.sort
     }));
   } catch {}
 }
@@ -837,10 +846,12 @@ function loadPrefs() {
   $("#ageMin").value = state.ageMin ?? ""; $("#ageMax").value = state.ageMax ?? "";
   if (Array.isArray(p.pos)) state.pos = new Set(p.pos.filter(x => EST_OPTS.includes(x)));
   state.onlyInjured = p.onlyInjured === true;
+  state.onlySusp = p.onlySusp === true;
   state.onlySel = p.onlySel === true;
   if (p.sort && COLS.some(c => c.key === p.sort.key) && (p.sort.dir === 1 || p.sort.dir === -1)) state.sort = { key: p.sort.key, dir: p.sort.dir };
   if (p.hideVal === true) setHideVal(true);
   $("#onlyInjured").setAttribute("aria-pressed", String(state.onlyInjured));
+  $("#onlySusp").setAttribute("aria-pressed", String(state.onlySusp));
   $("#onlySel").setAttribute("aria-pressed", String(state.onlySel));
   document.querySelectorAll("#poss button[data-pos]").forEach(b => b.setAttribute("aria-pressed", String(state.pos.has(b.dataset.pos))));
 }
@@ -861,6 +872,7 @@ function render() {
           + `<button type="button" class="copypid" data-pid="${esc(p.pid)}" title="Copiar PID ${esc(p.pid)}" aria-label="Copiar PID ${esc(p.pid)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>`
           + (p.callUp ? `<span class="sel" title="Citado a la selección">SEL</span>` : "")
           + (p.injury ? `<span class="inj" title="Lesionado: ${p.injury} ${p.injury === 1 ? "día" : "días"}" aria-label="Lesionado, ${p.injury} ${p.injury === 1 ? "día" : "días"}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 2h6v7h7v6h-7v7H9v-7H2V9h7z"/></svg>${p.injury} d</span>` : "")
+          + (p.red ? `<span class="redcard" title="Tarjeta roja: suspendido" aria-label="Tarjeta roja, suspendido" role="img"></span>` : "")
           + `</td>`;
       }
       if (c.skill) {
@@ -915,7 +927,7 @@ function setHideVal(on) {
   document.querySelector("table").classList.toggle("no-val", on);
   const b = $("#hideVal");
   b.setAttribute("aria-pressed", String(on));
-  b.textContent = on ? "Mostrar Valor" : "Ocultar Valor";
+  b.textContent = on ? "Mostrar Val/Sal" : "Ocultar Val/Sal";
 }
 let toastTimer;
 function toast(msg) {
@@ -937,7 +949,7 @@ async function copyText(text) {
 }
 async function copyTable() {
   const rows = visibleRows();
-  const cols = COLS.filter(c => !(c.key === "value" && state.hideVal));
+  const cols = COLS.filter(c => !((c.key === "value" || c.key === "wage") && state.hideVal));
   const lines = [cols.map(c => c.label === "#" ? "N" : c.label).join("\t")];
   rows.forEach((p, i) => {
     lines.push(cols.map(c => c.key === "n" ? i + 1 : c.key === "name" ? (p.name || p.pid) : cellText(p, c.key).replace(/\t|\n/g, " ")).join("\t"));
@@ -1007,7 +1019,7 @@ function init() {
     e.currentTarget.setAttribute("aria-pressed", String(state[field]));
     render();
   });
-  toggle("#onlyInjured", "onlyInjured"); toggle("#onlySel", "onlySel");
+  toggle("#onlyInjured", "onlyInjured"); toggle("#onlySusp", "onlySusp"); toggle("#onlySel", "onlySel");
   $("#hideVal").addEventListener("click", () => { setHideVal(!state.hideVal); render(); });
   $("#body").addEventListener("change", e => {
     const sel = e.target.closest("select.est"); if (!sel) return;
