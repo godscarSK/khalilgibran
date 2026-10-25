@@ -144,20 +144,20 @@ select.est[data-v="DEF"] { background: #dbe7fb; border-color: #6b8fd0; font-weig
 select.est[data-v="MID"] { background: #d4efdc; border-color: #5b9a74; font-weight: 700; }
 select.est[data-v="ATT"] { background: #f9d9d6; border-color: #d0605a; font-weight: 700; }
 select.est[data-v="ENT"] { background: #e6dcf5; border-color: #8a6cc0; font-weight: 700; }
-select.est[data-v="EXTRA"] { background: #d3eef0; border-color: #4aa3ad; font-weight: 700; }
+select.est[data-v="EXT"] { background: #d3eef0; border-color: #4aa3ad; font-weight: 700; }
 :root[data-theme="dark"] select.est[data-v="GK"] { background: #4a3f12; border-color: #c9a227; }
 :root[data-theme="dark"] select.est[data-v="DEF"] { background: #1d3157; border-color: #5a82c9; }
 :root[data-theme="dark"] select.est[data-v="MID"] { background: #1f4130; border-color: #4f9d73; }
 :root[data-theme="dark"] select.est[data-v="ATT"] { background: #4a1f1c; border-color: #d0605a; }
 :root[data-theme="dark"] select.est[data-v="ENT"] { background: #33224f; border-color: #8a6cc0; }
-:root[data-theme="dark"] select.est[data-v="EXTRA"] { background: #17383d; border-color: #4aa3ad; }
+:root[data-theme="dark"] select.est[data-v="EXT"] { background: #17383d; border-color: #4aa3ad; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) select.est[data-v="GK"] { background: #4a3f12; border-color: #c9a227; }
   :root:not([data-theme="light"]) select.est[data-v="DEF"] { background: #1d3157; border-color: #5a82c9; }
   :root:not([data-theme="light"]) select.est[data-v="MID"] { background: #1f4130; border-color: #4f9d73; }
   :root:not([data-theme="light"]) select.est[data-v="ATT"] { background: #4a1f1c; border-color: #d0605a; }
   :root:not([data-theme="light"]) select.est[data-v="ENT"] { background: #33224f; border-color: #8a6cc0; }
-  :root:not([data-theme="light"]) select.est[data-v="EXTRA"] { background: #17383d; border-color: #4aa3ad; }
+  :root:not([data-theme="light"]) select.est[data-v="EXT"] { background: #17383d; border-color: #4aa3ad; }
 }
 td.c-name .sel { margin-left: 8px; padding: 1px 5px; border-radius: 3px; font-size: .62rem; font-weight: 700; background: var(--call); color: var(--call-ink); letter-spacing: .03em; }
 td.c-name .inj { margin-left: 8px; display: inline-flex; align-items: center; gap: 3px; font-size: .68rem; font-weight: 700; color: var(--inj); white-space: nowrap; vertical-align: middle; }
@@ -622,16 +622,14 @@ async function load(force) {
    Se guarda en este navegador y, si config.js define estUrl, se sincroniza entre dispositivos con el Apps Script de tu hoja.
    Los valores viajan cifrados con la contraseña de la página. */
 const EST_KEY = "equipo:est", EST_DIRTY_KEY = "equipo:estdirty";
-const EST_OPTS = ["GK", "DEF", "MID", "ATT", "ENT", "EXTRA"];
-// Al sincronizar, EXTRA viaja con un código de 3 letras: así el valor cifrado mide lo mismo que el de las otras opciones.
-const EST_CODE = { EXTRA: "EXT" };
-const estEncode = v => EST_CODE[v] || v;
-const estDecode = v => Object.keys(EST_CODE).find(k => EST_CODE[k] === v) || v;
+const EST_OPTS = ["GK", "DEF", "MID", "ATT", "ENT", "EXT"];
+// Compatibilidad: la opción se llamó EXTRA antes de renombrarse a EXT (también en lo que quedó guardado en el servicio).
+const estDecode = v => v === "EXTRA" ? "EXT" : v;
 let estMap = {};      // pid → { v, t }   (t = momento del último cambio, en ms)
 const sync = { detail: "", key: null, token: "", dirty: new Set(), busy: false, state: "local", jsonp: false, fetchErr: "" };
 try {
   const o = JSON.parse(localStorage.getItem(EST_KEY));
-  if (o && typeof o === "object") estMap = o;
+  if (o && typeof o === "object") { estMap = o; for (const e of Object.values(estMap)) if (e && e.v === "EXTRA") e.v = "EXT"; }
   const d = JSON.parse(localStorage.getItem(EST_DIRTY_KEY));
   if (Array.isArray(d)) d.forEach(k => sync.dirty.add(String(k)));
 } catch {}
@@ -725,7 +723,7 @@ async function pushDirty() {
     for (const pid of [...sync.dirty]) {
       const e = estMap[pid];
       if (!e) { sync.dirty.delete(pid); continue; }
-      await estCall({ action: "set", pid, v: await encV(estEncode(e.v)), t: e.t, token: sync.token });
+      await estCall({ action: "set", pid, v: await encV(e.v), t: e.t, token: sync.token });
       if (estMap[pid] === e) sync.dirty.delete(pid);
       saveEst();
     }
