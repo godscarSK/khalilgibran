@@ -136,15 +136,18 @@ select.est[data-v="GK"] { background: #fbefc2; border-color: #c9a227; font-weigh
 select.est[data-v="DEF"] { background: #dbe7fb; border-color: #6b8fd0; font-weight: 700; }
 select.est[data-v="MID"] { background: #d4efdc; border-color: #5b9a74; font-weight: 700; }
 select.est[data-v="ATT"] { background: #f9d9d6; border-color: #d0605a; font-weight: 700; }
+select.est[data-v="ENT"] { background: #e6dcf5; border-color: #8a6cc0; font-weight: 700; }
 :root[data-theme="dark"] select.est[data-v="GK"] { background: #4a3f12; border-color: #c9a227; }
 :root[data-theme="dark"] select.est[data-v="DEF"] { background: #1d3157; border-color: #5a82c9; }
 :root[data-theme="dark"] select.est[data-v="MID"] { background: #1f4130; border-color: #4f9d73; }
 :root[data-theme="dark"] select.est[data-v="ATT"] { background: #4a1f1c; border-color: #d0605a; }
+:root[data-theme="dark"] select.est[data-v="ENT"] { background: #33224f; border-color: #8a6cc0; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) select.est[data-v="GK"] { background: #4a3f12; border-color: #c9a227; }
   :root:not([data-theme="light"]) select.est[data-v="DEF"] { background: #1d3157; border-color: #5a82c9; }
   :root:not([data-theme="light"]) select.est[data-v="MID"] { background: #1f4130; border-color: #4f9d73; }
   :root:not([data-theme="light"]) select.est[data-v="ATT"] { background: #4a1f1c; border-color: #d0605a; }
+  :root:not([data-theme="light"]) select.est[data-v="ENT"] { background: #33224f; border-color: #8a6cc0; }
 }
 td.c-name .sel { margin-left: 8px; padding: 1px 5px; border-radius: 3px; font-size: .62rem; font-weight: 700; background: var(--call); color: var(--call-ink); letter-spacing: .03em; }
 td.c-name .inj { margin-left: 8px; display: inline-flex; align-items: center; gap: 3px; font-size: .68rem; font-weight: 700; color: var(--inj); white-space: nowrap; vertical-align: middle; }
@@ -319,7 +322,7 @@ const COMPOSITES = [
 ].map(c => ({ ...c, title: c.parts.map(k => SKILL_LABEL[k]).join(" + ") }));
 const SUM_COMP = { key: "c_sum", label: "Suma", parts: ["stamina", "pace", "technique", "passing", "keeper", "playmaker", "defender", "striker"] };
 const compOf = key => key === "c_sum" ? SUM_COMP : COMPOSITES.find(c => c.key === key);
-const SEP = { sk_stamina: "sepl", sk_keeper: "sepl", c_sum: "sepl sepr", disc: "sepl" };
+const SEP = { sk_stamina: "sepl", sk_keeper: "sepl", c_sum: "sepl sepr" };
 function compositeValue(p, c) {
   const s = p.skills;
   return s && c.parts.every(k => Number.isFinite(s[k])) ? c.parts.reduce((a, k) => a + s[k], 0) : null;
@@ -331,13 +334,11 @@ const COLS = [
   { key: "name",     label: "Jugador", cls: "c-name", left: true },
   { key: "age",      label: "Edad" },
   { key: "value",    label: "Valor", cls: "c-val" },
+  { key: "wage",     label: "Salario", title: "Salario" },
   { key: "form",     label: "Forma" },
   ...SKILL_COLUMNS.map(s => ({ key: "sk_" + s.skill, label: s.label, title: s.title, skill: s.skill })),
   { key: "c_sum", label: "Suma", title: "Suma de las 8 skills", comp: SUM_COMP },
-  ...COMPOSITES.map(c => ({ key: c.key, label: c.label, title: c.title, comp: c })),
-  { key: "disc",     label: "Dis.",  title: "Disciplina táctica", ctr: true },
-  { key: "teamwork", label: "Eq.",   title: "Trabajo en equipo", ctr: true },
-  { key: "exp",      label: "Exp.",  title: "Experiencia", ctr: true }
+  ...COMPOSITES.map(c => ({ key: c.key, label: c.label, title: c.title, comp: c }))
 ];
 
 const SKILL_KEYS = ["stamina", "pace", "technique", "passing", "keeper", "defender", "playmaker", "striker"];
@@ -399,11 +400,36 @@ function findSkillsSource(info) {
   return bestScore >= 3 ? best : (info.skills || {});
 }
 
+// Busca el salario del jugador en cualquier parte de sus datos (wage, salary…), hasta 4 niveles de profundidad.
+function findWage(info) {
+  const re = /^(wage|wages|salary|weeklywage|weeklysalary|sueldo)$/i;
+  const queue = [[info, 0]];
+  for (let guard = 0; queue.length && guard < 300; guard++) {
+    const [o, d] = queue.shift();
+    for (const [k, v] of Object.entries(o)) {
+      if (re.test(k)) {
+        const n = num(v);
+        if (n !== null) return { value: n, currency: (v && typeof v === "object" && v.currency) || o.currency || "" };
+      }
+      if (v && typeof v === "object" && !Array.isArray(v) && d < 3) queue.push([v, d + 1]);
+    }
+  }
+  return null;
+}
+// Lista las rutas de campos de los datos de un jugador (para diagnosticar si algún campo no se reconoce).
+function keyPaths(o, prefix = "", depth = 0, out = []) {
+  for (const [k, v] of Object.entries(o || {})) {
+    if (v && typeof v === "object" && !Array.isArray(v) && depth < 2) keyPaths(v, prefix + k + ".", depth + 1, out);
+    else out.push(prefix + k);
+  }
+  return out;
+}
+
 function normalize(row, api) {
   const p = {
     n: row.n, name: row.name, pid: row.pid, link: "https://sokker.org/player/PID/" + row.pid,
     loaded: false, age: null, callUp: false, value: null, currency: "",
-    form: null, disc: null, teamwork: null, exp: null, injury: 0, skills: null, skillKeys: []
+    form: null, wage: null, wageCurrency: "", injury: 0, skills: null, skillKeys: []
   };
   const i = api && api.info;
   if (i) {
@@ -414,7 +440,9 @@ function normalize(row, api) {
     p.value = num(i.value?.value);
     p.currency = i.value?.currency || "";
     const s = i.skills || {};
-    p.form = num(s.form); p.disc = num(s.tacticalDiscipline); p.teamwork = num(s.teamwork); p.exp = num(s.experience);
+    p.form = num(s.form);
+    const w = findWage(i);
+    if (w) { p.wage = w.value; p.wageCurrency = w.currency || p.currency; }
     p.injury = num(i.injury?.daysRemaining) > 0 ? i.injury.daysRemaining : 0;
     const src = findSkillsSource(i);
     p.skillKeys = Object.keys(src);
@@ -555,6 +583,13 @@ async function load(force) {
       `<p><strong>No encontré skills que la página reconozca.</strong> Las claves que veo en el primer jugador son: <code>${esc(seen.join(", ") || "ninguna")}</code>.</p>
        <p>Si tus skills tienen otros nombres, agrégalos en <code>SKILL_ALIASES</code> al inicio del script. Comprueba también que <code>fetch-team.mjs</code> haya iniciado sesión con tu usuario: sin sesión la API oculta las skills.</p>` });
   }
+  if (loaded.length && !loaded.some(p => p.wage != null)) {
+    const first = st.api?.[loaded[0].pid]?.info;
+    const paths = first ? keyPaths(first) : [];
+    notices.push({ html:
+      `<p><strong>No encontré el campo de salario en los datos de la API.</strong> La columna Salario queda vacía hasta que se reconozca.</p>
+       <p>Campos que trae cada jugador: <code>${esc(paths.join(", ") || "ninguno")}</code>.</p>` });
+  }
   setNotices(notices);
   setStatus("");
   render();
@@ -564,7 +599,7 @@ async function load(force) {
    Se guarda en este navegador y, si config.js define estUrl, se sincroniza entre dispositivos con el Apps Script de tu hoja.
    Los valores viajan cifrados con la contraseña de la página. */
 const EST_KEY = "equipo:est", EST_DIRTY_KEY = "equipo:estdirty";
-const EST_OPTS = ["GK", "DEF", "MID", "ATT"];
+const EST_OPTS = ["GK", "DEF", "MID", "ATT", "ENT"];
 let estMap = {};      // pid → { v, t }   (t = momento del último cambio, en ms)
 const sync = { detail: "", key: null, token: "", dirty: new Set(), busy: false, state: "local", jsonp: false, fetchErr: "" };
 try {
@@ -748,6 +783,7 @@ function cellText(p, key) {
   switch (key) {
     case "est": return estOf(p);
     case "value": return p.value == null ? "" : nf.format(p.value) + (p.currency ? " " + p.currency : "");
+    case "wage": return p.wage == null ? "" : nf.format(p.wage) + (p.wageCurrency ? " " + p.wageCurrency : "");
     default: {
       if (key.startsWith("sk_")) { const s = p.skills?.[key.slice(3)]; return Number.isFinite(s) ? String(s) : ""; }
       if (key.startsWith("c_")) { const v = compositeValue(p, compOf(key)); return v == null ? "" : String(v); }
@@ -757,7 +793,7 @@ function cellText(p, key) {
   }
 }
 
-const FREEZE_KEYS = ["n", "est", "name", "age", "value", "form", "sk_stamina"];
+const FREEZE_KEYS = ["n", "est", "name", "age", "value", "wage", "form", "sk_stamina"];
 function applyFreeze() {
   const wrap = document.querySelector(".tablewrap");
   document.querySelectorAll(".frz").forEach(el => { el.classList.remove("frz", "frz-last"); el.style.left = ""; });
