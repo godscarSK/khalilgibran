@@ -250,6 +250,7 @@ dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
       <span class="ages" id="poss"></span>
     </div>
     <div class="actions" role="group" aria-label="Acciones y filtros">
+      <button class="btn" id="diagBtn" type="button" hidden title="Compara las asignaciones de este dispositivo con las del servicio">Diagnóstico</button>
       <button class="btn" id="forgetPw" type="button" hidden title="Olvidar la contraseña en este navegador">Bloquear</button>
       <button class="btn" id="hideVal" type="button" aria-pressed="false" title="Ocultar o mostrar las columnas Valor y Salario">Ocultar Val/Sal</button>
       <button class="btn" id="onlyInjured" type="button" aria-pressed="false" title="Mostrar solo los jugadores lesionados">Lesionados</button>
@@ -261,6 +262,10 @@ dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
 
   <div id="status" role="status" aria-live="polite"></div>
   <div id="notices"></div>
+  <div id="diagOut" class="notice" hidden>
+    <p><strong>Diagnóstico de sincronización.</strong> <button class="btn" id="diagCopy" type="button">Copiar</button></p>
+    <pre id="diagText" style="white-space:pre-wrap;word-break:break-word;margin:6px 0 0;font-size:.85rem"></pre>
+  </div>
 
   <div class="tablewrap">
     <table id="tbl">
@@ -789,6 +794,38 @@ async function estStart(pw) {
 document.addEventListener("visibilitychange", () => { if (!document.hidden) pullEst(); });
 window.addEventListener("online", () => { pullEst(); });
 
+// Diagnóstico (se activa abriendo la página con ?diag=1): compara lo que tiene este dispositivo con lo que tiene el servicio.
+async function runDiag() {
+  const out = $("#diagOut"), pre = $("#diagText"), L = [];
+  out.hidden = false; pre.textContent = "Consultando el servicio…";
+  L.push("Hora de este dispositivo: " + new Date().toISOString());
+  L.push("Servicio configurado: " + (CONFIG.estUrl ? "sí" : "NO") + " | clave lista: " + (sync.key ? "sí" : "NO") + " | lectura: " + (sync.jsonp ? "JSONP" : "fetch"));
+  L.push("Opciones de esta página: " + EST_OPTS.join(", "));
+  try {
+    const j = await estCall({ action: "list" });
+    const items = j.items || [], byPid = new Map(items.map(it => [String(it.pid), it]));
+    const cnt = o => Object.entries(o).map(([k, n]) => `${k} ${n}`).join(", ") || "ninguna";
+    const localCnt = {}, remoteCnt = {}, lines = [];
+    for (const pid of new Set([...byPid.keys(), ...Object.keys(estMap)])) {
+      const name = state.players.find(p => String(p.pid) === pid)?.name || "(no está en la plantilla)";
+      const loc = estMap[pid], it = byPid.get(pid);
+      let remV = null, rem = "sin fila";
+      if (it) {
+        try { remV = estDecode(await decV(it.v)); rem = `${remV || "(vacío)"}, t=${it.t}, ${String(it.v).length} car.`; }
+        catch { remV = "?"; rem = `ILEGIBLE, t=${it.t}, ${String(it.v).length} car.`; }
+      }
+      const locV = loc ? loc.v : null;
+      if (locV) localCnt[locV] = (localCnt[locV] || 0) + 1;
+      if (remV && remV !== "?") remoteCnt[remV] = (remoteCnt[remV] || 0) + 1;
+      const differs = (locV || "") !== (remV === "?" ? "?" : (remV || ""));
+      if (differs || locV === "EXT" || remV === "EXT" || remV === "?")
+        lines.push(`${pid} ${name} | aquí: ${loc ? (loc.v || "(vacío)") + ", t=" + loc.t : "sin dato"} | servidor: ${rem}${differs ? "  <-- DISTINTO" : ""}`);
+    }
+    L.push(`Filas en el servicio: ${items.length}`, `Aquí: ${cnt(localCnt)}`, `Servidor: ${cnt(remoteCnt)}`, "", ...(lines.length ? lines : ["Sin diferencias y sin jugadores EXT."]));
+  } catch (err) { L.push("Error al leer el servicio: " + explainSync(err)); }
+  pre.textContent = L.join("\n");
+}
+
 /* ─────────────── Vista ─────────────── */
 const tdCls = (c, extra = "") => [c.cls || "", SEP[c.key] || "", extra].filter(Boolean).join(" ");
 
@@ -1106,6 +1143,11 @@ function init() {
   });
   $("#pwDlg").addEventListener("cancel", ev => ev.preventDefault());   // no se puede cerrar sin contraseña
   $("#forgetPw").addEventListener("click", () => { forgetPw(); location.reload(); });
+  if (/[?&]diag=1(&|$)/.test(location.search)) {
+    $("#diagBtn").hidden = false;
+    $("#diagBtn").addEventListener("click", runDiag);
+    $("#diagCopy").addEventListener("click", async () => { await copyText($("#diagText").textContent); toast("Diagnóstico copiado"); });
+  }
   loadPrefs();
   render();
   load(false);
