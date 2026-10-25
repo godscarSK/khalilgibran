@@ -625,6 +625,10 @@ const EST_KEY = "equipo:est", EST_DIRTY_KEY = "equipo:estdirty";
 const EST_OPTS = ["GK", "DEF", "MID", "ATT", "ENT", "EXT"];
 // Compatibilidad: la opción se llamó EXTRA antes de renombrarse a EXT (también en lo que quedó guardado en el servicio).
 const estDecode = v => v === "EXTRA" ? "EXT" : v;
+// Último momento (t) que el servicio tiene guardado para cada jugador. El servicio ignora, sin avisar, cualquier cambio con un t
+// menor al que ya guarda; por eso cada cambio usa un t siempre mayor que el conocido, aunque la hora del dispositivo esté atrasada.
+const remoteT = {};
+const nextT = pid => Math.max(Date.now(), (remoteT[pid] || 0) + 1);
 let estMap = {};      // pid → { v, t }   (t = momento del último cambio, en ms)
 const sync = { detail: "", key: null, token: "", dirty: new Set(), busy: false, state: "local", jsonp: false, fetchErr: "" };
 try {
@@ -636,7 +640,7 @@ try {
 const saveEst = () => { try { localStorage.setItem(EST_KEY, JSON.stringify(estMap)); localStorage.setItem(EST_DIRTY_KEY, JSON.stringify([...sync.dirty])); } catch {} };
 const estOf = p => { const e = estMap[p.pid]; return e && EST_OPTS.includes(e.v) ? e.v : ""; };
 function setEst(pid, v) {
-  estMap[pid] = { v: EST_OPTS.includes(v) ? v : "", t: Date.now() };
+  estMap[pid] = { v: EST_OPTS.includes(v) ? v : "", t: nextT(pid) };
   sync.dirty.add(pid); saveEst();
   pushDirty();
 }
@@ -727,6 +731,7 @@ async function pushDirty() {
       const ev = await encV(e.v);
       await estCall({ action: "set", pid, v: ev, t: e.t, token: sync.token });
       sent[pid] = ev;
+      remoteT[pid] = Math.max(remoteT[pid] || 0, e.t);
       if (estMap[pid] === e) sync.dirty.delete(pid);
       saveEst();
     }
@@ -742,7 +747,7 @@ async function pushDirty() {
       const it = (j.items || []).find(x => String(x.pid) === String(pid));
       const name = state.players.find(p => String(p.pid) === String(pid))?.name || pid;
       if (!it) bad.push(`${name}: el servicio no lo guardó`);
-      else if (String(it.v ?? "") !== ev) bad.push(`${name}: se enviaron ${ev.length} caracteres y el servicio guardó ${String(it.v ?? "").length}`);
+      else if (String(it.v ?? "") !== ev) bad.push(String(it.v ?? "").length === ev.length ? `${name}: el servicio conservó otro valor (probablemente uno más reciente de otro dispositivo)` : `${name}: se enviaron ${ev.length} caracteres y el servicio guardó ${String(it.v ?? "").length}`);
     }
   } catch {}
   if (bad.length) setSyncState("offline", "el servicio no guardó lo que se envió (" + bad.slice(0, 3).join("; ") + (bad.length > 3 ? "; …" : "") + ").");
@@ -756,12 +761,12 @@ async function pullEst() {
     let changed = false;
     for (const it of j.items || []) {
       const pid = String(it.pid), t = Number(it.t) || 0;
-      remote.add(pid);
+      remote.add(pid); remoteT[pid] = Math.max(remoteT[pid] || 0, t);
       let v;
       try { v = estDecode(await decV(it.v)); }
       catch {
         // El valor guardado en el servicio no se puede leer (p. ej. quedó cortado): se vuelve a enviar el de este dispositivo.
-        if (estMap[pid]) { estMap[pid] = { v: estMap[pid].v, t: Date.now() }; sync.dirty.add(pid); }
+        if (estMap[pid]) { estMap[pid] = { v: estMap[pid].v, t: nextT(pid) }; sync.dirty.add(pid); }
         continue;
       }
       const loc = estMap[pid];
