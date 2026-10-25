@@ -61,6 +61,13 @@ h1 {
   margin: 0; font-family: "Barlow Condensed", "Arial Narrow", sans-serif; font-weight: 700;
   font-size: clamp(3rem, 9vw, 5.5rem); line-height: 0.9; letter-spacing: -0.01em; padding-right: 56px;
 }
+.headrow { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 16px 24px; }
+.headtext { flex: 1 1 360px; min-width: 0; }
+.summary { flex: 0 0 auto; margin-right: 56px; min-width: 250px; padding: 10px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; font-variant-numeric: tabular-nums; }
+.summary dl { margin: 0; display: grid; grid-template-columns: auto auto; gap: 3px 22px; }
+.summary dt { color: var(--muted); font-size: .875rem; }
+.summary dd { margin: 0; text-align: right; font-weight: 600; white-space: nowrap; }
+@media (max-width: 640px) { .summary { margin-right: 0; width: 100%; } }
 .lede { margin: 10px 0 0; color: var(--muted); max-width: 70ch; }
 .lede strong { color: var(--ink); font-weight: 600; }
 
@@ -137,17 +144,20 @@ select.est[data-v="DEF"] { background: #dbe7fb; border-color: #6b8fd0; font-weig
 select.est[data-v="MID"] { background: #d4efdc; border-color: #5b9a74; font-weight: 700; }
 select.est[data-v="ATT"] { background: #f9d9d6; border-color: #d0605a; font-weight: 700; }
 select.est[data-v="ENT"] { background: #e6dcf5; border-color: #8a6cc0; font-weight: 700; }
+select.est[data-v="EXTRA"] { background: #d3eef0; border-color: #4aa3ad; font-weight: 700; }
 :root[data-theme="dark"] select.est[data-v="GK"] { background: #4a3f12; border-color: #c9a227; }
 :root[data-theme="dark"] select.est[data-v="DEF"] { background: #1d3157; border-color: #5a82c9; }
 :root[data-theme="dark"] select.est[data-v="MID"] { background: #1f4130; border-color: #4f9d73; }
 :root[data-theme="dark"] select.est[data-v="ATT"] { background: #4a1f1c; border-color: #d0605a; }
 :root[data-theme="dark"] select.est[data-v="ENT"] { background: #33224f; border-color: #8a6cc0; }
+:root[data-theme="dark"] select.est[data-v="EXTRA"] { background: #17383d; border-color: #4aa3ad; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) select.est[data-v="GK"] { background: #4a3f12; border-color: #c9a227; }
   :root:not([data-theme="light"]) select.est[data-v="DEF"] { background: #1d3157; border-color: #5a82c9; }
   :root:not([data-theme="light"]) select.est[data-v="MID"] { background: #1f4130; border-color: #4f9d73; }
   :root:not([data-theme="light"]) select.est[data-v="ATT"] { background: #4a1f1c; border-color: #d0605a; }
   :root:not([data-theme="light"]) select.est[data-v="ENT"] { background: #33224f; border-color: #8a6cc0; }
+  :root:not([data-theme="light"]) select.est[data-v="EXTRA"] { background: #17383d; border-color: #4aa3ad; }
 }
 td.c-name .sel { margin-left: 8px; padding: 1px 5px; border-radius: 3px; font-size: .62rem; font-weight: 700; background: var(--call); color: var(--call-ink); letter-spacing: .03em; }
 td.c-name .inj { margin-left: 8px; display: inline-flex; align-items: center; gap: 3px; font-size: .68rem; font-weight: 700; color: var(--inj); white-space: nowrap; vertical-align: middle; }
@@ -214,8 +224,13 @@ dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
 <div class="wrap">
   <button class="theme" id="theme" type="button" aria-label="Cambiar a modo oscuro" title="Cambiar a modo oscuro"></button>
   <header class="top">
-    <h1 id="title">MI EQUIPO</h1>
-    <p class="lede" id="lede">Cargando jugadores…</p>
+    <div class="headrow">
+      <div class="headtext">
+        <h1 id="title">MI EQUIPO</h1>
+        <p class="lede" id="lede">Cargando jugadores…</p>
+      </div>
+      <aside class="summary" id="summary" aria-label="Resumen del equipo" hidden></aside>
+    </div>
   </header>
 
   <section class="toolbar" aria-label="Filtros">
@@ -607,7 +622,7 @@ async function load(force) {
    Se guarda en este navegador y, si config.js define estUrl, se sincroniza entre dispositivos con el Apps Script de tu hoja.
    Los valores viajan cifrados con la contraseña de la página. */
 const EST_KEY = "equipo:est", EST_DIRTY_KEY = "equipo:estdirty";
-const EST_OPTS = ["GK", "DEF", "MID", "ATT", "ENT"];
+const EST_OPTS = ["GK", "DEF", "MID", "ATT", "ENT", "EXTRA"];
 let estMap = {};      // pid → { v, t }   (t = momento del último cambio, en ms)
 const sync = { detail: "", key: null, token: "", dirty: new Set(), busy: false, state: "local", jsonp: false, fetchErr: "" };
 try {
@@ -920,6 +935,27 @@ function render() {
   $("#lede").innerHTML = total
     ? `<strong>${total} jugadores</strong> en tu plantilla, ${rows.length} visibles.${esc(stamp)}<span id="syncMsg">${syncText() ? " " + esc(syncText()) : ""}</span>`
     : "No hay jugadores para mostrar.";
+  renderSummary();
+}
+
+// Cuadro de resumen de todo el equipo (no depende de los filtros de la tabla).
+const nf1 = new Intl.NumberFormat("es-CL", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+function renderSummary() {
+  const el = $("#summary"), ps = state.players;
+  if (!ps.length) { el.hidden = true; return; }
+  el.hidden = false;
+  const total = f => { const v = ps.map(f).filter(Number.isFinite); return v.length ? v.reduce((a, b) => a + b, 0) : null; };
+  const money = (n, cur) => n == null ? "—" : nf.format(n) + (cur ? " " + cur : "");
+  const avgAge = list => { const a = list.map(p => p.age).filter(Number.isFinite); return a.length ? nf1.format(a.reduce((x, y) => x + y, 0) / a.length) : "—"; };
+  const cur = ps.find(p => p.currency)?.currency || "";
+  const wcur = ps.find(p => p.wageCurrency)?.wageCurrency || cur;
+  const starters = ps.filter(p => ["GK", "DEF", "MID", "ATT"].includes(estOf(p)));
+  const trainees = ps.filter(p => estOf(p) === "ENT");
+  const rows = [];
+  if (!state.hideVal) rows.push(["Valor Total", money(total(p => p.value), cur)], ["Salario Total", money(total(p => p.wage), wcur)]);
+  rows.push(["Edad Titulares", avgAge(starters)], ["Edad Entrenables", avgAge(trainees)],
+    ["Lesionados", String(ps.filter(p => p.injury).length)], ["Suspendidos", String(ps.filter(p => p.red).length)]);
+  el.innerHTML = `<dl>${rows.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}</dl>`;
 }
 
 function setHideVal(on) {
@@ -1025,6 +1061,7 @@ function init() {
     const sel = e.target.closest("select.est"); if (!sel) return;
     setEst(sel.dataset.pid, sel.value);
     sel.dataset.v = sel.value;
+    renderSummary();
     if (state.sort.key === "est" || state.pos.size) render();
   });
   $("#body").addEventListener("click", async e => {
