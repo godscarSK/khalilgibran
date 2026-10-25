@@ -115,6 +115,45 @@ async function allPlayerIds(teamId) {
   return ids;
 }
 
+/* ─────────────── Finanzas (dinero disponible) ───────────────
+   No se sabe en cuál consulta ni con qué nombre entrega Sokker el dinero de la cuenta, así que se prueban varias y se guardan
+   solo los campos numéricos con nombre de dinero, y los NOMBRES (sin valores) de todos los campos para poder diagnosticar. */
+const MONEY_KEY = /^(money|budget|balance|cash|funds?|wallet|finances?|available(money|funds|budget|cash)?|(current|team)(money|budget|cash))$/i;
+function collectMoney(obj, src, out, prefix = "", depth = 0) {
+  if (!obj || typeof obj !== "object" || Array.isArray(obj) || depth > 4) return;
+  for (const [k, v] of Object.entries(obj)) {
+    const path = prefix + k;
+    if (v && typeof v === "object" && !Array.isArray(v)) {
+      const inner = Number(v.value ?? v.amount);
+      if (MONEY_KEY.test(k) && v.value !== undefined && Number.isFinite(inner)) out.fields.push({ src, path, value: inner, currency: typeof v.currency === "string" ? v.currency : "" });
+      collectMoney(v, src, out, path + ".", depth + 1);
+    } else if (MONEY_KEY.test(k) && v !== null && v !== "" && typeof v !== "boolean" && Number.isFinite(Number(v))) {
+      out.fields.push({ src, path, value: Number(v), currency: typeof obj.currency === "string" ? obj.currency : "" });
+    }
+  }
+}
+function pathsOf(obj, prefix = "", depth = 0, out = []) {
+  if (!obj || typeof obj !== "object" || Array.isArray(obj) || depth > 3) return out;
+  for (const [k, v] of Object.entries(obj)) {
+    if (v && typeof v === "object" && !Array.isArray(v)) pathsOf(v, prefix + k + ".", depth + 1, out);
+    else out.push(prefix + k);
+  }
+  return out;
+}
+async function readFinance(teamId, me) {
+  const finance = { fields: [], paths: {} };
+  const sources = [["current", null], ["transfer", "/transfer/status"], ["economy", `/team/${teamId}/economy/overview`],
+                   ["economy2", `/team/${teamId}/economy`], ["team", `/team/${teamId}`]];
+  for (const [src, path] of sources) {
+    try {
+      const j = path ? await getJson(path) : me;
+      collectMoney(j, src, finance);
+      finance.paths[src] = pathsOf(j);
+    } catch (e) { finance.paths[src] = [`(no disponible: ${e.message})`]; }
+  }
+  return finance;
+}
+
 /* ─────────────── Principal ─────────────── */
 async function main() {
   const user = process.env.SOKKER_USER || (await ask("Usuario de Sokker: ")).trim();
@@ -160,7 +199,12 @@ async function main() {
   const teamName = api[ok[0]].info?.team?.name || "";
   const withSkills = ok.filter(pid => api[pid].info?.skills && Object.keys(api[pid].info.skills).length > 4).length;
 
-  const out = { generatedAt: new Date().toISOString(), team: { id: Number(teamId), name: teamName }, rows, api };
+  console.log("Leyendo las finanzas…");
+  const finance = await readFinance(teamId, me);
+  if (finance.fields.length) console.log("  Campos de dinero encontrados: " + finance.fields.map(f => `${f.src}.${f.path} = ${f.value}`).join("; "));
+  else console.warn("  Aviso: no encontré ningún campo de dinero en la API; la fila Finanzas quedará vacía.");
+
+  const out = { generatedAt: new Date().toISOString(), team: { id: Number(teamId), name: teamName }, rows, api, finance };
 
   // Respaldo semanal: la semana va de jueves a miércoles. El archivo anterior pasa a ser el respaldo
   // solo la primera vez que se ejecuta el script en cada semana.

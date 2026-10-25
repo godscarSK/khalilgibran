@@ -580,6 +580,7 @@ async function load(force) {
   }
 
   state.teamName = st.team?.name || "";
+  state.finance = st.finance || null;
   state.players = st.rows.map(r => normalize(r, st.api?.[r.pid]));
   state.stamp = st.generatedAt ? Date.parse(st.generatedAt) : null;
 
@@ -610,6 +611,12 @@ async function load(force) {
     notices.push({ html:
       `<p><strong>No encontré skills que la página reconozca.</strong> Las claves que veo en el primer jugador son: <code>${esc(seen.join(", ") || "ninguna")}</code>.</p>
        <p>Si tus skills tienen otros nombres, agrégalos en <code>SKILL_ALIASES</code> al inicio del script. Comprueba también que <code>fetch-team.mjs</code> haya iniciado sesión con tu usuario: sin sesión la API oculta las skills.</p>` });
+  }
+  if (st.finance && !pickFinance(st.finance)) {
+    const paths = Object.entries(st.finance.paths || {}).map(([k, l]) => `${k}: ${l.slice(0, 40).join(", ")}`).join(" | ");
+    notices.push({ html:
+      `<p><strong>No encontré el dinero disponible en los datos de la API.</strong> La fila Finanzas queda en «—».</p>
+       <p>Campos que entrega cada consulta: <code>${esc(paths)}</code></p>` });
   }
   if (loaded.length && !loaded.some(p => p.wage != null)) {
     const first = st.api?.[loaded[0].pid]?.info;
@@ -1006,6 +1013,20 @@ function render() {
 
 // Cuadro de resumen de todo el equipo (no depende de los filtros de la tabla).
 const nf1 = new Intl.NumberFormat("es-CL", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+// Elige el campo de dinero disponible entre los que guardó el script: primero por nombre (money, budget, cash…) y luego por consulta.
+const FIN_NAMES = ["money", "budget", "cash", "available", "funds", "balance", "wallet", "finance"];
+const FIN_SRC = ["current", "transfer", "economy", "economy2", "team"];
+function pickFinance(fin) {
+  const f = (fin?.fields || []).filter(x => Number.isFinite(x.value));
+  if (!f.length) return null;
+  const rank = x => {
+    const last = x.path.split(".").pop().toLowerCase();
+    const i = FIN_NAMES.findIndex(n => last.includes(n)), j = FIN_SRC.indexOf(x.src);
+    return [i < 0 ? 99 : i, j < 0 ? 99 : j];
+  };
+  const all = f.slice().sort((a, b) => { const ra = rank(a), rb = rank(b); return ra[0] - rb[0] || ra[1] - rb[1]; });
+  return { best: all[0], all };
+}
 function renderSummary() {
   const el = $("#summary"), ps = state.players;
   if (!ps.length) { el.hidden = true; return; }
@@ -1017,11 +1038,16 @@ function renderSummary() {
   const wcur = ps.find(p => p.wageCurrency)?.wageCurrency || cur;
   const starters = ps.filter(p => ["GK", "DEF", "MID", "ATT"].includes(estOf(p)));
   const trainees = ps.filter(p => estOf(p) === "ENT");
-  const rows = [];
-  if (!state.hideVal) rows.push(["Valor Total", money(total(p => p.value), cur)], ["Salario Total", money(total(p => p.wage), wcur)]);
+  const fin = pickFinance(state.finance);
+  const finTip = fin
+    ? `Campo usado: ${fin.best.src}.${fin.best.path}` + (fin.all.length > 1 ? ". Otros campos: " + fin.all.slice(1, 6).map(x => `${x.src}.${x.path} = ${nf.format(x.value)}`).join("; ") : "")
+    : (state.finance ? "No se encontró el dinero disponible en los datos de la API." : "Vuelve a ejecutar node fetch-team.mjs para obtener las finanzas.");
+  // Este cuadro se muestra siempre: no depende de los filtros ni del botón Ocultar Val/Sal.
+  const rows = [["Finanzas", fin ? money(fin.best.value, fin.best.currency || cur) : "—", finTip],
+    ["Valor Total", money(total(p => p.value), cur)], ["Salario Total", money(total(p => p.wage), wcur)]];
   rows.push(["Edad Titulares", avgAge(starters)], ["Edad Entrenables", avgAge(trainees)],
     ["Lesionados", String(ps.filter(p => p.injury).length)], ["Suspendidos", String(ps.filter(p => p.red).length)]);
-  el.innerHTML = `<dl>${rows.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}</dl>`;
+  el.innerHTML = `<dl>${rows.map(([k, v, tip]) => `<dt>${k}</dt><dd${tip ? ` title="${esc(tip)}"` : ""}>${esc(v)}</dd>`).join("")}</dl>`;
 }
 
 function setHideVal(on) {
