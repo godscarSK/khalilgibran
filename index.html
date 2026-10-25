@@ -719,18 +719,34 @@ async function pushDirty() {
   if (!CONFIG.estUrl || !sync.key || sync.busy || !sync.dirty.size) return;
   sync.busy = true; setSyncState("pending");
   let failed = null;
+  const sent = {};
   try {
     for (const pid of [...sync.dirty]) {
       const e = estMap[pid];
       if (!e) { sync.dirty.delete(pid); continue; }
-      await estCall({ action: "set", pid, v: await encV(e.v), t: e.t, token: sync.token });
+      const ev = await encV(e.v);
+      await estCall({ action: "set", pid, v: ev, t: e.t, token: sync.token });
+      sent[pid] = ev;
       if (estMap[pid] === e) sync.dirty.delete(pid);
       saveEst();
     }
   } catch (err) { failed = err; }
   sync.busy = false;
   if (failed) { setSyncState(/token/i.test(failed.message) ? "token" : "offline", explainSync(failed)); return; }
-  if (sync.dirty.size) pushDirty(); else setSyncState("ok");
+  if (sync.dirty.size) { pushDirty(); return; }
+  // Comprobación: se vuelve a leer lo guardado en el servicio y se compara con lo que se envió.
+  const bad = [];
+  try {
+    const j = await estCall({ action: "list" });
+    for (const [pid, ev] of Object.entries(sent)) {
+      const it = (j.items || []).find(x => String(x.pid) === String(pid));
+      const name = state.players.find(p => String(p.pid) === String(pid))?.name || pid;
+      if (!it) bad.push(`${name}: el servicio no lo guardó`);
+      else if (String(it.v ?? "") !== ev) bad.push(`${name}: se enviaron ${ev.length} caracteres y el servicio guardó ${String(it.v ?? "").length}`);
+    }
+  } catch {}
+  if (bad.length) setSyncState("offline", "el servicio no guardó lo que se envió (" + bad.slice(0, 3).join("; ") + (bad.length > 3 ? "; …" : "") + ").");
+  else setSyncState("ok");
 }
 async function pullEst() {
   if (!CONFIG.estUrl || !sync.key) return;
