@@ -148,6 +148,9 @@ td.c-name { text-align: left; }
 :root[data-theme="dark"] .mk.ok { color: #5fd08a; }
 :root[data-theme="dark"] .mk.bad { color: #ff7b6e; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .mk.ok { color: #5fd08a; } :root:not([data-theme="light"]) .mk.bad { color: #ff7b6e; } }
+td.c-reg.hi { background: #d6f0dd; color: #14532d; font-weight: 700; }
+:root[data-theme="dark"] td.c-reg.hi { background: #1f4130; color: #b8f0cc; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) td.c-reg.hi { background: #1f4130; color: #b8f0cc; } }
 td.c-reg { white-space: nowrap; font-variant-numeric: tabular-nums; }
 th.c-prog, td.c-prog { min-width: 14rem; text-align: left; }
 td.c-prog input { width: 100%; min-width: 12rem; box-sizing: border-box; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; min-height: 32px; }
@@ -377,10 +380,12 @@ function regCol(key, text) {
   const r = regress(text);
   if (!r) return { t: "", v: null };
   if (key === "reg") return { t: `y = ${nf2.format(r.b)}x ${r.a < 0 ? "−" : "+"} ${nf1r.format(Math.abs(r.a))}`, v: r.b };
-  if (key === "treal") return r.b ? { t: nf2.format(1 / r.b), v: 1 / r.b } : { t: "", v: null };
-  if (key === "r2") return r.r2 == null ? { t: "", v: null } : { t: nf3.format(r.r2), v: r.r2 };
+  if (key === "treal") return r.b ? { t: nf2.format(1 / r.b), v: 1 / r.b, hi: Math.round(100 * (1 / r.b)) / 100 <= HI_TREAL } : { t: "", v: null };
+  if (key === "r2") return r.r2 == null ? { t: "", v: null } : { t: nf3.format(r.r2), v: r.r2, hi: Math.round(1000 * r.r2) / 1000 >= HI_R2 };
   return { t: "", v: null };
 }
+// Umbrales de resaltado (se comparan con el valor redondeado, tal como se ve en la celda).
+const HI_TREAL = 4.5, HI_R2 = 0.7;
 const REG_KEYS = ["reg", "treal", "r2"];
 const countItems = t => Math.max(0, String(t || "").split(",").filter(x => x.trim() !== "").length - 1);   // elementos de Progreso menos 1
 const progOf = p => { const e = p.id != null ? progMap[progKey(p.id)] : null; return e && typeof e.v === "string" ? e.v : ""; };
@@ -519,8 +524,8 @@ function refreshProgInputs() {
   });
   document.querySelectorAll("#body td[data-reg]").forEach(td => {
     const e = progMap[progKey(td.dataset.reg)];
-    const t = regCol(td.dataset.f, e && typeof e.v === "string" ? e.v : "").t;
-    td.textContent = t || "—"; td.classList.toggle("dim", !t);
+    const rc = regCol(td.dataset.f, e && typeof e.v === "string" ? e.v : ""), t = rc.t;
+    td.textContent = t || "—"; td.classList.toggle("dim", !t); td.classList.toggle("hi", !!rc.hi);
   });
   document.querySelectorAll("#body td[data-cnt]").forEach(td => {
     const e = progMap[progKey(td.dataset.cnt)];
@@ -900,7 +905,7 @@ function render() {
     const tds = COLS.map(c => {
       if (c.key === "n") return `<td class="c-n">${rowIdx + 1}</td>`;
       if (c.key === "name") return `<td class="l c-name">${esc(p.name)}</td>`;
-      if (REG_KEYS.includes(c.key)) { const t = regCol(c.key, progOf(p)).t; return `<td class="c-reg${t ? "" : " dim"}" data-reg="${esc(String(p.id ?? ""))}" data-f="${c.key}">${t ? esc(t) : "—"}</td>`; }
+      if (REG_KEYS.includes(c.key)) { const rc = regCol(c.key, progOf(p)), t = rc.t; return `<td class="c-reg${t ? "" : " dim"}${rc.hi ? " hi" : ""}" data-reg="${esc(String(p.id ?? ""))}" data-f="${c.key}">${t ? esc(t) : "—"}</td>`; }
       if (c.key === "progN") return `<td class="c-progn" data-cnt="${esc(String(p.id ?? ""))}" data-wi="${p.weeksIn ?? ""}">${cntHtml(countItems(progOf(p)), p.weeksIn)}</td>`;
       if (c.key === "skill") {
         const v = p.skill;
@@ -1020,7 +1025,7 @@ function init() {
   });
   ageInput("#ageMin", "ageMin"); ageInput("#ageMax", "ageMax");
   $("#copy").addEventListener("click", copyTable);
-  $("#body").addEventListener("input", ev => { const t = ev.target; if (t && t.dataset && t.dataset.jid) { setProg(t.dataset.jid, t.value); t.closest("tr").querySelectorAll("td[data-reg]").forEach(rg => { const x = regCol(rg.dataset.f, t.value).t; rg.textContent = x || "—"; rg.classList.toggle("dim", !x); }); const td = t.closest("tr").querySelector("td[data-cnt]"); if (td) td.innerHTML = cntHtml(countItems(t.value), td.dataset.wi === "" ? null : Number(td.dataset.wi)); } });
+  $("#body").addEventListener("input", ev => { const t = ev.target; if (t && t.dataset && t.dataset.jid) { setProg(t.dataset.jid, t.value); t.closest("tr").querySelectorAll("td[data-reg]").forEach(rg => { const rc = regCol(rg.dataset.f, t.value), x = rc.t; rg.textContent = x || "—"; rg.classList.toggle("dim", !x); rg.classList.toggle("hi", !!rc.hi); }); const td = t.closest("tr").querySelector("td[data-cnt]"); if (td) td.innerHTML = cntHtml(countItems(t.value), td.dataset.wi === "" ? null : Number(td.dataset.wi)); } });
   $("#pwForm").addEventListener("submit", ev => {
     ev.preventDefault();
     const pw = $("#pwInput").value;
