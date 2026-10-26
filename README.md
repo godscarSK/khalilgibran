@@ -69,6 +69,8 @@ La API entrega los datos de los juveniles bajo nombres de campo que la página b
 
 **Nivel Inicial:** a la derecha de Nivel; muestra el primer elemento de Progreso (se actualiza mientras escribes).
 
+**Nivel Final:** (a la derecha de Nivel) = último elemento de Progreso + Sem. Restantes / divisor. El divisor es **3,5** si Sem. Entrenadas < 10, o si Talento Est. es menor que 0 o mayor que 10; en cualquier otro caso es el **Talento Est.**. Muestra «—» si falta el último elemento numérico de Progreso, las Sem. Restantes o las Sem. Entrenadas (o el Talento Est. cuando hace falta). Al pasar el mouse indica qué fórmula se usó.
+
 **Edad Final:** a la derecha de Edad. Se suma la semana actual de la temporada (`seasonweek`, la que entrega el script) y las Sem. Restantes; hasta 13 → Edad; 14–26 → Edad+1; 27–39 → Edad+2; 40–52 → Edad+3 (y así cada 13 semanas más). Cada edad tiene su propio color (16 naranjo, 17 rosado, 18 verde turquesa, 19 amarillo, 20 índigo, 21 celeste; las demás sin color; tabla `AGE_HUES` en `juveniles.html`) y **Sem. Final** usa el mismo color que **Edad Final** del mismo juvenil. Fijos: 16 naranjo y 18 verde (`AGE_HUES` en `juveniles.html`). Si falta la semana, la edad o las semanas restantes, muestra «—».
 
 **Sem. Final:** (a la derecha de Edad Final) número de semana de la temporada (1 a 13) en que las Sem. Restantes llegan a 0: (semana actual + Sem. Restantes) con temporadas de 13 semanas. Al pasar el mouse indica si ocurre en la temporada actual, la próxima o más adelante. Ordena por fecha real de salida. Si falta la semana actual o las semanas restantes, muestra «—».

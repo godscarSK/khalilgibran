@@ -416,6 +416,21 @@ function exitWeekOf(p) {
 // Color de cada Edad Final (matiz HSL). Solo las edades de la tabla tienen color; el resto se muestra sin color.
 const AGE_HUES = { 16: 28, 17: 335, 18: 165, 19: 52, 20: 250, 21: 200 };   // 16 naranjo, 17 rosado, 18 verde turquesa, 19 amarillo, 20 índigo, 21 celeste
 const ageHue = a => AGE_HUES[a] ?? null;   // otras edades: sin color
+// Nivel Final = último elemento de Progreso + Sem. Restantes / divisor.
+// Divisor: 3,5 si Sem. Entrenadas < 10 o Talento Est. < 0 o > 10; en otro caso, el Talento Est. (1 / pendiente de la regresión).
+function levelFinalOf(p) {
+  const items = String(progOf(p) || "").split(",").map(x => x.trim()).filter(x => x !== "");
+  if (!items.length || !Number.isFinite(p.weeks) || !Number.isFinite(p.weeksIn)) return null;
+  const last = Number(items[items.length - 1].replace(",", "."));
+  if (!Number.isFinite(last)) return null;
+  const te = regCol("treal", progOf(p)).v;
+  const fixed = p.weeksIn < 10 || (te != null && (te < 0 || te > 10));
+  if (!fixed && te == null) return null;
+  const div = fixed ? 3.5 : te;
+  return { v: last + p.weeks / div, fixed };
+}
+const lfText = p => { const r = levelFinalOf(p); return r ? nf1r.format(r.v) : ""; };
+const lfCell = p => { const r = levelFinalOf(p); return r ? { t: nf1r.format(r.v), tip: r.fixed ? "Último Progreso + Sem. Restantes / 3,5" : "Último Progreso + Sem. Restantes / Talento Est." } : { t: "", tip: "" }; };
 const countItems = t => Math.max(0, String(t || "").split(",").filter(x => x.trim() !== "").length - 1);   // elementos de Progreso menos 1
 const progOf = p => { if (p.calc) return p.progText || ""; const e = p.id != null ? progMap[progKey(p.id)] : null; return e && typeof e.v === "string" ? e.v : ""; };
 function setProg(id, v) {
@@ -556,6 +571,10 @@ function refreshProgInputs() {
     const rc = regCol(td.dataset.f, e && typeof e.v === "string" ? e.v : ""), t = rc.t;
     td.textContent = t || "—"; td.classList.toggle("dim", !t); td.classList.toggle("hi", !!rc.hi);
   });
+  document.querySelectorAll("#body td[data-lf]").forEach(td => {
+    const p = state.players.find(q => String(q.id) === td.dataset.lf); if (!p) return;
+    const l = lfCell(p); td.textContent = l.t || "—"; td.classList.toggle("dim", !l.t); td.title = l.tip;
+  });
   document.querySelectorAll("#body td[data-cnt]").forEach(td => {
     const e = progMap[progKey(td.dataset.cnt)];
     td.innerHTML = cntHtml(countItems(e && typeof e.v === "string" ? e.v : ""), td.dataset.wi === "" ? null : Number(td.dataset.wi));
@@ -624,6 +643,7 @@ const COLS = [
   { key: "ageOut", label: "Edad Final", title: "Edad con la que sale de la academia. Se suma la semana actual de la temporada y las Sem. Restantes: hasta 13 → Edad; 14–26 → Edad+1; 27–39 → Edad+2; 40–52 → Edad+3" },
   { key: "exitWeek", label: "Sem. Final", title: "Semana de la temporada (1 a 13) en que las Sem. Restantes llegan a 0: semana actual + Sem. Restantes, con temporadas de 13 semanas" },
   { key: "skill", label: "Nivel", title: "Nivel (skill) general del juvenil" },
+  { key: "lvlFinal", label: "Nivel Final", title: "Último elemento de Progreso + Sem. Restantes / 3,5 (si Sem. Entrenadas < 10 o Talento Est. < 0 o > 10); en otro caso, + Sem. Restantes / Talento Est." },
   { key: "first", label: "Nivel Inicial", title: "Primer elemento de Progreso" },
   { key: "weeks", label: "Sem. Restantes", title: "Semanas que le faltan en la academia (Listo = puede ascender)" },
   { key: "weeksIn", label: "Sem. Entrenadas", title: "Semanas de entreno (weeksIn)" },
@@ -866,6 +886,7 @@ function buildHead() {
   }).join("");
 }
 function sortValue(p, key) {
+  if (key === "lvlFinal") { const r = levelFinalOf(p); return r ? r.v : null; }
   if (key === "ageOut") return ageOutOf(p);
   if (key === "exitWeek") { const e = exitWeekOf(p); return e ? e.seasons * 13 + e.week : null; }
   if (key === "prog") return progOf(p).toLowerCase() || null;
@@ -895,6 +916,7 @@ function visibleRows() {
 }
 function cellText(p, key) {
   if (key === "exitWeek") { const e = exitWeekOf(p); return e ? String(e.week) : ""; }
+  if (key === "lvlFinal") return lfText(p);
   if (key === "ageOut") { const v = ageOutOf(p); return v == null ? "" : String(v); }
   if (key === "prog") return progOf(p);
   if (key === "progN") return String(countItems(progOf(p)));
@@ -996,7 +1018,8 @@ function cellHtml(c, p, rowIdx) {
     if (c.key === "name") return `<td class="l c-name">${esc(p.name)}</td>`;
     if (REG_KEYS.includes(c.key)) { const rc = regCol(c.key, progOf(p)), t = rc.t; return `<td class="c-reg${t ? "" : " dim"}${rc.hi ? " hi" : ""}" ${p.calc ? "" : `data-reg="${esc(String(p.id ?? ""))}"`} data-f="${c.key}">${t ? esc(t) : "—"}</td>`; }
     if (c.key === "progN") return `<td class="c-progn" ${p.calc ? "" : `data-cnt="${esc(String(p.id ?? ""))}"`} data-wi="${p.weeksIn ?? ""}">${cntHtml(countItems(progOf(p)), p.weeksIn)}</td>`;
-    if (c.key === "exitWeek") {
+    if (c.key === "lvlFinal") { const l = lfCell(p); return `<td class="c-lf${l.t ? "" : " dim"}" ${p.calc ? "" : `data-lf="${esc(String(p.id ?? ""))}"`}${l.tip ? ` title="${l.tip}"` : ""}>${l.t || "—"}</td>`; }
+  if (c.key === "exitWeek") {
       const e = exitWeekOf(p);
       if (!e) return `<td class="dim">—</td>`;
       const tip = e.seasons === 0 ? "En la temporada actual" : e.seasons === 1 ? "En la próxima temporada" : `En ${e.seasons} temporadas más`;
@@ -1140,7 +1163,7 @@ function init() {
     else state.calcP[k] = t.value;
     calcRefresh();
   });
-  $("#body").addEventListener("input", ev => { const t = ev.target; if (t && t.dataset && t.dataset.jid) { setProg(t.dataset.jid, t.value); t.closest("tr").querySelectorAll("td[data-reg]").forEach(rg => { const rc = regCol(rg.dataset.f, t.value), x = rc.t; rg.textContent = x || "—"; rg.classList.toggle("dim", !x); rg.classList.toggle("hi", !!rc.hi); }); const td = t.closest("tr").querySelector("td[data-cnt]"); if (td) td.innerHTML = cntHtml(countItems(t.value), td.dataset.wi === "" ? null : Number(td.dataset.wi)); } });
+  $("#body").addEventListener("input", ev => { const t = ev.target; if (t && t.dataset && t.dataset.jid) { setProg(t.dataset.jid, t.value); t.closest("tr").querySelectorAll("td[data-reg]").forEach(rg => { const rc = regCol(rg.dataset.f, t.value), x = rc.t; rg.textContent = x || "—"; rg.classList.toggle("dim", !x); rg.classList.toggle("hi", !!rc.hi); }); const lf = t.closest("tr").querySelector("td[data-lf]"); if (lf) { const pl = state.players.find(q => String(q.id) === lf.dataset.lf); if (pl) { const l = lfCell(pl); lf.textContent = l.t || "—"; lf.classList.toggle("dim", !l.t); lf.title = l.tip; } } const td = t.closest("tr").querySelector("td[data-cnt]"); if (td) td.innerHTML = cntHtml(countItems(t.value), td.dataset.wi === "" ? null : Number(td.dataset.wi)); } });
   $("#pwForm").addEventListener("submit", ev => {
     ev.preventDefault();
     const pw = $("#pwInput").value;
