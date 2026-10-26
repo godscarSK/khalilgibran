@@ -68,6 +68,8 @@ La API entrega los datos de los juveniles bajo nombres de campo que la página b
 
 **Edad de Salida:** a la derecha de Edad. Se suma la semana actual de la temporada (`seasonweek`, la que entrega el script) y las Semanas Restantes; hasta 13 → Edad; 14–26 → Edad+1; 27–39 → Edad+2; 40–52 → Edad+3 (y así cada 13 semanas más). Si falta la semana, la edad o las semanas restantes, muestra «—».
 
+**Semana de Salida:** número de semana de la temporada (1 a 13) en que las Semanas Restantes llegan a 0: (semana actual + Semanas Restantes) con temporadas de 13 semanas. Al pasar el mouse indica si ocurre en la temporada actual, la próxima o más adelante. Ordena por fecha real de salida. Si falta la semana actual o las semanas restantes, muestra «—».
+
 **Flechas ▲▼ en Nivel:** igual que en Plantel, el script guarda cada jueves un respaldo de los juveniles (`juniors.prev.enc.json`) y la página marca con ▲ o ▼ los juveniles cuyo Nivel subió o bajó respecto a la semana anterior (se compara por id). La primera comparación aparece después de la segunda semana de ejecuciones; sube los dos archivos a `data`. Un juvenil que no estaba la semana anterior no lleva flecha.
 
 Los textos se identifican por el id del juvenil. Junto a Progreso, la columna **Recuento de Semanas** cuenta cuántos elementos tiene el texto (separados por coma, sin espacios) y le resta 1 (nunca baja de 0) y se actualiza mientras escribes. Muestra ✓ si el número coincide con **Semanas de Entreno** y ✗ si no.

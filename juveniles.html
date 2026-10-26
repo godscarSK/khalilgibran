@@ -394,6 +394,13 @@ function ageOutOf(p) {
   const n = wk + p.weeks;
   return p.age + (n <= 13 ? 0 : Math.floor((n - 1) / 13));
 }
+// Semana de salida: semana de la temporada (1–13) en que las Semanas Restantes llegan a 0; seasons = temporadas que faltan hasta entonces.
+function exitWeekOf(p) {
+  const wk = state.calendar && Number.isFinite(state.calendar.week) ? state.calendar.week : null;
+  if (wk == null || !Number.isFinite(p.weeks)) return null;
+  const n = wk + p.weeks - 1;
+  return { week: (n % 13) + 1, seasons: Math.floor(n / 13) };
+}
 const countItems = t => Math.max(0, String(t || "").split(",").filter(x => x.trim() !== "").length - 1);   // elementos de Progreso menos 1
 const progOf = p => { const e = p.id != null ? progMap[progKey(p.id)] : null; return e && typeof e.v === "string" ? e.v : ""; };
 function setProg(id, v) {
@@ -602,6 +609,7 @@ const COLS = [
   { key: "ageOut", label: "Edad de Salida", title: "Edad con la que sale de la academia. Se suma la semana actual de la temporada y las Semanas Restantes: hasta 13 → Edad; 14–26 → Edad+1; 27–39 → Edad+2; 40–52 → Edad+3" },
   { key: "skill", label: "Nivel", title: "Nivel (skill) general del juvenil" },
   { key: "weeks", label: "Semanas Restantes", title: "Semanas que le faltan en la academia (Listo = puede ascender)" },
+  { key: "exitWeek", label: "Semana de Salida", title: "Semana de la temporada (1 a 13) en que las Semanas Restantes llegan a 0: semana actual + Semanas Restantes, con temporadas de 13 semanas" },
   { key: "weeksIn", label: "Semanas de Entreno", title: "Semanas de entreno (weeksIn)" },
   { key: "talent", label: "Talento", title: "Talento (talent)" },
   { key: "formation", label: "Tipo", title: "Tipo (formation)" },
@@ -817,7 +825,7 @@ async function load() {
     if (!ps.some(p => p.age != null)) missing.push("edad");
     if (!ps.some(p => p.weeks != null)) missing.push("semanas restantes");
     if (!(state.calendar && Number.isFinite(state.calendar.week))) {
-      notices.push({ html: `<p><strong>No tengo la semana actual de la temporada</strong> (campo <code>seasonweek</code>), así que la columna Edad de Salida queda en «—». Vuelve a ejecutar <code>node fetch-team.mjs</code> con la versión nueva y sube <code>juniors.enc.json</code>; si el aviso del script dice que no encontró la semana, pásamelo.</p>` });
+      notices.push({ html: `<p><strong>No tengo la semana actual de la temporada</strong> (campo <code>seasonweek</code>), así que las columnas Edad de Salida y Semana de Salida quedan en «—». Vuelve a ejecutar <code>node fetch-team.mjs</code> con la versión nueva y sube <code>juniors.enc.json</code>; si el aviso del script dice que no encontró la semana, pásamelo.</p>` });
     }
     if (missing.length) {
       notices.push({ html:
@@ -843,6 +851,7 @@ function buildHead() {
 }
 function sortValue(p, key) {
   if (key === "ageOut") return ageOutOf(p);
+  if (key === "exitWeek") { const e = exitWeekOf(p); return e ? e.seasons * 13 + e.week : null; }
   if (key === "prog") return progOf(p).toLowerCase() || null;
   if (key === "progN") return countItems(progOf(p));
   if (REG_KEYS.includes(key)) return regCol(key, progOf(p)).v;
@@ -869,6 +878,7 @@ function visibleRows() {
   return out;
 }
 function cellText(p, key) {
+  if (key === "exitWeek") { const e = exitWeekOf(p); return e ? String(e.week) : ""; }
   if (key === "ageOut") { const v = ageOutOf(p); return v == null ? "" : String(v); }
   if (key === "prog") return progOf(p);
   if (key === "progN") return String(countItems(progOf(p)));
@@ -920,6 +930,12 @@ function render() {
       if (c.key === "name") return `<td class="l c-name">${esc(p.name)}</td>`;
       if (REG_KEYS.includes(c.key)) { const rc = regCol(c.key, progOf(p)), t = rc.t; return `<td class="c-reg${t ? "" : " dim"}${rc.hi ? " hi" : ""}" data-reg="${esc(String(p.id ?? ""))}" data-f="${c.key}">${t ? esc(t) : "—"}</td>`; }
       if (c.key === "progN") return `<td class="c-progn" data-cnt="${esc(String(p.id ?? ""))}" data-wi="${p.weeksIn ?? ""}">${cntHtml(countItems(progOf(p)), p.weeksIn)}</td>`;
+      if (c.key === "exitWeek") {
+        const e = exitWeekOf(p);
+        if (!e) return `<td class="dim">—</td>`;
+        const tip = e.seasons === 0 ? "En la temporada actual" : e.seasons === 1 ? "En la próxima temporada" : `En ${e.seasons} temporadas más`;
+        return `<td title="${tip}">${e.week}</td>`;
+      }
       if (c.key === "ageOut") { const v = ageOutOf(p); return v == null ? `<td class="dim">—</td>` : `<td>${v}</td>`; }
       if (c.key === "skill") {
         const v = p.skill;
