@@ -74,6 +74,7 @@ h1 {
 .brand { display: flex; align-items: center; gap: clamp(10px, 2vw, 20px); }
 .brand .logo { flex: none; width: clamp(64px, 11vw, 104px); height: auto; filter: drop-shadow(0 2px 4px rgba(0,0,0,.25)); }
 .brand h1 { min-width: 0; overflow-wrap: anywhere; }
+.season { margin: 4px 0 0; font-weight: 700; color: var(--muted, inherit); letter-spacing: .04em; }
 .summary { flex: 0 0 auto; min-width: 250px; padding: 10px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; font-variant-numeric: tabular-nums; }
 .summary dl { margin: 0; display: grid; grid-template-columns: auto auto; gap: 3px 22px; }
 .summary dt { color: var(--muted); font-size: .875rem; }
@@ -249,6 +250,7 @@ dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
           <img class="logo" src="logo.png" alt="Escudo del equipo" width="300" height="300" onerror="this.hidden=true">
           <h1 id="title">MI EQUIPO</h1>
         </div>
+        <p class="season" id="season" hidden></p>
         <p class="lede" id="lede">Cargando jugadores…</p>
       </div>
       <aside class="summary" id="summary" aria-label="Resumen del equipo" hidden></aside>
@@ -602,6 +604,7 @@ async function load(force) {
   }
 
   state.teamName = st.team?.name || "";
+  state.calendar = st.calendar || null;
   state.finance = st.finance || null;
   state.players = st.rows.map(r => normalize(r, st.api?.[r.pid]));
   state.stamp = st.generatedAt ? Date.parse(st.generatedAt) : null;
@@ -1021,6 +1024,10 @@ function render() {
   const name = (state.teamName || CONFIG.title).toUpperCase();
   $("#title").textContent = name;
   document.title = name;
+  { const c = state.calendar, parts = [];
+    if (c && Number.isFinite(c.season)) parts.push("Temporada " + c.season);
+    if (c && Number.isFinite(c.week)) parts.push("Semana " + c.week);
+    const el = $("#season"); el.textContent = parts.join(" · "); el.hidden = !parts.length; }
 
   const total = state.players.length;
   const when = state.stamp ? fmtDate(state.stamp) : "";

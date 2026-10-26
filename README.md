@@ -23,6 +23,10 @@ Página con la tabla de **los jugadores de tu propio equipo en Sokker**. Es una 
 
 Para actualizar los datos, repite los pasos 2 y 3.
 
+## Temporada y semana
+
+Si la API entrega la temporada y la semana actuales, ambas páginas las muestran bajo el título («Temporada 87 · Semana 5»). Si no se encuentran, la línea no aparece y el script avisa al ejecutarse con los campos relacionados que vio. Se actualiza al ejecutar `node fetch-team.mjs`.
+
 ## Menú de secciones
 
 Arriba a la derecha, junto al botón de tema, hay un menú desplegable con dos opciones: **Plantel** (`index.html`) y **Juveniles** (`juveniles.html`). La contraseña se escribe una sola vez: las dos páginas la comparten en el mismo navegador.

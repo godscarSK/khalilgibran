@@ -158,6 +158,27 @@ async function readFinance(teamId, me) {
 /* ─────────────── Juveniles ───────────────
    La API entrega los juveniles de la academia del equipo con sesión iniciada (GET /junior), por páginas. Se guardan tal como llegan,
    porque la página busca por nombre de campo (nombre, edad, semanas restantes y skills). */
+// Temporada y semana actuales: no conozco el endpoint exacto, así que se busca en /current y en algunos candidatos.
+async function readCalendar(me) {
+  const found = [];
+  const walk = (o, src, path = "", d = 0) => {
+    if (!o || typeof o !== "object" || d > 4) return;
+    for (const [k, v] of Object.entries(o)) {
+      const p = path ? `${path}.${k}` : k;
+      if (v && typeof v === "object") walk(v, src, p, d + 1);
+      else if (/season|week|round|day|date|time/i.test(k) && (typeof v === "number" || typeof v === "string")) found.push({ src, path: p, value: v });
+    }
+  };
+  walk(me, "current");
+  for (const ep of ["/date", "/season", "/calendar", "/time", "/game/date", "/current/date"]) {
+    try { walk(await getJson(ep), ep.slice(1)); } catch {}
+  }
+  const pick = re => found.find(f => re.test(f.path.split(".").pop()) && Number.isFinite(Number(f.value)));
+  const season = pick(/^season(Number|No|Id|Num)?$/i);
+  const week = pick(/^(week|weekNumber|weekNo|gameWeek|weekOfSeason|seasonWeek)$/i);
+  return { season: season ? Number(season.value) : null, week: week ? Number(week.value) : null, fields: found.slice(0, 40) };
+}
+
 async function readJuniors() {
   const PAGE = 50, items = [], seen = new Set();
   let offset = 0;
@@ -231,7 +252,12 @@ async function main() {
   if (finance.fields.length) console.log("  Campos de dinero encontrados: " + finance.fields.map(f => `${f.src}.${f.path} = ${f.value}`).join("; "));
   else console.warn("  Aviso: no encontré ningún campo de dinero en la API; la fila Finanzas quedará vacía.");
 
-  const out = { generatedAt: new Date().toISOString(), team: { id: Number(teamId), name: teamName }, rows, api, finance };
+  console.log("Leyendo temporada y semana…");
+  const calendar = await readCalendar(me);
+  if (calendar.season != null || calendar.week != null) console.log(`  Temporada ${calendar.season ?? "?"}, semana ${calendar.week ?? "?"}`);
+  else console.warn("  Aviso: no encontré temporada ni semana en la API. Campos relacionados: " + (calendar.fields.map(f => `${f.src}.${f.path}`).join(", ") || "ninguno"));
+
+  const out = { generatedAt: new Date().toISOString(), team: { id: Number(teamId), name: teamName }, rows, api, finance, calendar };
 
   // Respaldo semanal: la semana va de jueves a miércoles. El archivo anterior pasa a ser el respaldo
   // solo la primera vez que se ejecuta el script en cada semana.
@@ -261,7 +287,7 @@ async function main() {
   try {
     console.log("Leyendo los juveniles…");
     const items = await readJuniors();
-    const jout = { generatedAt: out.generatedAt, team: out.team, items };
+    const jout = { generatedAt: out.generatedAt, team: out.team, calendar, items };
     await writeFile(JFILE, JSON.stringify(await encrypt(jout, sitePw)));
     jCount = items.length;
   } catch (e) { console.warn(`  Aviso: no pude leer los juveniles (${e.message}); la página «Juveniles» no se actualizará.`); }
