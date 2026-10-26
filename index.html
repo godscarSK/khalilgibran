@@ -798,6 +798,7 @@ async function pullEst() {
     let changed = false;
     for (const it of j.items || []) {
       const pid = String(it.pid), t = Number(it.t) || 0;
+      if (!/^\d+$/.test(pid)) continue;   // claves «j…»: son los Progresos de la página de juveniles
       remote.add(pid); remoteT[pid] = Math.max(remoteT[pid] || 0, t);
       let v;
       try { v = estDecode(await decV(it.v)); }

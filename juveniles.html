@@ -136,6 +136,9 @@ th.c-name button { justify-content: flex-start; }
 th[aria-sort="ascending"] button::after { content: "▲"; font-size: .65em; color: var(--accent); }
 th[aria-sort="descending"] button::after { content: "▼"; font-size: .65em; color: var(--accent); }
 td.c-name { text-align: left; }
+th.c-prog, td.c-prog { min-width: 14rem; text-align: left; }
+td.c-prog input { width: 100%; min-width: 12rem; box-sizing: border-box; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; min-height: 32px; }
+td.c-prog input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 tbody tr:nth-child(even) td { background-color: var(--zebra); }
 tbody tr:hover td { background-color: color-mix(in srgb, var(--accent) 7%, var(--panel)); }
 
@@ -302,6 +305,7 @@ dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
 
 <noscript>Esta página necesita JavaScript para mostrar la tabla.</noscript>
 
+<script src="config.js" onerror="void 0"></script>
 <script>
 "use strict";
 
@@ -310,8 +314,170 @@ const CONFIG = {
   title: "JUVENILES",
   encData: "data/juniors.enc.json",     // datos cifrados con la contraseña de la página (los genera fetch-team.mjs)
   staticData: "data/juniors.json",      // alternativa sin cifrar (opcional)
+  estUrl: (window.CANTERA_CONFIG && window.CANTERA_CONFIG.estUrl) || "",   // el mismo config.js de la página del plantel; vacío = Progreso solo en este navegador
   timeoutMs: 15000
 };
+
+/* ─────────────── Progreso (texto editable y sincronizado) ───────────────
+   Se guarda en este navegador y, si config.js define estUrl, se sincroniza con el mismo Apps Script de la página del plantel.
+   Cada juvenil usa la clave «j» + su id; el texto viaja cifrado con la contraseña de la página. */
+const PROG_KEY = "juveniles:prog", PROG_DIRTY_KEY = "juveniles:progdirty";
+const remoteT = {};
+const nextT = k => Math.max(Date.now(), (remoteT[k] || 0) + 1);
+let progMap = {};   // "j<id>" → { v, t }
+const sync = { detail: "", key: null, token: "", dirty: new Set(), busy: false, state: "local", jsonp: false, fetchErr: "" };
+try {
+  const o = JSON.parse(localStorage.getItem(PROG_KEY));
+  if (o && typeof o === "object") progMap = o;
+  const d = JSON.parse(localStorage.getItem(PROG_DIRTY_KEY));
+  if (Array.isArray(d)) d.forEach(k => sync.dirty.add(String(k)));
+} catch {}
+const saveProg = () => { try { localStorage.setItem(PROG_KEY, JSON.stringify(progMap)); localStorage.setItem(PROG_DIRTY_KEY, JSON.stringify([...sync.dirty])); } catch {} };
+const progKey = id => "j" + id;
+const progOf = p => { const e = p.id != null ? progMap[progKey(p.id)] : null; return e && typeof e.v === "string" ? e.v : ""; };
+function setProg(id, v) {
+  const k = progKey(id);
+  progMap[k] = { v: String(v).slice(0, 200), t: nextT(k) };
+  sync.dirty.add(k); saveProg();
+  clearTimeout(setProg.tm);
+  setProg.tm = setTimeout(pushDirty, 700);
+}
+
+const SYNC_TEXT = { local: "", ok: "Progreso sincronizado.", pending: "Sincronizando progreso…",
+  offline: "Progreso pendiente de sincronizar (sin conexión con el servicio).",
+  token: "No se pudo sincronizar el progreso: el servicio rechazó la clave. Usa la misma contraseña que en la página del plantel." };
+const syncText = () => (SYNC_TEXT[sync.state] || "") + (sync.detail && (sync.state === "offline" || sync.state === "token") ? " Motivo: " + sync.detail : "");
+function setSyncState(st, detail = "") { sync.state = st; sync.detail = detail; const el = document.getElementById("syncMsg"); if (el) el.textContent = syncText() ? " " + syncText() : ""; }
+function explainSync(err) {
+  const m = String(err && err.message || err);
+  if (err && err.name === "AbortError") return "el servicio tardó más de 15 s en responder (inténtalo de nuevo).";
+  if (err && err.net) return `el navegador no pudo conectar con el servicio (${sync.fetchErr || "sin detalle"}). Revisa que la URL de config.js termine en /exec.`;
+  if (err && err.name === "JsonpTimeout") return "el servicio no respondió. Revisa que est-sync.gs esté en su versión nueva y publicado.";
+  if (err instanceof TypeError) return "error interno de la página: " + m;
+  if (err instanceof SyntaxError) return "el servicio no respondió datos válidos.";
+  if (/pid inv|valor inv/i.test(m)) return "el servicio rechazó el dato (" + m + "). Actualiza est-sync.gs a su versión nueva y publícala como nueva versión.";
+  if (/^HTTP \d+/.test(m)) return "el servicio respondió " + m + ".";
+  return "el servicio respondió: " + m;
+}
+const te = new TextEncoder();
+const hex = buf => [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
+const b64u = a => { let s = ""; for (const c of a) s += String.fromCharCode(c); return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); };
+const unb64u = t => Uint8Array.from(atob(t.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
+async function estInit(pw) {
+  const p = String(pw).normalize("NFC");
+  const km = await crypto.subtle.importKey("raw", te.encode(p), "PBKDF2", false, ["deriveKey"]);
+  sync.key = await crypto.subtle.deriveKey({ name: "PBKDF2", salt: te.encode("cantera-est-v1"), iterations: 250000, hash: "SHA-256" },
+    km, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+  sync.token = hex(await crypto.subtle.digest("SHA-256", te.encode("cantera-est-token|" + p)));
+}
+async function encV(v) {
+  if (!v) return "";
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, sync.key, te.encode(v)));
+  const o = new Uint8Array(12 + ct.length); o.set(iv); o.set(ct, 12);
+  return b64u(o);
+}
+async function decV(s) {
+  if (!s) return "";
+  const o = unb64u(String(s));
+  return new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv: o.slice(0, 12) }, sync.key, o.slice(12)));
+}
+function jsonp(u) {
+  return new Promise((res, rej) => {
+    const cb = "__juv_" + Math.random().toString(36).slice(2);
+    const el = document.createElement("script");
+    let tm;
+    const done = () => { delete window[cb]; el.remove(); clearTimeout(tm); };
+    tm = setTimeout(() => { done(); const e = new Error("sin respuesta"); e.name = "JsonpTimeout"; rej(e); }, CONFIG.timeoutMs);
+    window[cb] = d => { done(); res(d); };
+    el.onerror = () => { done(); const e = new Error("no se pudo cargar"); e.net = true; rej(e); };
+    u.searchParams.set("callback", cb);
+    el.src = u.toString();
+    document.head.appendChild(el);
+  });
+}
+async function estCall(params) {
+  const u = new URL(CONFIG.estUrl);
+  for (const [k, v] of Object.entries(params)) u.searchParams.set(k, v);
+  u.searchParams.set("_", Date.now());
+  let j = null;
+  if (!sync.jsonp) {
+    let r = null;
+    try { r = await fetchWithTimeout(u.toString()); }
+    catch (err) {
+      if (err.name === "AbortError") throw err;
+      sync.fetchErr = String(err.message || err);
+    }
+    if (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      j = await r.json();
+    } else sync.jsonp = true;
+  }
+  if (!j) j = await jsonp(u);
+  if (!j.ok) throw new Error(j.error || "error");
+  return j;
+}
+async function pushDirty() {
+  if (!CONFIG.estUrl || !sync.key || sync.busy || !sync.dirty.size) return;
+  sync.busy = true; setSyncState("pending");
+  let failed = null;
+  try {
+    for (const k of [...sync.dirty]) {
+      const e = progMap[k];
+      if (!e) { sync.dirty.delete(k); continue; }
+      await estCall({ action: "set", pid: k, v: await encV(e.v), t: e.t, token: sync.token });
+      remoteT[k] = Math.max(remoteT[k] || 0, e.t);
+      if (progMap[k] === e) sync.dirty.delete(k);
+      saveProg();
+    }
+  } catch (err) { failed = err; }
+  sync.busy = false;
+  if (failed) { setSyncState(/token/i.test(failed.message) ? "token" : "offline", explainSync(failed)); return; }
+  if (sync.dirty.size) { pushDirty(); return; }
+  setSyncState("ok");
+}
+async function pullProg() {
+  if (!CONFIG.estUrl || !sync.key) return;
+  try {
+    const j = await estCall({ action: "list" });
+    const remote = new Set();
+    let changed = false;
+    for (const it of j.items || []) {
+      const k = String(it.pid), t = Number(it.t) || 0;
+      if (!/^j\d+$/.test(k)) continue;           // las claves numéricas son de la página del plantel
+      remote.add(k); remoteT[k] = Math.max(remoteT[k] || 0, t);
+      let v;
+      try { v = await decV(it.v); }
+      catch { if (progMap[k]) { progMap[k] = { v: progMap[k].v, t: nextT(k) }; sync.dirty.add(k); } continue; }
+      const loc = progMap[k];
+      if (!loc || t > loc.t) {
+        progMap[k] = { v, t }; sync.dirty.delete(k); changed = true;
+      } else if (loc.t > t) sync.dirty.add(k);
+    }
+    for (const k of Object.keys(progMap)) if (!remote.has(k)) sync.dirty.add(k);
+    saveProg();
+    if (changed) refreshProgInputs();
+    if (sync.dirty.size) await pushDirty(); else setSyncState("ok");
+  } catch (err) { setSyncState("offline", explainSync(err)); }
+}
+// Actualiza los campos de texto sin recrear la tabla y sin pisar lo que se está escribiendo.
+function refreshProgInputs() {
+  document.querySelectorAll("#body input[data-jid]").forEach(inp => {
+    if (inp === document.activeElement) return;
+    const e = progMap[progKey(inp.dataset.jid)];
+    const v = e && typeof e.v === "string" ? e.v : "";
+    if (inp.value !== v) inp.value = v;
+  });
+}
+let estStarted = "";
+async function estStart(pw) {
+  if (!CONFIG.estUrl) return;
+  if (estStarted !== pw) { estStarted = pw; try { await estInit(pw); } catch { return; } }
+  setSyncState("pending");
+  await pullProg();
+}
+document.addEventListener("visibilitychange", () => { if (!document.hidden) pullProg(); });
+window.addEventListener("online", () => { pullProg(); });
 
 /* ─────────────── Columnas ─────────────── */
 const SKILL_COLUMNS = [
@@ -341,10 +507,11 @@ const COLS = [
   { key: "name",  label: "Juvenil", cls: "c-name", left: true },
   { key: "age",   label: "Edad" },
   { key: "skill", label: "Nivel", title: "Nivel (skill) general del juvenil" },
-  { key: "weeks", label: "Restantes", title: "Semanas que le faltan en la academia (Listo = puede ascender)" },
-  { key: "weeksIn", label: "Entrenos", title: "Entrenos (weeksIn)" },
+  { key: "weeks", label: "Semanas Restantes", title: "Semanas que le faltan en la academia (Listo = puede ascender)" },
+  { key: "weeksIn", label: "Semanas de Entreno", title: "Semanas de entreno (weeksIn)" },
   { key: "talent", label: "Talento", title: "Talento (talent)" },
-  { key: "formation", label: "Tipo", title: "Tipo (formation)" }
+  { key: "formation", label: "Tipo", title: "Tipo (formation)" },
+  { key: "prog", label: "Progreso", cls: "c-prog", left: true, title: "Texto libre tuyo para cada juvenil; se sincroniza entre dispositivos" }
 ];
 
 /* ─────────────── Utilidades ─────────────── */
@@ -492,7 +659,7 @@ async function unlock(env) {
       const data = await decryptEnvelope(env, pw);
       savePw(pw);
       if ($("#pwDlg").open) $("#pwDlg").close();
-      return data;
+      return { data, pw };
     } catch {
       forgetPw(); pw = ""; msg = "Contraseña incorrecta. Inténtalo de nuevo.";
     }
@@ -512,7 +679,9 @@ async function load() {
   setNotices([]);
   setStatus("Cargando juveniles…");
   const env = await fetchEnvelope(CONFIG.encData);
-  const st = env ? await unlock(env) : await tryStatic();
+  let st = null, pwUsed = null;
+  if (env) { const u = await unlock(env); st = u.data; pwUsed = u.pw; estStart(pwUsed); }
+  else st = await tryStatic();
   $("#forgetPw").hidden = !env;
   if (!st) {
     setStatus("");
@@ -557,6 +726,7 @@ function buildHead() {
   }).join("");
 }
 function sortValue(p, key) {
+  if (key === "prog") return progOf(p).toLowerCase() || null;
   const v = p[key];
   return v === undefined || v === "" ? null : v;
 }
@@ -580,6 +750,7 @@ function visibleRows() {
   return out;
 }
 function cellText(p, key) {
+  if (key === "prog") return progOf(p);
   const v = p[key];
   return v == null ? "" : String(v);
 }
@@ -625,6 +796,10 @@ function render() {
     const tds = COLS.map(c => {
       if (c.key === "n") return `<td class="c-n">${rowIdx + 1}</td>`;
       if (c.key === "name") return `<td class="l c-name">${esc(p.name)}</td>`;
+      if (c.key === "prog") {
+        return p.id == null ? `<td class="c-prog dim">—</td>`
+          : `<td class="c-prog"><input type="text" maxlength="200" data-jid="${esc(String(p.id))}" value="${esc(progOf(p))}" placeholder="Escribe aquí" aria-label="Progreso de ${esc(p.name)}" autocomplete="off"></td>`;
+      }
       if (c.key === "weeks") {
         if (p.weeks == null) return `<td class="dim">—</td>`;
         return p.weeks === 0 ? `<td><span class="ready" title="Terminó la academia: puede ascender al plantel">Listo</span></td>` : `<td>${p.weeks}</td>`;
@@ -651,7 +826,7 @@ function render() {
   const total = state.players.length;
   const when = state.stamp ? fmtDate(state.stamp) : "";
   $("#lede").innerHTML = total
-    ? `Juveniles: <strong>${total} en la academia</strong>, ${rows.length} visibles.${when ? esc(` Datos al ${when}${when.endsWith(".") ? "" : "."}`) : ""}`
+    ? `Juveniles: <strong>${total} en la academia</strong>, ${rows.length} visibles.${when ? esc(` Datos al ${when}${when.endsWith(".") ? "" : "."}`) : ""}<span id="syncMsg">${syncText() ? " " + esc(syncText()) : ""}</span>`
     : "No hay juveniles para mostrar.";
 }
 
@@ -730,6 +905,7 @@ function init() {
   });
   ageInput("#ageMin", "ageMin"); ageInput("#ageMax", "ageMax");
   $("#copy").addEventListener("click", copyTable);
+  $("#body").addEventListener("input", ev => { const t = ev.target; if (t && t.dataset && t.dataset.jid) setProg(t.dataset.jid, t.value); });
   $("#pwForm").addEventListener("submit", ev => {
     ev.preventDefault();
     const pw = $("#pwInput").value;
