@@ -148,6 +148,7 @@ td.c-name { text-align: left; }
 :root[data-theme="dark"] .mk.ok { color: #5fd08a; }
 :root[data-theme="dark"] .mk.bad { color: #ff7b6e; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .mk.ok { color: #5fd08a; } :root:not([data-theme="light"]) .mk.bad { color: #ff7b6e; } }
+td.c-reg { white-space: nowrap; font-variant-numeric: tabular-nums; }
 th.c-prog, td.c-prog { min-width: 14rem; text-align: left; }
 td.c-prog input { width: 100%; min-width: 12rem; box-sizing: border-box; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; min-height: 32px; }
 td.c-prog input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
@@ -353,6 +354,34 @@ const cntHtml = (n, wi) => {
   return n === wi ? `${n} <span class="mk ok" title="Coincide con Semanas de Entreno" aria-label="coincide">✓</span>`
                   : `${n} <span class="mk bad" title="No coincide con Semanas de Entreno (${wi})" aria-label="no coincide">✗</span>`;
 };
+// Regresión lineal de los elementos de Progreso: y = valor del elemento, x = posición (0, 1, 2…). Los elementos no numéricos se omiten.
+function regress(text) {
+  const pts = String(text || "").split(",").map((v, x) => [x, Number(v.trim().replace(",", "."))])
+    .filter(([, y], i) => String(text).split(",")[i].trim() !== "" && Number.isFinite(y));
+  const n = pts.length;
+  if (n < 2) return null;
+  const mx = pts.reduce((a, [x]) => a + x, 0) / n, my = pts.reduce((a, [, y]) => a + y, 0) / n;
+  const sxx = pts.reduce((a, [x]) => a + (x - mx) ** 2, 0);
+  if (!sxx) return null;
+  const b = pts.reduce((a, [x, y]) => a + (x - mx) * (y - my), 0) / sxx;
+  const a = my - b * mx;
+  const sst = pts.reduce((q, [, y]) => q + (y - my) ** 2, 0);
+  const sse = pts.reduce((q, [x, y]) => q + (y - (a + b * x)) ** 2, 0);
+  return { a, b, n, r2: sst ? 1 - sse / sst : null };
+}
+const nf2 = new Intl.NumberFormat("es-CL", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const nf1r = new Intl.NumberFormat("es-CL", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const nf3 = new Intl.NumberFormat("es-CL", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+// Valor de cada columna derivada de la regresión: texto para mostrar y número para ordenar.
+function regCol(key, text) {
+  const r = regress(text);
+  if (!r) return { t: "", v: null };
+  if (key === "reg") return { t: `y = ${nf2.format(r.b)}x ${r.a < 0 ? "−" : "+"} ${nf1r.format(Math.abs(r.a))}`, v: r.b };
+  if (key === "treal") return r.b ? { t: nf2.format(1 / r.b), v: 1 / r.b } : { t: "", v: null };
+  if (key === "r2") return r.r2 == null ? { t: "", v: null } : { t: nf3.format(r.r2), v: r.r2 };
+  return { t: "", v: null };
+}
+const REG_KEYS = ["reg", "treal", "r2"];
 const countItems = t => Math.max(0, String(t || "").split(",").filter(x => x.trim() !== "").length - 1);   // elementos de Progreso menos 1
 const progOf = p => { const e = p.id != null ? progMap[progKey(p.id)] : null; return e && typeof e.v === "string" ? e.v : ""; };
 function setProg(id, v) {
@@ -488,6 +517,11 @@ function refreshProgInputs() {
     const v = e && typeof e.v === "string" ? e.v : "";
     if (inp.value !== v) inp.value = v;
   });
+  document.querySelectorAll("#body td[data-reg]").forEach(td => {
+    const e = progMap[progKey(td.dataset.reg)];
+    const t = regCol(td.dataset.f, e && typeof e.v === "string" ? e.v : "").t;
+    td.textContent = t || "—"; td.classList.toggle("dim", !t);
+  });
   document.querySelectorAll("#body td[data-cnt]").forEach(td => {
     const e = progMap[progKey(td.dataset.cnt)];
     td.innerHTML = cntHtml(countItems(e && typeof e.v === "string" ? e.v : ""), td.dataset.wi === "" ? null : Number(td.dataset.wi));
@@ -559,6 +593,9 @@ const COLS = [
   { key: "talent", label: "Talento", title: "Talento (talent)" },
   { key: "formation", label: "Tipo", title: "Tipo (formation)" },
   { key: "prog", label: "Progreso", cls: "c-prog", left: true, title: "Texto libre tuyo para cada juvenil; se sincroniza entre dispositivos" },
+  { key: "treal", label: "Talento real", title: "1 / pendiente de la regresión lineal de Progreso" },
+  { key: "r2", label: "R2", title: "Coeficiente de determinación (R²) de la regresión lineal de Progreso" },
+  { key: "reg", label: "Regresión", title: "Recta de regresión lineal de Progreso: y = nivel, x = semana (0, 1, 2…). El número que acompaña a x es la pendiente" },
   { key: "progN", label: "Recuento de Semanas", title: "Cantidad de elementos de Progreso (separados por coma) menos 1. ✓ si coincide con Semanas de Entreno, ✗ si no" }
 ];
 
@@ -791,6 +828,7 @@ function buildHead() {
 function sortValue(p, key) {
   if (key === "prog") return progOf(p).toLowerCase() || null;
   if (key === "progN") return countItems(progOf(p));
+  if (REG_KEYS.includes(key)) return regCol(key, progOf(p)).v;
   const v = p[key];
   return v === undefined || v === "" ? null : v;
 }
@@ -816,6 +854,7 @@ function visibleRows() {
 function cellText(p, key) {
   if (key === "prog") return progOf(p);
   if (key === "progN") return String(countItems(progOf(p)));
+  if (REG_KEYS.includes(key)) return regCol(key, progOf(p)).t;
   const v = p[key];
   return v == null ? "" : String(v);
 }
@@ -861,6 +900,7 @@ function render() {
     const tds = COLS.map(c => {
       if (c.key === "n") return `<td class="c-n">${rowIdx + 1}</td>`;
       if (c.key === "name") return `<td class="l c-name">${esc(p.name)}</td>`;
+      if (REG_KEYS.includes(c.key)) { const t = regCol(c.key, progOf(p)).t; return `<td class="c-reg${t ? "" : " dim"}" data-reg="${esc(String(p.id ?? ""))}" data-f="${c.key}">${t ? esc(t) : "—"}</td>`; }
       if (c.key === "progN") return `<td class="c-progn" data-cnt="${esc(String(p.id ?? ""))}" data-wi="${p.weeksIn ?? ""}">${cntHtml(countItems(progOf(p)), p.weeksIn)}</td>`;
       if (c.key === "skill") {
         const v = p.skill;
@@ -980,7 +1020,7 @@ function init() {
   });
   ageInput("#ageMin", "ageMin"); ageInput("#ageMax", "ageMax");
   $("#copy").addEventListener("click", copyTable);
-  $("#body").addEventListener("input", ev => { const t = ev.target; if (t && t.dataset && t.dataset.jid) { setProg(t.dataset.jid, t.value); const td = t.closest("tr").querySelector("td[data-cnt]"); if (td) td.innerHTML = cntHtml(countItems(t.value), td.dataset.wi === "" ? null : Number(td.dataset.wi)); } });
+  $("#body").addEventListener("input", ev => { const t = ev.target; if (t && t.dataset && t.dataset.jid) { setProg(t.dataset.jid, t.value); t.closest("tr").querySelectorAll("td[data-reg]").forEach(rg => { const x = regCol(rg.dataset.f, t.value).t; rg.textContent = x || "—"; rg.classList.toggle("dim", !x); }); const td = t.closest("tr").querySelector("td[data-cnt]"); if (td) td.innerHTML = cntHtml(countItems(t.value), td.dataset.wi === "" ? null : Number(td.dataset.wi)); } });
   $("#pwForm").addEventListener("submit", ev => {
     ev.preventDefault();
     const pw = $("#pwInput").value;
