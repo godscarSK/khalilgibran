@@ -1071,8 +1071,8 @@ function renderSummary() {
   const finTip = fin
     ? `Campo usado: ${fin.best.src}.${fin.best.path}` + (fin.all.length > 1 ? ". Otros campos: " + fin.all.slice(1, 6).map(x => `${x.src}.${x.path} = ${nf.format(x.value)}`).join("; ") : "")
     : (state.finance ? "No se encontró el dinero disponible en los datos de la API." : "Vuelve a ejecutar node fetch-team.mjs para obtener las finanzas.");
-  // Este cuadro se muestra siempre: no depende de los filtros ni del botón Ocultar Val/Sal.
-  const rows = [["Finanzas", fin ? money(fin.best.value, fin.best.currency || cur) : "—", finTip],
+  // Este cuadro se muestra siempre y no depende de los filtros; solo Finanzas sigue al botón Ocultar Val/Sal.
+  const rows = [["Finanzas", state.hideVal ? "-" : (fin ? money(fin.best.value, fin.best.currency || cur) : "—"), state.hideVal ? "" : finTip],
     ["Valor Total", money(total(p => p.value), cur)], ["Salario Total", money(total(p => p.wage), wcur)]];
   rows.push(["Edad Titulares", avgAge(starters)], ["Edad Entrenables", avgAge(trainees)],
     ["Lesionados", String(ps.filter(p => p.injury).length)], ["Suspendidos", String(ps.filter(p => p.red).length)]);
