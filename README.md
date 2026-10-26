@@ -44,6 +44,7 @@ Arriba a la derecha, junto al botón de tema, hay un menú desplegable con dos o
 - **Ocultar Val/Sal** oculta las columnas Valor y Salario (queda recordado en cada dispositivo).
 - **CSV** copia la tabla visible como texto separado por tabulaciones, para pegar en una planilla.
 - El botón redondo de la esquina cambia entre modo claro y oscuro.
+- El orden por defecto es por **Valor, de mayor a menor**; al pulsar el encabezado **#** se vuelve a ese orden. El resto de los encabezados ordenan como siempre (el orden elegido se recuerda en cada dispositivo).
 - Al hacer scroll horizontal quedan inmovilizadas las primeras columnas (en pantallas angostas, menos).
 
 ### Cuadro de resumen (esquina superior derecha)
@@ -71,6 +72,8 @@ La API entrega los datos de los juveniles bajo nombres de campo que la página b
 **Edad de Salida:** a la derecha de Edad. Se suma la semana actual de la temporada (`seasonweek`, la que entrega el script) y las Semanas Restantes; hasta 13 → Edad; 14–26 → Edad+1; 27–39 → Edad+2; 40–52 → Edad+3 (y así cada 13 semanas más). Cada edad tiene su propio color (la misma edad, el mismo color) para distinguirlas de un vistazo. Fijos: 16 naranjo y 18 verde (`AGE_HUES` en `juveniles.html`). Si falta la semana, la edad o las semanas restantes, muestra «—».
 
 **Semana de Salida:** (a la derecha de Edad de Salida) número de semana de la temporada (1 a 13) en que las Semanas Restantes llegan a 0: (semana actual + Semanas Restantes) con temporadas de 13 semanas. Al pasar el mouse indica si ocurre en la temporada actual, la próxima o más adelante. Ordena por fecha real de salida. Si falta la semana actual o las semanas restantes, muestra «—».
+
+**Botones Simplificar y Calculadora:** **Simplificar** oculta las columnas Talento, Tipo, Progreso y Regresión (el botón pasa a «Mostrar todo»; se recuerda en cada dispositivo y el CSV copia solo las columnas visibles). **Calculadora** oculta todas las filas y muestra una sola fila vacía con campos para Juvenil, Edad, Nivel, Semanas Restantes, Semanas de Entreno, Talento, Tipo y Progreso; el resto de las columnas (Edad de Salida, Semana de Salida, Nivel Inicial, Talento Estimado, R2, Regresión, Recuento de Entrenos) se calculan al escribir. Esa fila vive solo en memoria: nada se guarda ni se sincroniza, y siempre empieza vacía.
 
 **Flechas ▲▼ en Nivel:** igual que en Plantel, el script guarda cada jueves un respaldo de los juveniles (`juniors.prev.enc.json`) y la página marca con ▲ o ▼ los juveniles cuyo Nivel subió o bajó respecto a la semana anterior (se compara por id). La primera comparación aparece después de la segunda semana de ejecuciones; sube los dos archivos a `data`. Un juvenil que no estaba la semana anterior no lleva flecha.
 

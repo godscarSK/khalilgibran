@@ -293,6 +293,8 @@ dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
       </span>
     </div>
     <div class="actions" role="group" aria-label="Acciones">
+      <button class="btn" id="simplify" type="button" aria-pressed="false" title="Oculta las columnas Talento, Tipo, Progreso y Regresión">Simplificar</button>
+      <button class="btn" id="calcBtn" type="button" aria-pressed="false" title="Muestra una fila vacía para hacer cálculos; no se guarda ni se sincroniza">Calculadora</button>
       <button class="btn" id="forgetPw" type="button" hidden title="Olvidar la contraseña en este navegador">Bloquear</button>
       <button class="btn primary" id="copy" type="button" title="Copiar la tabla visible para pegarla en una planilla">CSV</button>
     </div>
@@ -419,7 +421,7 @@ function ageHue(a) {
   return AGE_PALETTE[(((a - 15) % AGE_PALETTE.length) + AGE_PALETTE.length) % AGE_PALETTE.length];
 }
 const countItems = t => Math.max(0, String(t || "").split(",").filter(x => x.trim() !== "").length - 1);   // elementos de Progreso menos 1
-const progOf = p => { const e = p.id != null ? progMap[progKey(p.id)] : null; return e && typeof e.v === "string" ? e.v : ""; };
+const progOf = p => { if (p.calc) return p.progText || ""; const e = p.id != null ? progMap[progKey(p.id)] : null; return e && typeof e.v === "string" ? e.v : ""; };
 function setProg(id, v) {
   const k = progKey(id);
   progMap[k] = { v: String(v).slice(0, 200), t: nextT(k) };
@@ -728,7 +730,7 @@ function normalize(it, i) {
 }
 
 /* ─────────────── Estado y datos ─────────────── */
-const state = { players: [], q: "", ageMin: null, ageMax: null, sort: { key: "n", dir: 1 }, stamp: null, prevStamp: null, teamName: "" };
+const state = { players: [], q: "", ageMin: null, ageMax: null, sort: { key: "n", dir: 1 }, stamp: null, prevStamp: null, teamName: "", simple: false, calc: false, calcP: null };
 
 async function fetchWithTimeout(url, opts = {}) {
   const ctl = new AbortController();
@@ -926,7 +928,7 @@ const PREFS_KEY = "juveniles:prefs";
 let prefsReady = false;
 function savePrefs() {
   if (!prefsReady) return;
-  try { localStorage.setItem(PREFS_KEY, JSON.stringify({ ageMin: state.ageMin, ageMax: state.ageMax, sort: state.sort })); } catch {}
+  try { localStorage.setItem(PREFS_KEY, JSON.stringify({ ageMin: state.ageMin, ageMax: state.ageMax, sort: state.sort, simple: state.simple })); } catch {}
 }
 function loadPrefs() {
   let p = null;
@@ -934,51 +936,105 @@ function loadPrefs() {
   try { p = JSON.parse(localStorage.getItem(PREFS_KEY)); } catch {}
   if (!p || typeof p !== "object") return;
   const age = v => Number.isFinite(v) ? v : null;
+  if (p.simple === true) setSimple(true);
   state.ageMin = age(p.ageMin); state.ageMax = age(p.ageMax);
   $("#ageMin").value = state.ageMin ?? ""; $("#ageMax").value = state.ageMax ?? "";
   if (p.sort && COLS.some(c => c.key === p.sort.key) && (p.sort.dir === 1 || p.sort.dir === -1)) state.sort = { key: p.sort.key, dir: p.sort.dir };
 }
 
+/* ─────────────── Simplificar y Calculadora ─────────────── */
+const SIMPLE_HIDE = ["talent", "formation", "prog", "reg"];
+const hiddenKeys = () => state.simple ? SIMPLE_HIDE : [];
+const visibleCols = () => COLS.filter(c => !hiddenKeys().includes(c.key));
+function applyColVis() {
+  const hid = hiddenKeys();
+  COLS.forEach((c, i) => {
+    const off = hid.includes(c.key);
+    const th = document.querySelector(`#head th:nth-child(${i + 1})`);
+    if (th) th.style.display = off ? "none" : "";
+    document.querySelectorAll(`#body td:nth-child(${i + 1})`).forEach(td => { if (!td.classList.contains("empty")) td.style.display = off ? "none" : ""; });
+  });
+}
+const CALC_NUM = ["age", "skill", "weeks", "weeksIn", "talent"];
+const CALC_EDIT = ["name", "age", "skill", "weeks", "weeksIn", "talent", "formation", "prog"];
+const newCalcP = () => ({ calc: true, id: null, n: 1, name: "", age: null, skill: null, weeks: null, weeksIn: null, talent: null, formation: "", progText: "" });
+function calcRowHtml() {
+  const p = state.calcP;
+  const tds = COLS.map((c, i) => {
+    if (!CALC_EDIT.includes(c.key)) return cellHtml(c, p, 0);
+    const num = CALC_NUM.includes(c.key);
+    const key = c.key === "prog" ? "progText" : c.key;
+    const v = p[key] ?? "";
+    return `<td class="${c.key === "prog" ? "c-prog" : c.key === "name" ? "l c-name" : ""}"><input type="${num ? "number" : "text"}" ${num ? 'step="any" inputmode="decimal"' : ""} data-calc="${key}" value="${esc(String(v))}" aria-label="${esc(c.label)}"${c.key === "prog" ? ' maxlength="200"' : ""}${num ? ' style="width:5.5rem"' : ""}></td>`;
+  }).join("");
+  return `<tr class="calc-row">${tds}</tr>`;
+}
+// Recalcula las celdas derivadas de la fila de la calculadora sin recrear los campos (para no perder el foco).
+function calcRefresh() {
+  const tr = $("#body tr.calc-row"); if (!tr) return;
+  COLS.forEach((c, i) => {
+    if (CALC_EDIT.includes(c.key)) return;
+    const tpl = document.createElement("template");
+    tpl.innerHTML = cellHtml(c, state.calcP, 0);
+    if (tr.children[i] && tpl.content.firstChild) tr.replaceChild(tpl.content.firstChild, tr.children[i]);
+  });
+  applyColVis();
+}
+function setCalc(on) {
+  state.calc = on;
+  state.calcP = on ? newCalcP() : null;   // siempre empieza vacía; nunca se guarda ni se sincroniza
+  const b = $("#calcBtn"); b.setAttribute("aria-pressed", String(on)); b.textContent = on ? "Salir de la calculadora" : "Calculadora";
+  document.querySelectorAll(".toolbar .field").forEach(el => { el.hidden = on; });
+  $("#copy").disabled = on;
+}
+function setSimple(on) {
+  state.simple = on;
+  const b = $("#simplify"); b.setAttribute("aria-pressed", String(on)); b.textContent = on ? "Mostrar todo" : "Simplificar";
+}
+
+function cellHtml(c, p, rowIdx) {
+    if (c.key === "n") return `<td class="c-n">${rowIdx + 1}</td>`;
+    if (c.key === "name") return `<td class="l c-name">${esc(p.name)}</td>`;
+    if (REG_KEYS.includes(c.key)) { const rc = regCol(c.key, progOf(p)), t = rc.t; return `<td class="c-reg${t ? "" : " dim"}${rc.hi ? " hi" : ""}" ${p.calc ? "" : `data-reg="${esc(String(p.id ?? ""))}"`} data-f="${c.key}">${t ? esc(t) : "—"}</td>`; }
+    if (c.key === "progN") return `<td class="c-progn" ${p.calc ? "" : `data-cnt="${esc(String(p.id ?? ""))}"`} data-wi="${p.weeksIn ?? ""}">${cntHtml(countItems(progOf(p)), p.weeksIn)}</td>`;
+    if (c.key === "exitWeek") {
+      const e = exitWeekOf(p);
+      if (!e) return `<td class="dim">—</td>`;
+      const tip = e.seasons === 0 ? "En la temporada actual" : e.seasons === 1 ? "En la próxima temporada" : `En ${e.seasons} temporadas más`;
+      return `<td title="${tip}">${e.week}</td>`;
+    }
+    if (c.key === "ageOut") { const v = ageOutOf(p); return v == null ? `<td class="dim">—</td>` : `<td><span class="ao" style="--h:${ageHue(v)}">${v}</span></td>`; }
+    if (c.key === "skill") {
+      const v = p.skill;
+      if (!Number.isFinite(v)) return `<td class="${tdCls(c)}"><span class="dim">—</span></td>`;
+      const b = p.prevSkill;
+      const mark = Number.isFinite(b) && b !== v
+        ? (v > b ? ` <span class="chg up" title="Subió: antes ${b}" aria-label="subió, antes ${b}">▲</span>` : ` <span class="chg down" title="Bajó: antes ${b}" aria-label="bajó, antes ${b}">▼</span>`)
+        : "";
+      return `<td class="${tdCls(c)}">${v}${mark}</td>`;
+    }
+    if (c.key === "prog") {
+      return p.id == null ? `<td class="c-prog dim">—</td>`
+        : `<td class="c-prog"><input type="text" maxlength="200" data-jid="${esc(String(p.id))}" value="${esc(progOf(p))}" placeholder="Escribe aquí" aria-label="Progreso de ${esc(p.name)}" autocomplete="off"></td>`;
+    }
+    if (c.key === "weeks") {
+      if (p.weeks == null) return `<td class="dim">—</td>`;
+      return p.weeks === 0 ? `<td><span class="ready" title="Terminó la academia: puede ascender al plantel">Listo</span></td>` : `<td>${p.weeks}</td>`;
+    }
+    const t = cellText(p, c.key);
+    return `<td class="${tdCls(c)}">${t === "" ? '<span class="dim">—</span>' : esc(t)}</td>`;
+}
+
 function render() {
   savePrefs();
-  const rows = visibleRows();
-  $("#body").innerHTML = rows.length ? rows.map((p, rowIdx) => {
-    const tds = COLS.map(c => {
-      if (c.key === "n") return `<td class="c-n">${rowIdx + 1}</td>`;
-      if (c.key === "name") return `<td class="l c-name">${esc(p.name)}</td>`;
-      if (REG_KEYS.includes(c.key)) { const rc = regCol(c.key, progOf(p)), t = rc.t; return `<td class="c-reg${t ? "" : " dim"}${rc.hi ? " hi" : ""}" data-reg="${esc(String(p.id ?? ""))}" data-f="${c.key}">${t ? esc(t) : "—"}</td>`; }
-      if (c.key === "progN") return `<td class="c-progn" data-cnt="${esc(String(p.id ?? ""))}" data-wi="${p.weeksIn ?? ""}">${cntHtml(countItems(progOf(p)), p.weeksIn)}</td>`;
-      if (c.key === "exitWeek") {
-        const e = exitWeekOf(p);
-        if (!e) return `<td class="dim">—</td>`;
-        const tip = e.seasons === 0 ? "En la temporada actual" : e.seasons === 1 ? "En la próxima temporada" : `En ${e.seasons} temporadas más`;
-        return `<td title="${tip}">${e.week}</td>`;
-      }
-      if (c.key === "ageOut") { const v = ageOutOf(p); return v == null ? `<td class="dim">—</td>` : `<td><span class="ao" style="--h:${ageHue(v)}">${v}</span></td>`; }
-      if (c.key === "skill") {
-        const v = p.skill;
-        if (!Number.isFinite(v)) return `<td class="${tdCls(c)}"><span class="dim">—</span></td>`;
-        const b = p.prevSkill;
-        const mark = Number.isFinite(b) && b !== v
-          ? (v > b ? ` <span class="chg up" title="Subió: antes ${b}" aria-label="subió, antes ${b}">▲</span>` : ` <span class="chg down" title="Bajó: antes ${b}" aria-label="bajó, antes ${b}">▼</span>`)
-          : "";
-        return `<td class="${tdCls(c)}">${v}${mark}</td>`;
-      }
-      if (c.key === "prog") {
-        return p.id == null ? `<td class="c-prog dim">—</td>`
-          : `<td class="c-prog"><input type="text" maxlength="200" data-jid="${esc(String(p.id))}" value="${esc(progOf(p))}" placeholder="Escribe aquí" aria-label="Progreso de ${esc(p.name)}" autocomplete="off"></td>`;
-      }
-      if (c.key === "weeks") {
-        if (p.weeks == null) return `<td class="dim">—</td>`;
-        return p.weeks === 0 ? `<td><span class="ready" title="Terminó la academia: puede ascender al plantel">Listo</span></td>` : `<td>${p.weeks}</td>`;
-      }
-      const t = cellText(p, c.key);
-      return `<td class="${tdCls(c)}">${t === "" ? '<span class="dim">—</span>' : esc(t)}</td>`;
-    }).join("");
+  const rows = state.calc ? [state.calcP] : visibleRows();
+  $("#body").innerHTML = state.calc ? calcRowHtml() : rows.length ? rows.map((p, rowIdx) => {
+    const tds = COLS.map(c => cellHtml(c, p, rowIdx)).join("");
     return `<tr>${tds}</tr>`;
   }).join("") : `<tr><td class="empty" colspan="${COLS.length}">${state.players.length ? "Ningún juvenil coincide con los filtros. Borra la búsqueda o amplía el rango de edad." : "No hay juveniles para mostrar."}</td></tr>`;
 
   applyFreeze();
+  applyColVis();
   document.querySelectorAll("#head th").forEach(th => {
     th.setAttribute("aria-sort", th.dataset.key === state.sort.key ? (state.sort.dir === 1 ? "ascending" : "descending") : "none");
   });
@@ -993,6 +1049,7 @@ function render() {
 
   const total = state.players.length;
   const when = state.stamp ? fmtDate(state.stamp) : "";
+  if (state.calc) { $("#lede").innerHTML = "<strong>Calculadora:</strong> fila vacía para hacer cálculos. Lo que escribas aquí no se guarda ni se sincroniza."; return; }
   $("#lede").innerHTML = total
     ? `Juveniles: <strong>${total} en la academia</strong>, ${rows.length} visibles.${when ? esc(` Datos al ${when}${when.endsWith(".") ? "" : "."}`) : ""}${state.prevStamp ? esc(` Flechas ▲▼ en Nivel: cambios respecto al ${fmtDate(state.prevStamp).replace(/,.*$/, "")}.`) : ""}<span id="syncMsg">${syncText() ? " " + esc(syncText()) : ""}</span>`
     : "No hay juveniles para mostrar.";
@@ -1018,8 +1075,9 @@ async function copyText(text) {
 }
 async function copyTable() {
   const rows = visibleRows();
-  const lines = [COLS.map(c => c.label === "#" ? "N" : c.label).join("\t")];
-  rows.forEach((p, i) => lines.push(COLS.map(c => c.key === "n" ? i + 1 : cellText(p, c.key).replace(/\t|\n/g, " ")).join("\t")));
+  const cols = visibleCols();
+  const lines = [cols.map(c => c.label === "#" ? "N" : c.label).join("\t")];
+  rows.forEach((p, i) => lines.push(cols.map(c => c.key === "n" ? i + 1 : cellText(p, c.key).replace(/\t|\n/g, " ")).join("\t")));
   await copyText(lines.join("\n"));
   const btn = $("#copy"), old = btn.textContent;
   btn.textContent = `Copiadas ${rows.length} filas`;
@@ -1073,6 +1131,15 @@ function init() {
   });
   ageInput("#ageMin", "ageMin"); ageInput("#ageMax", "ageMax");
   $("#copy").addEventListener("click", copyTable);
+  $("#simplify").addEventListener("click", () => { setSimple(!state.simple); render(); });
+  $("#calcBtn").addEventListener("click", () => { setCalc(!state.calc); render(); });
+  $("#body").addEventListener("input", ev => {
+    const t = ev.target; if (!t || !t.dataset || !t.dataset.calc || !state.calcP) return;
+    const k = t.dataset.calc;
+    if (CALC_NUM.includes(k)) { const n = t.value === "" ? null : Number(t.value); state.calcP[k] = Number.isFinite(n) ? n : null; }
+    else state.calcP[k] = t.value;
+    calcRefresh();
+  });
   $("#body").addEventListener("input", ev => { const t = ev.target; if (t && t.dataset && t.dataset.jid) { setProg(t.dataset.jid, t.value); t.closest("tr").querySelectorAll("td[data-reg]").forEach(rg => { const rc = regCol(rg.dataset.f, t.value), x = rc.t; rg.textContent = x || "—"; rg.classList.toggle("dim", !x); rg.classList.toggle("hi", !!rc.hi); }); const td = t.closest("tr").querySelector("td[data-cnt]"); if (td) td.innerHTML = cntHtml(countItems(t.value), td.dataset.wi === "" ? null : Number(td.dataset.wi)); } });
   $("#pwForm").addEventListener("submit", ev => {
     ev.preventDefault();

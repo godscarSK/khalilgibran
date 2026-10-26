@@ -375,7 +375,7 @@ function compositeValue(p, c) {
 }
 
 const COLS = [
-  { key: "n",        label: "#",     cls: "c-n", left: true, title: "Número de fila. Al pulsarlo vuelves al orden original." },
+  { key: "n",        label: "#",     cls: "c-n", left: true, title: "Número de fila. Al pulsarlo vuelves al orden por Valor, de mayor a menor." },
   { key: "est",      label: "Pos.",  cls: "c-est", title: "Tu asignación para cada jugador: GK, DEF, MID o ATT" },
   { key: "name",     label: "Jugador", cls: "c-name", left: true },
   { key: "age",      label: "Edad" },
@@ -506,7 +506,7 @@ function normalize(row, api) {
 /* ─────────────── Estado ─────────────── */
 const state = {
   players: [], pos: new Set(), hideVal: false, onlyInjured: false, onlySusp: false, onlySel: false, q: "",
-  ageMin: null, ageMax: null, sort: { key: "n", dir: 1 }, stamp: null, prevStamp: null, teamName: ""
+  ageMin: null, ageMax: null, sort: { key: "value", dir: -1 }, stamp: null, prevStamp: null, teamName: ""
 };
 
 /* ─────────────── Carga de datos ─────────────── */
@@ -962,7 +962,7 @@ function loadPrefs() {
   state.onlyInjured = p.onlyInjured === true;
   state.onlySusp = p.onlySusp === true;
   state.onlySel = p.onlySel === true;
-  if (p.sort && COLS.some(c => c.key === p.sort.key) && (p.sort.dir === 1 || p.sort.dir === -1)) state.sort = { key: p.sort.key, dir: p.sort.dir };
+  if (p.sort && p.sort.key !== "n" && COLS.some(c => c.key === p.sort.key) && (p.sort.dir === 1 || p.sort.dir === -1)) state.sort = { key: p.sort.key, dir: p.sort.dir };
   if (p.hideVal === true) setHideVal(true);
   $("#onlyInjured").setAttribute("aria-pressed", String(state.onlyInjured));
   $("#onlySusp").setAttribute("aria-pressed", String(state.onlySusp));
@@ -1151,7 +1151,8 @@ function init() {
   buildHead();
   $("#head").addEventListener("click", e => {
     const th = e.target.closest("th"); if (!th) return;
-    const key = th.dataset.key;
+    let key = th.dataset.key;
+    if (key === "n") { state.sort = { key: "value", dir: -1 }; render(); return; }   // «#» vuelve al orden por defecto: Valor, de mayor a menor
     const textual = key === "name" || key === "est";
     state.sort = state.sort.key === key
       ? { key, dir: -state.sort.dir }
