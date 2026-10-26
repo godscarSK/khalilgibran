@@ -145,6 +145,7 @@ td.c-name { text-align: left; }
 .mk { font-weight: 700; font-size: .7em; margin-left: 1px; vertical-align: super; line-height: 0; }
 .mk.ok { color: #1f8f4e; }
 .mk.bad { color: #c0392b; }
+.stars { color: #e0a800; font-weight: 700; letter-spacing: 1px; white-space: nowrap; }
 .mk.star { color: #e0a800; font-size: 1em; vertical-align: baseline; }
 .mk.warn { color: #d11a1a; font-size: .95em; vertical-align: baseline; }
 :root[data-theme="dark"] .mk.warn { color: #ff6b6b; }
@@ -449,6 +450,15 @@ function lfCell(p) {
     tip: r.fixed ? "Último Progreso + Sem. Restantes / 3,5" : "Último Progreso + Sem. Restantes / Talento Est." };
 }
 const lfText = p => lfCell(p).t;
+// Tres estrellas junto al nombre: Nivel Final con ★ dorada y Talento Est. entre 3 y 4,3 (ambos incluidos, comparando el valor tal como se ve, con 2 decimales).
+const TRIPLE_MIN = 3, TRIPLE_MAX = 4.3;
+function tripleStar(p) {
+  const r = levelFinalOf(p); if (!r || lfMark(p, r.v).cls !== "star") return false;
+  const te = regCol("treal", progOf(p)).v; if (te == null) return false;
+  const t = Math.round(te * 100) / 100;
+  return t >= TRIPLE_MIN && t <= TRIPLE_MAX;
+}
+const nameHtml = p => esc(p.name) + (tripleStar(p) ? ` <span class="stars" title="Nivel Final con ★ y Talento Est. entre ${TRIPLE_MIN} y ${String(TRIPLE_MAX).replace(".", ",")}" aria-label="tres estrellas">★★★</span>` : "");
 // Convierte los espacios entre números de Progreso en comas («10 12 14» → «10,12,14») y mantiene el cursor en su sitio.
 const normProgText = t => String(t).replace(/\s*,\s*/g, ",").replace(/\s+/g, ",");
 function normProgInput(inp) {
@@ -598,6 +608,9 @@ function refreshProgInputs() {
     const e = progMap[progKey(td.dataset.reg)];
     const rc = regCol(td.dataset.f, e && typeof e.v === "string" ? e.v : ""), t = rc.t;
     td.textContent = t || "—"; td.classList.toggle("dim", !t); td.classList.toggle("hi", !!rc.hi);
+  });
+  document.querySelectorAll("#body td[data-nm]").forEach(td => {
+    const p = state.players.find(q => String(q.id) === td.dataset.nm); if (p) td.innerHTML = nameHtml(p);
   });
   document.querySelectorAll("#body td[data-lf]").forEach(td => {
     const p = state.players.find(q => String(q.id) === td.dataset.lf); if (!p) return;
@@ -1043,7 +1056,7 @@ function setSimple(on) {
 
 function cellHtml(c, p, rowIdx) {
     if (c.key === "n") return `<td class="c-n">${rowIdx + 1}</td>`;
-    if (c.key === "name") return `<td class="l c-name">${esc(p.name)}</td>`;
+    if (c.key === "name") return `<td class="l c-name" ${p.calc ? "" : `data-nm="${esc(String(p.id ?? ""))}"`}>${nameHtml(p)}</td>`;
     if (REG_KEYS.includes(c.key)) { const rc = regCol(c.key, progOf(p)), t = rc.t; return `<td class="c-reg${t ? "" : " dim"}${rc.hi ? " hi" : ""}" ${p.calc ? "" : `data-reg="${esc(String(p.id ?? ""))}"`} data-f="${c.key}">${t ? esc(t) : "—"}</td>`; }
     if (c.key === "progN") return `<td class="c-progn" ${p.calc ? "" : `data-cnt="${esc(String(p.id ?? ""))}"`} data-wi="${p.weeksIn ?? ""}">${cntHtml(countItems(progOf(p)), p.weeksIn)}</td>`;
     if (c.key === "lvlFinal") { const l = lfCell(p); return `<td class="c-lf${l.t ? "" : " dim"}" ${p.calc ? "" : `data-lf="${esc(String(p.id ?? ""))}"`}${l.tip ? ` title="${l.tip}"` : ""}>${l.h || "—"}</td>`; }
@@ -1192,7 +1205,7 @@ function init() {
     else state.calcP[k] = t.value;
     calcRefresh();
   });
-  $("#body").addEventListener("input", ev => { const t = ev.target; if (t && t.dataset && t.dataset.jid) { normProgInput(t); setProg(t.dataset.jid, t.value); t.closest("tr").querySelectorAll("td[data-reg]").forEach(rg => { const rc = regCol(rg.dataset.f, t.value), x = rc.t; rg.textContent = x || "—"; rg.classList.toggle("dim", !x); rg.classList.toggle("hi", !!rc.hi); }); const lf = t.closest("tr").querySelector("td[data-lf]"); if (lf) { const pl = state.players.find(q => String(q.id) === lf.dataset.lf); if (pl) { const l = lfCell(pl); lf.innerHTML = l.h || "—"; lf.classList.toggle("dim", !l.t); lf.title = l.tip; } } const td = t.closest("tr").querySelector("td[data-cnt]"); if (td) td.innerHTML = cntHtml(countItems(t.value), td.dataset.wi === "" ? null : Number(td.dataset.wi)); } });
+  $("#body").addEventListener("input", ev => { const t = ev.target; if (t && t.dataset && t.dataset.jid) { normProgInput(t); setProg(t.dataset.jid, t.value); t.closest("tr").querySelectorAll("td[data-reg]").forEach(rg => { const rc = regCol(rg.dataset.f, t.value), x = rc.t; rg.textContent = x || "—"; rg.classList.toggle("dim", !x); rg.classList.toggle("hi", !!rc.hi); }); const nm = t.closest("tr").querySelector("td[data-nm]"); if (nm) { const pl = state.players.find(q => String(q.id) === nm.dataset.nm); if (pl) nm.innerHTML = nameHtml(pl); } const lf = t.closest("tr").querySelector("td[data-lf]"); if (lf) { const pl = state.players.find(q => String(q.id) === lf.dataset.lf); if (pl) { const l = lfCell(pl); lf.innerHTML = l.h || "—"; lf.classList.toggle("dim", !l.t); lf.title = l.tip; } } const td = t.closest("tr").querySelector("td[data-cnt]"); if (td) td.innerHTML = cntHtml(countItems(t.value), td.dataset.wi === "" ? null : Number(td.dataset.wi)); } });
   $("#pwForm").addEventListener("submit", ev => {
     ev.preventDefault();
     const pw = $("#pwInput").value;
