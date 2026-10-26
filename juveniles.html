@@ -136,7 +136,7 @@ th.c-name button { justify-content: flex-start; }
 th[aria-sort="ascending"] button::after { content: "▲"; font-size: .65em; color: var(--accent); }
 th[aria-sort="descending"] button::after { content: "▼"; font-size: .65em; color: var(--accent); }
 td.c-name { text-align: left; }
-.mk { font-weight: 700; margin-left: 2px; }
+.mk { font-weight: 700; font-size: .7em; margin-left: 1px; vertical-align: super; line-height: 0; }
 .mk.ok { color: #1f8f4e; }
 .mk.bad { color: #c0392b; }
 :root[data-theme="dark"] .mk.ok { color: #5fd08a; }
@@ -345,7 +345,7 @@ const cntHtml = (n, wi) => {
   return n === wi ? `${n} <span class="mk ok" title="Coincide con Semanas de Entreno" aria-label="coincide">✓</span>`
                   : `${n} <span class="mk bad" title="No coincide con Semanas de Entreno (${wi})" aria-label="no coincide">✗</span>`;
 };
-const countItems = t => String(t || "").split(",").filter(x => x.trim() !== "").length;
+const countItems = t => Math.max(0, String(t || "").split(",").filter(x => x.trim() !== "").length - 1);   // elementos de Progreso menos 1
 const progOf = p => { const e = p.id != null ? progMap[progKey(p.id)] : null; return e && typeof e.v === "string" ? e.v : ""; };
 function setProg(id, v) {
   const k = progKey(id);
@@ -528,7 +528,7 @@ const COLS = [
   { key: "talent", label: "Talento", title: "Talento (talent)" },
   { key: "formation", label: "Tipo", title: "Tipo (formation)" },
   { key: "prog", label: "Progreso", cls: "c-prog", left: true, title: "Texto libre tuyo para cada juvenil; se sincroniza entre dispositivos" },
-  { key: "progN", label: "Recuento de Semanas", title: "Cantidad de elementos de Progreso (separados por coma). ✓ si coincide con Semanas de Entreno, ✗ si no" }
+  { key: "progN", label: "Recuento de Semanas", title: "Cantidad de elementos de Progreso (separados por coma) menos 1. ✓ si coincide con Semanas de Entreno, ✗ si no" }
 ];
 
 /* ─────────────── Utilidades ─────────────── */
