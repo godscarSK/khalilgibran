@@ -148,6 +148,10 @@ td.c-name { text-align: left; }
 :root[data-theme="dark"] .mk.ok { color: #5fd08a; }
 :root[data-theme="dark"] .mk.bad { color: #ff7b6e; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .mk.ok { color: #5fd08a; } :root:not([data-theme="light"]) .mk.bad { color: #ff7b6e; } }
+.ao { display: inline-block; min-width: 2.2em; padding: 1px 8px; border-radius: 999px; font-weight: 700; font-variant-numeric: tabular-nums;
+  background: hsl(var(--h) 65% 86%); color: hsl(var(--h) 65% 20%); border: 1px solid hsl(var(--h) 45% 62%); }
+:root[data-theme="dark"] .ao { background: hsl(var(--h) 40% 25%); color: hsl(var(--h) 75% 86%); border-color: hsl(var(--h) 40% 45%); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .ao { background: hsl(var(--h) 40% 25%); color: hsl(var(--h) 75% 86%); border-color: hsl(var(--h) 40% 45%); } }
 td.c-reg.hi { background: #d6f0dd; color: #14532d; font-weight: 700; }
 :root[data-theme="dark"] td.c-reg.hi { background: #1f4130; color: #b8f0cc; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) td.c-reg.hi { background: #1f4130; color: #b8f0cc; } }
@@ -607,9 +611,9 @@ const COLS = [
   { key: "name",  label: "Juvenil", cls: "c-name", left: true },
   { key: "age",   label: "Edad" },
   { key: "ageOut", label: "Edad de Salida", title: "Edad con la que sale de la academia. Se suma la semana actual de la temporada y las Semanas Restantes: hasta 13 → Edad; 14–26 → Edad+1; 27–39 → Edad+2; 40–52 → Edad+3" },
+  { key: "exitWeek", label: "Semana de Salida", title: "Semana de la temporada (1 a 13) en que las Semanas Restantes llegan a 0: semana actual + Semanas Restantes, con temporadas de 13 semanas" },
   { key: "skill", label: "Nivel", title: "Nivel (skill) general del juvenil" },
   { key: "weeks", label: "Semanas Restantes", title: "Semanas que le faltan en la academia (Listo = puede ascender)" },
-  { key: "exitWeek", label: "Semana de Salida", title: "Semana de la temporada (1 a 13) en que las Semanas Restantes llegan a 0: semana actual + Semanas Restantes, con temporadas de 13 semanas" },
   { key: "weeksIn", label: "Semanas de Entreno", title: "Semanas de entreno (weeksIn)" },
   { key: "talent", label: "Talento", title: "Talento (talent)" },
   { key: "formation", label: "Tipo", title: "Tipo (formation)" },
@@ -936,7 +940,7 @@ function render() {
         const tip = e.seasons === 0 ? "En la temporada actual" : e.seasons === 1 ? "En la próxima temporada" : `En ${e.seasons} temporadas más`;
         return `<td title="${tip}">${e.week}</td>`;
       }
-      if (c.key === "ageOut") { const v = ageOutOf(p); return v == null ? `<td class="dim">—</td>` : `<td>${v}</td>`; }
+      if (c.key === "ageOut") { const v = ageOutOf(p); return v == null ? `<td class="dim">—</td>` : `<td><span class="ao" style="--h:${(((v - 10) * 47) % 360 + 360) % 360}">${v}</span></td>`; }
       if (c.key === "skill") {
         const v = p.skill;
         if (!Number.isFinite(v)) return `<td class="${tdCls(c)}"><span class="dim">—</span></td>`;
