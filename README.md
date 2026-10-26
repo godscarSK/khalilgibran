@@ -10,7 +10,7 @@ Página con la tabla de **los jugadores de tu propio equipo en Sokker**. Es una 
 - `config.js`: configuración propia (dirección del servicio que sincroniza la columna «Pos.» entre dispositivos). No hace falta tocarlo al actualizar `index.html`.
 - `fetch-team.mjs`: script que se ejecuta en tu computador, inicia sesión en Sokker y genera los datos.
 - `data/team.enc.json` y `data/team.prev.enc.json`: los datos cifrados del plantel (los crea el script).
-- `data/juniors.enc.json`: los datos cifrados de los juveniles (los crea el script).
+- `data/juniors.enc.json` y `data/juniors.prev.enc.json`: los datos cifrados de los juveniles y su respaldo de la semana anterior (los crea el script).
 
 ## Puesta en marcha
 
@@ -18,7 +18,7 @@ Página con la tabla de **los jugadores de tu propio equipo en Sokker**. Es una 
 2. En la carpeta del proyecto ejecuta `node fetch-team.mjs`. Te pide tu usuario de Sokker, tu contraseña de Sokker y la contraseña de la página (mínimo 8 caracteres, mejor una frase larga). Ninguna se guarda en un archivo.
    - También puedes pasarlas solo para esa ejecución. Mac o Linux: `SOKKER_USER="..." SOKKER_PASS="..." SITE_PASSWORD="..." node fetch-team.mjs`. En PowerShell: `$env:SOKKER_USER="..."; $env:SOKKER_PASS="..."; $env:SITE_PASSWORD="..."; node fetch-team.mjs`.
    - Si el script no encuentra el ID de tu equipo, agrega la variable `SOKKER_TEAM_ID` con tu ID de equipo.
-3. Sube a la carpeta `data` del repositorio `team.enc.json`, `juniors.enc.json` (y `team.prev.enc.json` si existe).
+3. Sube a la carpeta `data` del repositorio `team.enc.json`, `juniors.enc.json` (y `team.prev.enc.json` y `juniors.prev.enc.json` si existen).
 4. En el repositorio: Settings → Pages → «Deploy from a branch» → rama `main`, carpeta `/ (root)`. La página queda en `https://TU_USUARIO.github.io/NOMBRE_DEL_REPO/`.
 
 Para actualizar los datos, repite los pasos 2 y 3.
@@ -62,7 +62,9 @@ Finanzas y Salario dependen de los nombres de campo que entregue la API de Sokke
 
 Tabla con los juveniles de la academia del equipo: nombre, edad, **Nivel** (campo `skill`), **Semanas Restantes** (semanas que le faltan; «Listo» cuando terminó la academia y puede ascender), **Semanas de Entreno** (`weeksIn`), **Talento** (`talent`) y **Tipo** (`formation`). Se puede buscar por nombre, filtrar por rango de edad, ordenar por cualquier columna y copiar como CSV.
 
-La API entrega los datos de los juveniles bajo nombres de campo que la página busca de forma flexible. Si no encuentra edad, semanas, skill o talento, muestra un aviso con los nombres de los campos disponibles, para poder ajustarla. La última columna, **Progreso**, es un campo de texto libre (hasta 200 caracteres) para anotar lo que quieras de cada juvenil. Se guarda en el navegador y, con `estUrl` configurado en `config.js`, se sincroniza entre dispositivos con el mismo servicio de Apps Script que las asignaciones «Pos.»: usa la misma contraseña de página y la versión actual de `est-sync.gs` (acepta claves `j…` para los juveniles y textos más largos). Tras pegar el nuevo `est-sync.gs` hay que publicarlo como **nueva versión** (Implementar → Administrar implementaciones → editar → Versión nueva) para que la URL siga siendo la misma. Los textos se identifican por el id del juvenil. Junto a Progreso, la columna **Recuento de Semanas** cuenta cuántos elementos tiene el texto (separados por coma, sin espacios) y le resta 1 (nunca baja de 0) y se actualiza mientras escribes. Muestra ✓ si el número coincide con **Semanas de Entreno** y ✗ si no.
+La API entrega los datos de los juveniles bajo nombres de campo que la página busca de forma flexible. Si no encuentra edad, semanas, skill o talento, muestra un aviso con los nombres de los campos disponibles, para poder ajustarla. La última columna, **Progreso**, es un campo de texto libre (hasta 200 caracteres) para anotar lo que quieras de cada juvenil. Se guarda en el navegador y, con `estUrl` configurado en `config.js`, se sincroniza entre dispositivos con el mismo servicio de Apps Script que las asignaciones «Pos.»: usa la misma contraseña de página y la versión actual de `est-sync.gs` (acepta claves `j…` para los juveniles y textos más largos). Tras pegar el nuevo `est-sync.gs` hay que publicarlo como **nueva versión** (Implementar → Administrar implementaciones → editar → Versión nueva) para que la URL siga siendo la misma. **Flechas ▲▼ en Nivel:** igual que en Plantel, el script guarda cada jueves un respaldo de los juveniles (`juniors.prev.enc.json`) y la página marca con ▲ o ▼ los juveniles cuyo Nivel subió o bajó respecto a la semana anterior (se compara por id). La primera comparación aparece después de la segunda semana de ejecuciones; sube los dos archivos a `data`. Un juvenil que no estaba la semana anterior no lleva flecha.
+
+Los textos se identifican por el id del juvenil. Junto a Progreso, la columna **Recuento de Semanas** cuenta cuántos elementos tiene el texto (separados por coma, sin espacios) y le resta 1 (nunca baja de 0) y se actualiza mientras escribes. Muestra ✓ si el número coincide con **Semanas de Entreno** y ✗ si no.
 
 Para actualizar esta página hay que volver a ejecutar `node fetch-team.mjs` y subir `data/juniors.enc.json`.
 

@@ -21,6 +21,7 @@ const DIR = "data";
 const FILE = `${DIR}/team.enc.json`;
 const PREV = `${DIR}/team.prev.enc.json`;
 const JFILE = `${DIR}/juniors.enc.json`;
+const JPREV = `${DIR}/juniors.prev.enc.json`;
 const LOGIN_FIELDS = { username: "login", password: "password" };   // deben coincidir con LoginRequest en https://sokker.org/apidoc.html
 const LOGIN_EXTRA = { remember: false };
 const CONCURRENCY = 4;
@@ -288,13 +289,30 @@ async function main() {
     console.log("Leyendo los juveniles…");
     const items = await readJuniors();
     const jout = { generatedAt: out.generatedAt, team: out.team, calendar, items };
+    // Respaldo semanal de los juveniles (mismas reglas que el del plantel: se renueva el primer día de cada semana, de jueves a miércoles).
+    let jold = null;
+    try { jold = JSON.parse(await readFile(JFILE, "utf8")); } catch {}
+    if (jold) {
+      let joldData = null;
+      try { joldData = await decrypt(jold, sitePw); } catch {}
+      if (!joldData) console.warn("Aviso: el archivo anterior de juveniles no se pudo leer con esta contraseña; esta semana no habrá flechas ▲▼ en Juveniles.");
+      else {
+        const now = new Date();
+        const back = (now.getDay() - 4 + 7) % 7;
+        const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - back).getTime();
+        if (Date.parse(joldData.generatedAt) < weekStart) {
+          await copyFile(JFILE, JPREV);
+          console.log("Respaldo de juveniles de la semana anterior renovado (data/juniors.prev.enc.json).");
+        }
+      }
+    }
     await writeFile(JFILE, JSON.stringify(await encrypt(jout, sitePw)));
     jCount = items.length;
   } catch (e) { console.warn(`  Aviso: no pude leer los juveniles (${e.message}); la página «Juveniles» no se actualizará.`); }
   console.log(`\nListo: ${FILE} con ${ok.length} jugadores${teamName ? ` de ${teamName}` : ""}${failed ? ` (${failed} no se pudieron leer)` : ""}.`);
   if (withSkills < ok.length) console.warn(`Aviso: solo ${withSkills} de ${ok.length} jugadores traen skills. Si esperabas verlas todas, revisa que el inicio de sesión haya funcionado.`);
   if (jCount !== null) console.log(`Juveniles: ${jCount}${jCount ? "" : " (la academia no tiene juveniles)"}.`);
-  console.log("Sube a la carpeta data del repositorio: team.enc.json, juniors.enc.json y team.prev.enc.json (si existe).");
+  console.log("Sube a la carpeta data del repositorio: team.enc.json, juniors.enc.json, team.prev.enc.json y juniors.prev.enc.json (los dos últimos si existen).");
 }
 
 main().catch(e => { console.error("\nError: " + e.message); process.exit(1); });

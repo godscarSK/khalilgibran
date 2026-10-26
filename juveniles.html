@@ -136,6 +136,12 @@ th.c-name button { justify-content: flex-start; }
 th[aria-sort="ascending"] button::after { content: "▲"; font-size: .65em; color: var(--accent); }
 th[aria-sort="descending"] button::after { content: "▼"; font-size: .65em; color: var(--accent); }
 td.c-name { text-align: left; }
+.chg { font-size: .7em; vertical-align: 1px; }
+.chg.up { color: #1f8f4a; }
+.chg.down { color: #c8352f; }
+:root[data-theme="dark"] .chg.up { color: #5fd58b; }
+:root[data-theme="dark"] .chg.down { color: #ff8a82; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .chg.up { color: #5fd58b; } :root:not([data-theme="light"]) .chg.down { color: #ff8a82; } }
 .mk { font-weight: 700; font-size: .7em; margin-left: 1px; vertical-align: super; line-height: 0; }
 .mk.ok { color: #1f8f4e; }
 .mk.bad { color: #c0392b; }
@@ -319,6 +325,7 @@ dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
 const CONFIG = {
   title: "JUVENILES",
   encData: "data/juniors.enc.json",     // datos cifrados con la contraseña de la página (los genera fetch-team.mjs)
+  encPrevData: "data/juniors.prev.enc.json",   // respaldo de la semana anterior (para las flechas ▲▼ de Nivel)
   staticData: "data/juniors.json",      // alternativa sin cifrar (opcional)
   estUrl: (window.CANTERA_CONFIG && window.CANTERA_CONFIG.estUrl) || "",   // el mismo config.js de la página del plantel; vacío = Progreso solo en este navegador
   timeoutMs: 15000
@@ -621,7 +628,7 @@ function normalize(it, i) {
 }
 
 /* ─────────────── Estado y datos ─────────────── */
-const state = { players: [], q: "", ageMin: null, ageMax: null, sort: { key: "n", dir: 1 }, stamp: null, teamName: "" };
+const state = { players: [], q: "", ageMin: null, ageMax: null, sort: { key: "n", dir: 1 }, stamp: null, prevStamp: null, teamName: "" };
 
 async function fetchWithTimeout(url, opts = {}) {
   const ctl = new AbortController();
@@ -712,6 +719,18 @@ async function load() {
   state.calendar = st.calendar || null;
   state.stamp = st.generatedAt ? Date.parse(st.generatedAt) : null;
   state.players = (st.items || []).map(normalize);
+
+  // Respaldo de la semana anterior (opcional): marca con ▲▼ los cambios de Nivel.
+  state.prevStamp = null;
+  if (env) {
+    let pv = null;
+    try { const penv = await fetchEnvelope(CONFIG.encPrevData); pv = penv ? await decryptEnvelope(penv, pwUsed) : null; } catch { pv = null; }
+    if (pv && Array.isArray(pv.items)) {
+      state.prevStamp = pv.generatedAt ? Date.parse(pv.generatedAt) : null;
+      const before = new Map(pv.items.map((it, i) => normalize(it, i)).filter(q => q.id != null).map(q => [String(q.id), q.skill]));
+      for (const p of state.players) p.prevSkill = p.id != null && before.has(String(p.id)) ? before.get(String(p.id)) : null;
+    }
+  }
 
   const notices = [], ps = state.players;
   if (ps.length) {
@@ -816,6 +835,15 @@ function render() {
       if (c.key === "n") return `<td class="c-n">${rowIdx + 1}</td>`;
       if (c.key === "name") return `<td class="l c-name">${esc(p.name)}</td>`;
       if (c.key === "progN") return `<td class="c-progn" data-cnt="${esc(String(p.id ?? ""))}" data-wi="${p.weeksIn ?? ""}">${cntHtml(countItems(progOf(p)), p.weeksIn)}</td>`;
+      if (c.key === "skill") {
+        const v = p.skill;
+        if (!Number.isFinite(v)) return `<td class="${tdCls(c)}"><span class="dim">—</span></td>`;
+        const b = p.prevSkill;
+        const mark = Number.isFinite(b) && b !== v
+          ? (v > b ? ` <span class="chg up" title="Subió: antes ${b}" aria-label="subió, antes ${b}">▲</span>` : ` <span class="chg down" title="Bajó: antes ${b}" aria-label="bajó, antes ${b}">▼</span>`)
+          : "";
+        return `<td class="${tdCls(c)}">${v}${mark}</td>`;
+      }
       if (c.key === "prog") {
         return p.id == null ? `<td class="c-prog dim">—</td>`
           : `<td class="c-prog"><input type="text" maxlength="200" data-jid="${esc(String(p.id))}" value="${esc(progOf(p))}" placeholder="Escribe aquí" aria-label="Progreso de ${esc(p.name)}" autocomplete="off"></td>`;
@@ -846,7 +874,7 @@ function render() {
   const total = state.players.length;
   const when = state.stamp ? fmtDate(state.stamp) : "";
   $("#lede").innerHTML = total
-    ? `Juveniles: <strong>${total} en la academia</strong>, ${rows.length} visibles.${when ? esc(` Datos al ${when}${when.endsWith(".") ? "" : "."}`) : ""}<span id="syncMsg">${syncText() ? " " + esc(syncText()) : ""}</span>`
+    ? `Juveniles: <strong>${total} en la academia</strong>, ${rows.length} visibles.${when ? esc(` Datos al ${when}${when.endsWith(".") ? "" : "."}`) : ""}${state.prevStamp ? esc(` Flechas ▲▼ en Nivel: cambios respecto al ${fmtDate(state.prevStamp).replace(/,.*$/, "")}.`) : ""}<span id="syncMsg">${syncText() ? " " + esc(syncText()) : ""}</span>`
     : "No hay juveniles para mostrar.";
 }
 
