@@ -387,6 +387,13 @@ function regCol(key, text) {
 // Umbrales de resaltado (se comparan con el valor redondeado, tal como se ve en la celda).
 const HI_TREAL = 4.5, HI_R2 = 0.7;
 const REG_KEYS = ["reg", "treal", "r2"];
+// Edad de salida: semana actual de la temporada + semanas restantes; cada tramo de 13 semanas suma un año.
+function ageOutOf(p) {
+  const wk = state.calendar && Number.isFinite(state.calendar.week) ? state.calendar.week : null;
+  if (wk == null || !Number.isFinite(p.age) || !Number.isFinite(p.weeks)) return null;
+  const n = wk + p.weeks;
+  return p.age + (n <= 13 ? 0 : Math.floor((n - 1) / 13));
+}
 const countItems = t => Math.max(0, String(t || "").split(",").filter(x => x.trim() !== "").length - 1);   // elementos de Progreso menos 1
 const progOf = p => { const e = p.id != null ? progMap[progKey(p.id)] : null; return e && typeof e.v === "string" ? e.v : ""; };
 function setProg(id, v) {
@@ -592,6 +599,7 @@ const COLS = [
   { key: "n",     label: "#", cls: "c-n", left: true, title: "Número de fila. Al pulsarlo vuelves al orden original." },
   { key: "name",  label: "Juvenil", cls: "c-name", left: true },
   { key: "age",   label: "Edad" },
+  { key: "ageOut", label: "Edad de Salida", title: "Edad con la que sale de la academia. Se suma la semana actual de la temporada y las Semanas Restantes: hasta 13 → Edad; 14–26 → Edad+1; 27–39 → Edad+2; 40–52 → Edad+3" },
   { key: "skill", label: "Nivel", title: "Nivel (skill) general del juvenil" },
   { key: "weeks", label: "Semanas Restantes", title: "Semanas que le faltan en la academia (Listo = puede ascender)" },
   { key: "weeksIn", label: "Semanas de Entreno", title: "Semanas de entreno (weeksIn)" },
@@ -808,6 +816,9 @@ async function load() {
     if (!ps.some(p => p.formation != null)) missing.push("formation");
     if (!ps.some(p => p.age != null)) missing.push("edad");
     if (!ps.some(p => p.weeks != null)) missing.push("semanas restantes");
+    if (!(state.calendar && Number.isFinite(state.calendar.week))) {
+      notices.push({ html: `<p><strong>No tengo la semana actual de la temporada</strong> (campo <code>seasonweek</code>), así que la columna Edad de Salida queda en «—». Vuelve a ejecutar <code>node fetch-team.mjs</code> con la versión nueva y sube <code>juniors.enc.json</code>; si el aviso del script dice que no encontró la semana, pásamelo.</p>` });
+    }
     if (missing.length) {
       notices.push({ html:
         `<p><strong>No encontré en los datos de la API: ${esc(missing.join(", "))}.</strong> Esas columnas quedan en «—».</p>
@@ -831,6 +842,7 @@ function buildHead() {
   }).join("");
 }
 function sortValue(p, key) {
+  if (key === "ageOut") return ageOutOf(p);
   if (key === "prog") return progOf(p).toLowerCase() || null;
   if (key === "progN") return countItems(progOf(p));
   if (REG_KEYS.includes(key)) return regCol(key, progOf(p)).v;
@@ -857,6 +869,7 @@ function visibleRows() {
   return out;
 }
 function cellText(p, key) {
+  if (key === "ageOut") { const v = ageOutOf(p); return v == null ? "" : String(v); }
   if (key === "prog") return progOf(p);
   if (key === "progN") return String(countItems(progOf(p)));
   if (REG_KEYS.includes(key)) return regCol(key, progOf(p)).t;
@@ -907,6 +920,7 @@ function render() {
       if (c.key === "name") return `<td class="l c-name">${esc(p.name)}</td>`;
       if (REG_KEYS.includes(c.key)) { const rc = regCol(c.key, progOf(p)), t = rc.t; return `<td class="c-reg${t ? "" : " dim"}${rc.hi ? " hi" : ""}" data-reg="${esc(String(p.id ?? ""))}" data-f="${c.key}">${t ? esc(t) : "—"}</td>`; }
       if (c.key === "progN") return `<td class="c-progn" data-cnt="${esc(String(p.id ?? ""))}" data-wi="${p.weeksIn ?? ""}">${cntHtml(countItems(progOf(p)), p.weeksIn)}</td>`;
+      if (c.key === "ageOut") { const v = ageOutOf(p); return v == null ? `<td class="dim">—</td>` : `<td>${v}</td>`; }
       if (c.key === "skill") {
         const v = p.skill;
         if (!Number.isFinite(v)) return `<td class="${tdCls(c)}"><span class="dim">—</span></td>`;
