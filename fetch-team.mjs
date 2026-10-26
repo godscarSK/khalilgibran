@@ -20,6 +20,7 @@ const API = "https://sokker.org/api";
 const DIR = "data";
 const FILE = `${DIR}/team.enc.json`;
 const PREV = `${DIR}/team.prev.enc.json`;
+const JFILE = `${DIR}/juniors.enc.json`;
 const LOGIN_FIELDS = { username: "login", password: "password" };   // deben coincidir con LoginRequest en https://sokker.org/apidoc.html
 const LOGIN_EXTRA = { remember: false };
 const CONCURRENCY = 4;
@@ -154,6 +155,32 @@ async function readFinance(teamId, me) {
   return finance;
 }
 
+/* ─────────────── Juveniles ───────────────
+   La API entrega los juveniles de la academia del equipo con sesión iniciada (GET /junior), por páginas. Se guardan tal como llegan,
+   porque la página busca por nombre de campo (nombre, edad, semanas restantes y skills). */
+async function readJuniors() {
+  const PAGE = 50, items = [], seen = new Set();
+  let offset = 0;
+  for (let guard = 0; guard < 40; guard++) {
+    const res = await call(`/junior?filter%5Blimit%5D=${PAGE}&filter%5Boffset%5D=${offset}`);
+    if (!res.ok) {
+      if (guard > 0) break;
+      if (res.status === 400) return listFrom(await getJson("/junior"));   // la API no aceptó la paginación
+      throw new Error(`/junior → HTTP ${res.status}`);
+    }
+    const batch = listFrom(await res.json());
+    const fresh = batch.filter(it => {
+      const id = String(it?.id ?? it?.juniorId ?? it?.info?.id ?? JSON.stringify(it).slice(0, 120));
+      if (seen.has(id)) return false;
+      seen.add(id); return true;
+    });
+    if (!fresh.length) break;
+    items.push(...fresh);
+    offset += batch.length;
+  }
+  return items;
+}
+
 /* ─────────────── Principal ─────────────── */
 async function main() {
   const user = process.env.SOKKER_USER || (await ask("Usuario de Sokker: ")).trim();
@@ -228,9 +255,20 @@ async function main() {
   }
 
   await writeFile(FILE, JSON.stringify(await encrypt(out, sitePw)));
+
+  // Juveniles de la academia (archivo aparte, usado por la página «Juveniles»).
+  let jCount = null;
+  try {
+    console.log("Leyendo los juveniles…");
+    const items = await readJuniors();
+    const jout = { generatedAt: out.generatedAt, team: out.team, items };
+    await writeFile(JFILE, JSON.stringify(await encrypt(jout, sitePw)));
+    jCount = items.length;
+  } catch (e) { console.warn(`  Aviso: no pude leer los juveniles (${e.message}); la página «Juveniles» no se actualizará.`); }
   console.log(`\nListo: ${FILE} con ${ok.length} jugadores${teamName ? ` de ${teamName}` : ""}${failed ? ` (${failed} no se pudieron leer)` : ""}.`);
   if (withSkills < ok.length) console.warn(`Aviso: solo ${withSkills} de ${ok.length} jugadores traen skills. Si esperabas verlas todas, revisa que el inicio de sesión haya funcionado.`);
-  console.log("Sube a la carpeta data del repositorio: team.enc.json y team.prev.enc.json (si existe).");
+  if (jCount !== null) console.log(`Juveniles: ${jCount}${jCount ? "" : " (la academia no tiene juveniles)"}.`);
+  console.log("Sube a la carpeta data del repositorio: team.enc.json, juniors.enc.json y team.prev.enc.json (si existe).");
 }
 
 main().catch(e => { console.error("\nError: " + e.message); process.exit(1); });

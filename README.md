@@ -4,10 +4,13 @@ Página con la tabla de **los jugadores de tu propio equipo en Sokker**. Es una 
 
 ## Archivos
 
-- `index.html`: la página.
+- `index.html`: la página del plantel.
+- `juveniles.html`: la página de juveniles.
+- `logo.png`: el escudo que se muestra junto al título (opcional: si falta, la página se ve igual, sin escudo).
 - `config.js`: configuración propia (dirección del servicio que sincroniza la columna «Pos.» entre dispositivos). No hace falta tocarlo al actualizar `index.html`.
 - `fetch-team.mjs`: script que se ejecuta en tu computador, inicia sesión en Sokker y genera los datos.
-- `data/team.enc.json` y `data/team.prev.enc.json`: los datos cifrados (los crea el script).
+- `data/team.enc.json` y `data/team.prev.enc.json`: los datos cifrados del plantel (los crea el script).
+- `data/juniors.enc.json`: los datos cifrados de los juveniles (los crea el script).
 
 ## Puesta en marcha
 
@@ -15,12 +18,16 @@ Página con la tabla de **los jugadores de tu propio equipo en Sokker**. Es una 
 2. En la carpeta del proyecto ejecuta `node fetch-team.mjs`. Te pide tu usuario de Sokker, tu contraseña de Sokker y la contraseña de la página (mínimo 8 caracteres, mejor una frase larga). Ninguna se guarda en un archivo.
    - También puedes pasarlas solo para esa ejecución. Mac o Linux: `SOKKER_USER="..." SOKKER_PASS="..." SITE_PASSWORD="..." node fetch-team.mjs`. En PowerShell: `$env:SOKKER_USER="..."; $env:SOKKER_PASS="..."; $env:SITE_PASSWORD="..."; node fetch-team.mjs`.
    - Si el script no encuentra el ID de tu equipo, agrega la variable `SOKKER_TEAM_ID` con tu ID de equipo.
-3. Sube a la carpeta `data` del repositorio `team.enc.json` (y `team.prev.enc.json` si existe).
+3. Sube a la carpeta `data` del repositorio `team.enc.json`, `juniors.enc.json` (y `team.prev.enc.json` si existe).
 4. En el repositorio: Settings → Pages → «Deploy from a branch» → rama `main`, carpeta `/ (root)`. La página queda en `https://TU_USUARIO.github.io/NOMBRE_DEL_REPO/`.
 
 Para actualizar los datos, repite los pasos 2 y 3.
 
-## Qué muestra
+## Menú de secciones
+
+Arriba a la derecha, junto al botón de tema, hay un menú desplegable con dos opciones: **Plantel** (`index.html`) y **Juveniles** (`juveniles.html`). La contraseña se escribe una sola vez: las dos páginas la comparten en el mismo navegador.
+
+## Qué muestra el plantel
 
 - Las 8 skills de cada jugador (la API las entrega completas porque son tus jugadores y el script inicia sesión con tu usuario), más **Suma**, **DEF**, **DEFside**, **MID**, **ATT** y **ATTside** (sumas simples de skills; si falta alguna, la celda muestra «—»).
 - Edad, **Valor**, **Salario** (a la derecha de Valor) y forma.
@@ -46,6 +53,12 @@ Se muestra siempre y cuenta a todo el equipo, sin importar los filtros ni los bo
 - **Lesionados** y **Suspendidos**: cantidad de jugadores.
 
 Finanzas y Salario dependen de los nombres de campo que entregue la API de Sokker. Al pasar el mouse sobre la cifra de Finanzas se ve qué campo se usó y cuáles otros se encontraron. Si la fila queda en «—», la página muestra un aviso con los nombres de los campos disponibles.
+
+## Página de juveniles
+
+Tabla con los juveniles de la academia del equipo: nombre, edad, **Sem.** (semanas que le faltan; «Listo» cuando terminó la academia y puede ascender), las 8 skills y la Suma. Se puede buscar por nombre, filtrar por rango de edad, ordenar por cualquier columna y copiar como CSV.
+
+La API entrega los datos de los juveniles bajo nombres de campo que la página busca de forma flexible. Si no encuentra skills, edad o semanas, muestra un aviso con los nombres de los campos disponibles, para poder ajustarla. Para actualizar esta página hay que volver a ejecutar `node fetch-team.mjs` y subir `data/juniors.enc.json`.
 
 ## Columna «Pos.»
 

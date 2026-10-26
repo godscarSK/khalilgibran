@@ -1,0 +1,745 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JUVENILES</title>
+<script>try { var t = localStorage.getItem("cantera:theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch (e) {}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #eef1ee;
+  --panel: #ffffff;
+  --ink: #1b2a41;
+  --muted: #5b6b78;
+  --line: #cfd8d2;
+  --accent: #c8352f;
+  --accent-ink: #ffffff;
+  --hl: #ffe9a8;
+  --inj: #d6232a;
+  --call: #1a5fd0;
+  --call-ink: #ffffff;
+  --zebra: #f1f5f3;
+  --notice-bg: #fff3d6;
+  --notice-line: #d9b240;
+  --error-bg: #fde8e6;
+  --error-line: #c8352f;
+  --head-bg: #e3e9e5;
+  --focus: #1b6fd1;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1a22; --panel: #16232d; --ink: #e6edf1; --muted: #93a4b0; --line: #2a3b47;
+    --accent: #ef6a62; --accent-ink: #1a0b0a; --hl: #5a4a12; --inj: #ff6b63; --call: #6aaeff; --call-ink: #0b1a2b;
+    --zebra: #1b2b36; --notice-bg: #3a3118; --notice-line: #8a7326; --error-bg: #3b1d1b; --error-line: #ef6a62;
+    --head-bg: #1d2e3a; --focus: #6aaeff;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1a22; --panel: #16232d; --ink: #e6edf1; --muted: #93a4b0; --line: #2a3b47;
+  --accent: #ef6a62; --accent-ink: #1a0b0a; --hl: #5a4a12; --inj: #ff6b63; --call: #6aaeff; --call-ink: #0b1a2b;
+  --zebra: #1b2b36; --notice-bg: #3a3118; --notice-line: #8a7326; --error-bg: #3b1d1b; --error-line: #ef6a62;
+  --head-bg: #1d2e3a; --focus: #6aaeff;
+}
+
+* { box-sizing: border-box; }
+html { color-scheme: light dark; }
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 16px; line-height: 1.45;
+}
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+[hidden] { display: none !important; }
+
+.wrap { max-width: 1680px; margin: 0 auto; padding: 0 16px; position: relative; }
+header.top { padding: 10px 0 16px; }
+.topbar { display: flex; justify-content: flex-end; align-items: center; gap: 10px; padding-top: 14px; }
+.navwrap { position: relative; display: inline-block; }
+.navwrap::after { content: "▾"; position: absolute; right: 13px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--ink); }
+select.nav {
+  appearance: none; -webkit-appearance: none; font: inherit; font-weight: 600; cursor: pointer; color: var(--ink);
+  min-height: 42px; padding: 0 36px 0 14px; border: 1px solid var(--ink); border-radius: 4px; background: var(--panel);
+}
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+h1 {
+  margin: 0; font-family: "Barlow Condensed", "Arial Narrow", sans-serif; font-weight: 700;
+  font-size: clamp(2.2rem, 9vw, 5.5rem); line-height: 0.9; letter-spacing: -0.01em;
+}
+.headrow { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 16px 24px; }
+.headtext { flex: 1 1 360px; min-width: 0; }
+.brand { display: flex; align-items: center; gap: clamp(10px, 2vw, 20px); }
+.brand .logo { flex: none; width: clamp(64px, 11vw, 104px); height: auto; filter: drop-shadow(0 2px 4px rgba(0,0,0,.25)); }
+.brand h1 { min-width: 0; overflow-wrap: anywhere; }
+.summary { flex: 0 0 auto; min-width: 250px; padding: 10px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; font-variant-numeric: tabular-nums; }
+.summary dl { margin: 0; display: grid; grid-template-columns: auto auto; gap: 3px 22px; }
+.summary dt { color: var(--muted); font-size: .875rem; }
+.summary dd { margin: 0; text-align: right; font-weight: 600; white-space: nowrap; }
+@media (max-width: 640px) { .summary { margin-right: 0; width: 100%; } }
+.lede { margin: 10px 0 0; color: var(--muted); max-width: 70ch; }
+.lede strong { color: var(--ink); font-weight: 600; }
+
+.toolbar {
+  display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: end;
+  padding: 14px 0 12px; border-top: 2px solid var(--ink);
+}
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; justify-content: flex-end; align-items: center; }
+.field { display: flex; flex-direction: column; gap: 3px; font-size: 0.875rem; color: var(--muted); }
+.field input[type="search"], .field input[type="number"], .field input[type="password"] {
+  font: inherit; color: var(--ink); background: var(--panel);
+  border: 1px solid var(--line); border-radius: 4px; padding: 7px 9px; min-height: 38px;
+}
+.field input[type="search"] { width: min(260px, 100%); }
+.field input[type="number"] { width: 5rem; }
+.range { display: flex; gap: 6px; align-items: center; }
+.ages { display: flex; gap: 6px; flex-wrap: wrap; }
+.ages button {
+  font: inherit; min-width: 3rem; min-height: 40px; padding: 0 10px; cursor: pointer; border-radius: 4px;
+  border: 1px solid var(--ink); background: var(--ink); color: var(--panel); font-weight: 600;
+}
+.ages button[aria-pressed="false"] { background: transparent; color: var(--muted); border-color: var(--line); }
+button.btn {
+  font: inherit; font-weight: 600; cursor: pointer; min-height: 38px; padding: 7px 14px;
+  border-radius: 4px; border: 1px solid var(--ink); background: var(--panel); color: var(--ink);
+}
+button.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+button.btn:hover { filter: brightness(0.96); }
+button.btn[aria-pressed="true"] { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+
+#status { min-height: 1.4em; margin: 4px 0 10px; color: var(--muted); font-size: 0.95rem; }
+.notice {
+  border: 1px solid var(--notice-line); background: var(--notice-bg);
+  border-left-width: 5px; border-radius: 4px; padding: 10px 14px; margin: 0 0 12px; max-width: 80ch;
+}
+.notice.error { border-color: var(--error-line); background: var(--error-bg); }
+.notice p { margin: 0 0 6px; }
+.notice p:last-child { margin: 0; }
+
+.tablewrap { overflow: auto; max-height: 78vh; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; }
+table { border-collapse: separate; border-spacing: 0; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { padding: 7px 8px; white-space: nowrap; text-align: center; border-bottom: 1px solid var(--line); }
+th {
+  position: sticky; top: 0; z-index: 2; background: var(--head-bg); font-weight: 600;
+  font-size: 0.9rem; padding: 0; border-bottom: 2px solid var(--ink);
+}
+th button {
+  all: unset; box-sizing: border-box; display: flex; align-items: center; justify-content: center;
+  gap: 4px; width: 100%; padding: 9px 10px; cursor: pointer;
+}
+th button:hover { background: rgba(0,0,0,.06); }
+th button:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
+th.c-name button { justify-content: flex-start; }
+th[aria-sort="ascending"] button::after { content: "▲"; font-size: .65em; color: var(--accent); }
+th[aria-sort="descending"] button::after { content: "▼"; font-size: .65em; color: var(--accent); }
+td.c-name { text-align: left; }
+tbody tr:nth-child(even) td { background-color: var(--zebra); }
+tbody tr:hover td { background-color: color-mix(in srgb, var(--accent) 7%, var(--panel)); }
+
+th.c-n, td.c-n { width: 3.2rem; min-width: 3.2rem; color: var(--muted); }
+th.c-est, td.c-est { width: 5.6rem; min-width: 5.6rem; padding-left: 4px; padding-right: 4px; }
+td.frz { position: sticky; z-index: 1; background-color: var(--panel); }
+th.frz { z-index: 3; background: var(--head-bg); }
+.frz-last { box-shadow: 3px 0 4px -2px rgba(0,0,0,.25); }
+
+td.c-name a { color: var(--ink); font-weight: 600; text-decoration-color: var(--line); text-underline-offset: 3px; }
+td.c-name a:hover { text-decoration-color: var(--accent); }
+select.est {
+  font: inherit; font-size: .85rem; width: 100%; min-height: 30px; padding: 2px 2px; border-radius: 4px; cursor: pointer;
+  color: var(--ink); background: var(--bg); border: 1px solid var(--line);
+}
+select.est[data-v="GK"] { background: #fbefc2; border-color: #c9a227; font-weight: 700; }
+select.est[data-v="DEF"] { background: #dbe7fb; border-color: #6b8fd0; font-weight: 700; }
+select.est[data-v="MID"] { background: #d4efdc; border-color: #5b9a74; font-weight: 700; }
+select.est[data-v="ATT"] { background: #f9d9d6; border-color: #d0605a; font-weight: 700; }
+select.est[data-v="ENT"] { background: #e6dcf5; border-color: #8a6cc0; font-weight: 700; }
+select.est[data-v="EXT"] { background: #d3eef0; border-color: #4aa3ad; font-weight: 700; }
+:root[data-theme="dark"] select.est[data-v="GK"] { background: #4a3f12; border-color: #c9a227; }
+:root[data-theme="dark"] select.est[data-v="DEF"] { background: #1d3157; border-color: #5a82c9; }
+:root[data-theme="dark"] select.est[data-v="MID"] { background: #1f4130; border-color: #4f9d73; }
+:root[data-theme="dark"] select.est[data-v="ATT"] { background: #4a1f1c; border-color: #d0605a; }
+:root[data-theme="dark"] select.est[data-v="ENT"] { background: #33224f; border-color: #8a6cc0; }
+:root[data-theme="dark"] select.est[data-v="EXT"] { background: #17383d; border-color: #4aa3ad; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) select.est[data-v="GK"] { background: #4a3f12; border-color: #c9a227; }
+  :root:not([data-theme="light"]) select.est[data-v="DEF"] { background: #1d3157; border-color: #5a82c9; }
+  :root:not([data-theme="light"]) select.est[data-v="MID"] { background: #1f4130; border-color: #4f9d73; }
+  :root:not([data-theme="light"]) select.est[data-v="ATT"] { background: #4a1f1c; border-color: #d0605a; }
+  :root:not([data-theme="light"]) select.est[data-v="ENT"] { background: #33224f; border-color: #8a6cc0; }
+  :root:not([data-theme="light"]) select.est[data-v="EXT"] { background: #17383d; border-color: #4aa3ad; }
+}
+td.c-name .sel { margin-left: 8px; padding: 1px 5px; border-radius: 3px; font-size: .62rem; font-weight: 700; background: var(--call); color: var(--call-ink); letter-spacing: .03em; }
+td.c-name .inj { margin-left: 8px; display: inline-flex; align-items: center; gap: 3px; font-size: .68rem; font-weight: 700; color: var(--inj); white-space: nowrap; vertical-align: middle; }
+td.c-name .inj svg { width: 13px; height: 13px; fill: var(--inj); }
+td.c-name .redcard { display: inline-block; margin-left: 8px; width: 11px; height: 15px; border-radius: 2px; background: #d6232a; border: 1px solid rgba(0,0,0,.35); vertical-align: middle; transform: rotate(8deg); }
+td.c-name .copypid {
+  all: unset; box-sizing: border-box; margin-left: 8px; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center;
+  vertical-align: middle; cursor: pointer; color: var(--muted); border: 1px solid var(--line); border-radius: 4px;
+}
+td.c-name .copypid:hover { color: var(--ink); border-color: var(--ink); }
+td.c-name .copypid svg { width: 14px; height: 14px; }
+#toast {
+  position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 50;
+  background: var(--ink); color: var(--panel); padding: 10px 18px; border-radius: 6px; font-weight: 600;
+  box-shadow: 0 4px 16px rgba(0,0,0,.25); opacity: 0; pointer-events: none; transition: opacity .2s;
+}
+#toast.show { opacity: 1; }
+
+td.pos { min-width: 3rem; }
+td.sk { min-width: 2.4rem; }
+td.sk, td.pos { padding-left: 4px; padding-right: 4px; }
+table.no-val .c-val { display: none; }
+th.sepl, td.sepl { border-left: 1px solid var(--muted); }
+th.sepr, td.sepr { border-right: 1px solid var(--muted); }
+.chg { font-size: .7em; vertical-align: 1px; }
+.chg.up { color: #1f8f4a; }
+.chg.down { color: #c8352f; }
+:root[data-theme="dark"] .chg.up { color: #5fd58b; }
+:root[data-theme="dark"] .chg.down { color: #ff8a82; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .chg.up { color: #5fd58b; } :root:not([data-theme="light"]) .chg.down { color: #ff8a82; } }
+th.hl { background: var(--hl); }
+tbody tr td.hl { background-color: var(--hl); font-weight: 600; }
+.dim { color: var(--muted); }
+.empty { padding: 36px 16px; text-align: center; color: var(--muted); }
+.theme {
+  flex: none; width: 42px; height: 42px; padding: 0;
+  display: grid; place-items: center; border-radius: 50%; cursor: pointer;
+  border: 1px solid var(--ink); background: var(--panel); color: var(--ink);
+}
+.theme svg { width: 22px; height: 22px; }
+
+details.formulas { margin: 22px 0 40px; max-width: 900px; }
+details.formulas summary { cursor: pointer; font-weight: 600; padding: 6px 0; }
+details.formulas table { margin-top: 10px; background: var(--panel); border: 1px solid var(--line); }
+details.formulas td, details.formulas th { text-align: left; position: static; padding: 7px 10px; white-space: normal; }
+details.formulas p { max-width: 70ch; color: var(--muted); }
+
+dialog.dlg {
+  width: min(420px, calc(100vw - 32px)); padding: 22px; border: 2px solid var(--ink); border-radius: 6px;
+  background: var(--panel); color: var(--ink);
+}
+dialog.dlg::backdrop { background: rgba(10, 20, 30, .55); }
+dialog.dlg h2 { margin: 0 0 6px; font-family: "Barlow Condensed", "Arial Narrow", sans-serif; font-size: 2rem; line-height: 1; font-weight: 700; }
+dialog.dlg .hint { margin: 0 0 14px; color: var(--muted); font-size: .92rem; }
+dialog.dlg .field { margin-bottom: 12px; }
+dialog.dlg .field input { width: 100%; background: var(--bg); min-height: 40px; }
+dialog.dlg .msg { min-height: 1.3em; margin: 0 0 10px; color: var(--accent); font-weight: 600; font-size: .92rem; }
+dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
+
+@media (max-width: 640px) { th.c-n, td.c-n { width: 2.6rem; min-width: 2.6rem; padding-left: 6px; padding-right: 6px; } }
+.ready { color: var(--call); font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <label class="navwrap"><span class="sr">Cambiar de sección</span>
+      <select class="nav" id="nav">
+        <option value="./">Plantel</option>
+        <option value="juveniles.html" selected>Juveniles</option>
+      </select>
+    </label>
+    <button class="theme" id="theme" type="button" aria-label="Cambiar a modo oscuro" title="Cambiar a modo oscuro"></button>
+  </div>
+  <header class="top">
+    <div class="headrow">
+      <div class="headtext">
+        <div class="brand">
+          <img class="logo" src="logo.png" alt="Escudo del equipo" width="300" height="300" onerror="this.hidden=true">
+          <h1 id="title">JUVENILES</h1>
+        </div>
+        <p class="lede" id="lede">Cargando juveniles…</p>
+      </div>
+    </div>
+  </header>
+
+  <section class="toolbar" aria-label="Filtros">
+    <label class="field">Buscar
+      <input type="search" id="q" placeholder="Nombre" autocomplete="off">
+    </label>
+    <div class="field" role="group" aria-label="Edad">
+      Edad
+      <span class="range">
+        <input type="number" id="ageMin" min="10" max="30" inputmode="numeric" placeholder="mín." aria-label="Edad mínima">
+        <span aria-hidden="true">–</span>
+        <input type="number" id="ageMax" min="10" max="30" inputmode="numeric" placeholder="máx." aria-label="Edad máxima">
+      </span>
+    </div>
+    <div class="actions" role="group" aria-label="Acciones">
+      <button class="btn" id="forgetPw" type="button" hidden title="Olvidar la contraseña en este navegador">Bloquear</button>
+      <button class="btn primary" id="copy" type="button" title="Copiar la tabla visible para pegarla en una planilla">CSV</button>
+    </div>
+  </section>
+
+  <div id="status" role="status" aria-live="polite"></div>
+  <div id="notices"></div>
+
+  <div class="tablewrap">
+    <table id="tbl">
+      <thead><tr id="head"></tr></thead>
+      <tbody id="body"></tbody>
+    </table>
+  </div>
+</div>
+
+<dialog id="pwDlg" class="dlg" aria-labelledby="pwTitle">
+  <form id="pwForm">
+    <h2 id="pwTitle">Página protegida</h2>
+    <p class="hint">Escribe la contraseña para ver los datos. Este navegador la recordará.</p>
+    <label class="field">Contraseña
+      <input id="pwInput" name="password" type="password" autocomplete="current-password" required>
+    </label>
+    <p class="msg" id="pwMsg" role="alert"></p>
+    <div class="actions">
+      <button class="btn primary" id="pwOk" type="submit">Entrar</button>
+    </div>
+  </form>
+</dialog>
+
+<noscript>Esta página necesita JavaScript para mostrar la tabla.</noscript>
+
+<script>
+"use strict";
+
+/* ─────────────── Configuración ─────────────── */
+const CONFIG = {
+  title: "JUVENILES",
+  encData: "data/juniors.enc.json",     // datos cifrados con la contraseña de la página (los genera fetch-team.mjs)
+  staticData: "data/juniors.json",      // alternativa sin cifrar (opcional)
+  timeoutMs: 15000
+};
+
+/* ─────────────── Columnas ─────────────── */
+const SKILL_COLUMNS = [
+  { skill: "stamina",   label: "Cond.", title: "Stamina (Condición)" },
+  { skill: "pace",      label: "Rap.", title: "Pace" },
+  { skill: "technique", label: "Téc.", title: "Technique" },
+  { skill: "passing",   label: "Pas.", title: "Passing" },
+  { skill: "keeper",    label: "Por.", title: "Keeper" },
+  { skill: "defender",  label: "Def.", title: "Defending" },
+  { skill: "playmaker", label: "Cre.", title: "Playmaking" },
+  { skill: "striker",   label: "Ano.", title: "Striker" }
+];
+const SKILL_KEYS = SKILL_COLUMNS.map(s => s.skill);
+const SKILL_ALIASES = {
+  stamina:   ["stamina", "stam", "res", "resistencia"],
+  pace:      ["pace", "rap", "rapidez"],
+  technique: ["technique", "tech", "tec", "téc", "tecnica", "técnica"],
+  passing:   ["passing", "pass", "pas", "pase"],
+  keeper:    ["keeper", "goalkeeping", "gk", "por", "portero"],
+  defender:  ["defender", "defending", "def", "defensa"],
+  playmaker: ["playmaker", "playmaking", "pm", "cre", "creacion", "creación"],
+  striker:   ["striker", "scoring", "str", "ano", "anotacion", "anotación"]
+};
+const SEP = { sk_stamina: "sepl", sk_keeper: "sepl", c_sum: "sepl" };
+const COLS = [
+  { key: "n",     label: "#", cls: "c-n", left: true, title: "Número de fila. Al pulsarlo vuelves al orden original." },
+  { key: "name",  label: "Juvenil", cls: "c-name", left: true },
+  { key: "age",   label: "Edad" },
+  { key: "weeks", label: "Sem.", title: "Semanas que le faltan en la academia (Listo = puede ascender)" },
+  ...SKILL_COLUMNS.map(s => ({ key: "sk_" + s.skill, label: s.label, title: s.title, skill: s.skill })),
+  { key: "c_sum", label: "Suma", title: "Suma de las 8 skills", ctr: true }
+];
+
+/* ─────────────── Utilidades ─────────────── */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const num = v => {
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  if (typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v))) return Number(v);
+  if (v && typeof v === "object") {
+    for (const k of ["value", "level", "current", "now", "skill", "points"]) {
+      const x = v[k]; if (typeof x === "number" && Number.isFinite(x)) return x;
+    }
+  }
+  return null;
+};
+const fmtDate = t => new Date(t).toLocaleString("es-CL", { dateStyle: "medium", timeStyle: "short" });
+
+function pickSkills(apiSkills) {
+  const lower = {};
+  for (const [k, v] of Object.entries(apiSkills || {})) lower[k.toLowerCase()] = v;
+  const sk = {};
+  for (const key of SKILL_KEYS) {
+    let v = null;
+    for (const a of SKILL_ALIASES[key]) { if (a in lower) { v = num(lower[a]); if (v !== null) break; } }
+    sk[key] = v;
+  }
+  return sk;
+}
+// Busca el objeto que contiene los niveles de skills: normalmente "skills", pero si están en otro lugar se elige el que más nombres reconocidos tenga.
+function findSkillsSource(info) {
+  const known = new Set(Object.values(SKILL_ALIASES).flat());
+  const score = o => (o && typeof o === "object" && !Array.isArray(o))
+    ? Object.keys(o).filter(k => known.has(k.toLowerCase())).length : 0;
+  let best = info.skills || {}, bestScore = score(best);
+  const queue = [info];
+  for (let guard = 0; queue.length && guard < 300; guard++) {
+    const o = queue.shift();
+    for (const v of Object.values(o)) {
+      if (v && typeof v === "object" && !Array.isArray(v)) {
+        const sc = score(v);
+        if (sc > bestScore) { best = v; bestScore = sc; }
+        queue.push(v);
+      }
+    }
+  }
+  return bestScore >= 3 ? best : (info.skills || {});
+}
+// Primer valor simple cuya clave coincide con el patrón (hasta 4 niveles de profundidad).
+function deepFind(o, re, depth = 0) {
+  if (!o || typeof o !== "object" || Array.isArray(o) || depth > 3) return null;
+  for (const [k, v] of Object.entries(o)) if (re.test(k) && v !== null && typeof v !== "object") return v;
+  for (const v of Object.values(o)) {
+    if (v && typeof v === "object" && !Array.isArray(v)) { const r = deepFind(v, re, depth + 1); if (r !== null) return r; }
+  }
+  return null;
+}
+function keyPaths(o, prefix = "", depth = 0, out = []) {
+  for (const [k, v] of Object.entries(o || {})) {
+    if (v && typeof v === "object" && !Array.isArray(v) && depth < 2) keyPaths(v, prefix + k + ".", depth + 1, out);
+    else out.push(prefix + k);
+  }
+  return out;
+}
+function juniorName(o) {
+  const n = o.name;
+  if (typeof n === "string" && n) return n;
+  if (n && typeof n === "object") {
+    if (n.full) return String(n.full);
+    const parts = [n.first ?? n.firstName ?? n.name, n.last ?? n.lastName ?? n.surname].filter(Boolean);
+    if (parts.length) return parts.join(" ");
+  }
+  const f = deepFind(o, /^(fullName|full)$/i);
+  if (f) return String(f);
+  return [deepFind(o, /^(firstName|name)$/i), deepFind(o, /^(lastName|surname)$/i)].filter(Boolean).join(" ");
+}
+
+function normalize(it, i) {
+  const src = it && it.info && typeof it.info === "object" ? it.info : (it || {});
+  const sk = findSkillsSource(src);
+  const id = src.id ?? src.juniorId ?? it?.id ?? it?.juniorId ?? null;
+  return {
+    n: i + 1, id,
+    name: juniorName(src) || (id != null ? "Juvenil " + id : "Juvenil " + (i + 1)),
+    age: num(deepFind(src, /^age$/i)), weeks: num(deepFind(src, /^weeksLeft$/i)),
+    skills: pickSkills(sk), skillKeys: Object.keys(sk), allKeys: keyPaths(src)
+  };
+}
+const sumOf = p => SKILL_KEYS.every(k => Number.isFinite(p.skills[k])) ? SKILL_KEYS.reduce((a, k) => a + p.skills[k], 0) : null;
+
+/* ─────────────── Estado y datos ─────────────── */
+const state = { players: [], q: "", ageMin: null, ageMax: null, sort: { key: "n", dir: 1 }, stamp: null, teamName: "" };
+
+async function fetchWithTimeout(url, opts = {}) {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), CONFIG.timeoutMs);
+  try { return await fetch(url, { ...opts, signal: ctl.signal }); }
+  finally { clearTimeout(timer); }
+}
+async function tryStatic() {
+  try {
+    const r = await fetchWithTimeout(CONFIG.staticData, { cache: "no-store" });
+    if (!r.ok) return null;
+    const j = await r.json();
+    return j && Array.isArray(j.items) ? j : null;
+  } catch { return null; }
+}
+
+/* Datos cifrados (la contraseña se comparte con la página del plantel: queda guardada una sola vez en este navegador) */
+const PW_KEY = "equipo:pw";
+const b64 = t => Uint8Array.from(atob(t), c => c.charCodeAt(0));
+async function fetchEnvelope(url) {
+  try {
+    const r = await fetchWithTimeout(url, { cache: "no-store" });
+    if (!r.ok) return null;
+    const j = await r.json();
+    return j && j.data && j.salt && j.iv ? j : null;
+  } catch { return null; }
+}
+async function decryptEnvelope(env, pw) {
+  const km = await crypto.subtle.importKey("raw", new TextEncoder().encode(String(pw).normalize("NFC")), "PBKDF2", false, ["deriveKey"]);
+  const key = await crypto.subtle.deriveKey({ name: "PBKDF2", salt: b64(env.salt), iterations: env.iter, hash: "SHA-256" },
+    km, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+  let buf = await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64(env.iv) }, key, b64(env.data));
+  if (env.z) buf = await new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream("gzip"))).arrayBuffer();
+  return JSON.parse(new TextDecoder().decode(buf));
+}
+const savedPw = () => { try { return localStorage.getItem(PW_KEY) || ""; } catch { return ""; } };
+const savePw = pw => { try { localStorage.setItem(PW_KEY, pw); } catch {} };
+const forgetPw = () => { try { localStorage.removeItem(PW_KEY); } catch {} };
+function askPassword(msg) {
+  const dlg = $("#pwDlg");
+  $("#pwMsg").textContent = msg || "";
+  $("#pwInput").value = "";
+  if (!dlg.open) dlg.showModal();
+  $("#pwInput").focus();
+  return new Promise(res => { dlg._res = res; });
+}
+async function unlock(env) {
+  let pw = savedPw(), msg = "";
+  for (;;) {
+    if (!pw) { setStatus("Datos protegidos con contraseña."); pw = await askPassword(msg); }
+    try {
+      const data = await decryptEnvelope(env, pw);
+      savePw(pw);
+      if ($("#pwDlg").open) $("#pwDlg").close();
+      return data;
+    } catch {
+      forgetPw(); pw = ""; msg = "Contraseña incorrecta. Inténtalo de nuevo.";
+    }
+  }
+}
+function setStatus(text) { $("#status").textContent = text || ""; }
+function setNotices(list) {
+  if (location.protocol === "file:") {
+    list = [{ error: true, html:
+      `<p><strong>La página está abierta como archivo local.</strong> El navegador bloquea la lectura de los archivos de <code>data/</code> desde un archivo, y por eso no se ven los datos.</p>
+       <p>Publícala en GitHub Pages, o ábrela con un servidor local: en esta carpeta ejecuta <code>python -m http.server</code> y entra a <code>http://localhost:8000/juveniles.html</code>.</p>` }, ...list];
+  }
+  $("#notices").innerHTML = list.map(n => `<div class="notice${n.error ? " error" : ""}">${n.html}</div>`).join("");
+}
+
+async function load() {
+  setNotices([]);
+  setStatus("Cargando juveniles…");
+  const env = await fetchEnvelope(CONFIG.encData);
+  const st = env ? await unlock(env) : await tryStatic();
+  $("#forgetPw").hidden = !env;
+  if (!st) {
+    setStatus("");
+    setNotices([{ error: true, html:
+      `<p><strong>No encontré los datos de los juveniles.</strong> Falta el archivo <code>data/juniors.enc.json</code>.</p>
+       <p>Genera el archivo ejecutando <code>node fetch-team.mjs</code> (en su versión nueva) y súbelo a la carpeta <code>data</code> del repositorio.</p>` }]);
+    render();
+    return;
+  }
+  state.teamName = st.team?.name || "";
+  state.stamp = st.generatedAt ? Date.parse(st.generatedAt) : null;
+  state.players = (st.items || []).map(normalize);
+
+  const notices = [], ps = state.players;
+  if (ps.length) {
+    const missing = [];
+    if (!ps.some(p => SKILL_KEYS.some(k => Number.isFinite(p.skills[k])))) missing.push("skills");
+    if (!ps.some(p => p.age != null)) missing.push("edad");
+    if (!ps.some(p => p.weeks != null)) missing.push("semanas restantes");
+    if (missing.length) {
+      notices.push({ html:
+        `<p><strong>No encontré en los datos de la API: ${esc(missing.join(", "))}.</strong> Esas columnas quedan en «—».</p>
+         <p>Campos que entrega la API para el primer juvenil: <code>${esc(ps[0].allKeys.slice(0, 60).join(", ") || "ninguno")}</code>.</p>` });
+    }
+  }
+  setNotices(notices);
+  setStatus("");
+  render();
+}
+
+/* ─────────────── Vista ─────────────── */
+const tdCls = (c, extra = "") => [c.cls || "", SEP[c.key] || "", extra].filter(Boolean).join(" ");
+function buildHead() {
+  $("#head").innerHTML = COLS.map(c => {
+    const title = c.title ? ` title="${esc(c.title)}"` : "";
+    const cls = [c.cls || "", SEP[c.key] || "", c.left ? "l" : "", c.skill || c.ctr ? "ctr" : ""].filter(Boolean).join(" ");
+    return `<th class="${cls}" data-key="${c.key}" scope="col" aria-sort="none"><button type="button"${title}>${esc(c.label)}</button></th>`;
+  }).join("");
+}
+function sortValue(p, key) {
+  if (key.startsWith("sk_")) { const s = p.skills?.[key.slice(3)]; return Number.isFinite(s) ? s : null; }
+  if (key === "c_sum") return sumOf(p);
+  const v = p[key];
+  return v === undefined || v === "" ? null : v;
+}
+function visibleRows() {
+  const q = state.q.trim().toLowerCase();
+  const out = state.players.filter(p => {
+    if (q && !p.name.toLowerCase().includes(q)) return false;
+    if (state.ageMin != null && (p.age == null || p.age < state.ageMin)) return false;
+    if (state.ageMax != null && (p.age == null || p.age > state.ageMax)) return false;
+    return true;
+  });
+  const { key, dir } = state.sort;
+  out.sort((a, b) => {
+    const x = sortValue(a, key), y = sortValue(b, key);
+    if (x == null && y == null) return a.n - b.n;
+    if (x == null) return 1;
+    if (y == null) return -1;
+    const c = typeof x === "string" ? x.localeCompare(y, "es") : x - y;
+    return c ? c * dir : a.n - b.n;
+  });
+  return out;
+}
+function cellText(p, key) {
+  if (key.startsWith("sk_")) { const s = p.skills?.[key.slice(3)]; return Number.isFinite(s) ? String(s) : ""; }
+  if (key === "c_sum") { const v = sumOf(p); return v == null ? "" : String(v); }
+  const v = p[key];
+  return v == null ? "" : String(v);
+}
+
+const FREEZE_KEYS = ["n", "name"];
+function applyFreeze() {
+  document.querySelectorAll(".frz").forEach(el => { el.classList.remove("frz", "frz-last"); el.style.left = ""; });
+  if (document.querySelector("#body td.empty")) return;
+  let left = 0;
+  FREEZE_KEYS.forEach((k, idx) => {
+    const th = document.querySelector(`#head th[data-key="${k}"]`);
+    if (!th) return;
+    const col = COLS.findIndex(c => c.key === k);
+    const cells = [th, ...document.querySelectorAll(`#body tr td:nth-child(${col + 1})`)];
+    for (const el of cells) { el.classList.add("frz"); if (idx === FREEZE_KEYS.length - 1) el.classList.add("frz-last"); el.style.left = left + "px"; }
+    left += th.getBoundingClientRect().width;
+  });
+}
+window.addEventListener("resize", () => applyFreeze());
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => applyFreeze());
+
+const PREFS_KEY = "juveniles:prefs";
+let prefsReady = false;
+function savePrefs() {
+  if (!prefsReady) return;
+  try { localStorage.setItem(PREFS_KEY, JSON.stringify({ ageMin: state.ageMin, ageMax: state.ageMax, sort: state.sort })); } catch {}
+}
+function loadPrefs() {
+  let p = null;
+  prefsReady = true;
+  try { p = JSON.parse(localStorage.getItem(PREFS_KEY)); } catch {}
+  if (!p || typeof p !== "object") return;
+  const age = v => Number.isFinite(v) ? v : null;
+  state.ageMin = age(p.ageMin); state.ageMax = age(p.ageMax);
+  $("#ageMin").value = state.ageMin ?? ""; $("#ageMax").value = state.ageMax ?? "";
+  if (p.sort && COLS.some(c => c.key === p.sort.key) && (p.sort.dir === 1 || p.sort.dir === -1)) state.sort = { key: p.sort.key, dir: p.sort.dir };
+}
+
+function render() {
+  savePrefs();
+  const rows = visibleRows();
+  $("#body").innerHTML = rows.length ? rows.map((p, rowIdx) => {
+    const tds = COLS.map(c => {
+      if (c.key === "n") return `<td class="c-n">${rowIdx + 1}</td>`;
+      if (c.key === "name") return `<td class="l c-name">${esc(p.name)}</td>`;
+      if (c.key === "weeks") {
+        if (p.weeks == null) return `<td class="dim">—</td>`;
+        return p.weeks === 0 ? `<td><span class="ready" title="Terminó la academia: puede ascender al plantel">Listo</span></td>` : `<td>${p.weeks}</td>`;
+      }
+      if (c.skill) {
+        const v = p.skills?.[c.skill];
+        return Number.isFinite(v) ? `<td class="${tdCls(c, "sk")}">${v}</td>` : `<td class="${tdCls(c, "sk dim")}">—</td>`;
+      }
+      if (c.key === "c_sum") { const v = sumOf(p); return v == null ? `<td class="${tdCls(c, "pos dim")}">—</td>` : `<td class="${tdCls(c, "pos")}">${v}</td>`; }
+      const t = cellText(p, c.key);
+      return `<td class="${tdCls(c)}">${t === "" ? '<span class="dim">—</span>' : esc(t)}</td>`;
+    }).join("");
+    return `<tr>${tds}</tr>`;
+  }).join("") : `<tr><td class="empty" colspan="${COLS.length}">${state.players.length ? "Ningún juvenil coincide con los filtros. Borra la búsqueda o amplía el rango de edad." : "No hay juveniles para mostrar."}</td></tr>`;
+
+  applyFreeze();
+  document.querySelectorAll("#head th").forEach(th => {
+    th.setAttribute("aria-sort", th.dataset.key === state.sort.key ? (state.sort.dir === 1 ? "ascending" : "descending") : "none");
+  });
+
+  const name = (state.teamName || CONFIG.title).toUpperCase();
+  $("#title").textContent = name;
+  document.title = name + " · JUVENILES";
+
+  const total = state.players.length;
+  const when = state.stamp ? fmtDate(state.stamp) : "";
+  $("#lede").innerHTML = total
+    ? `Juveniles: <strong>${total} en la academia</strong>, ${rows.length} visibles.${when ? esc(` Datos al ${when}${when.endsWith(".") ? "" : "."}`) : ""}`
+    : "No hay juveniles para mostrar.";
+}
+
+let toastTimer;
+function toast(msg) {
+  const t = $("#toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 2000);
+}
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); }
+  catch {
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); } catch {}
+    ta.remove();
+  }
+}
+async function copyTable() {
+  const rows = visibleRows();
+  const lines = [COLS.map(c => c.label === "#" ? "N" : c.label).join("\t")];
+  rows.forEach((p, i) => lines.push(COLS.map(c => c.key === "n" ? i + 1 : cellText(p, c.key).replace(/\t|\n/g, " ")).join("\t")));
+  await copyText(lines.join("\n"));
+  const btn = $("#copy"), old = btn.textContent;
+  btn.textContent = `Copiadas ${rows.length} filas`;
+  setTimeout(() => { btn.textContent = old; }, 1800);
+}
+
+/* ─────────────── Modo claro y oscuro ─────────────── */
+const ICON_SUN = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>`;
+const ICON_MOON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>`;
+function currentTheme() {
+  return document.documentElement.dataset.theme
+    || (window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+}
+function paintThemeButton() {
+  const dark = currentTheme() === "dark";
+  const b = $("#theme");
+  const label = dark ? "Cambiar a modo claro" : "Cambiar a modo oscuro";
+  b.setAttribute("aria-label", label);
+  b.title = label;
+  b.innerHTML = dark ? ICON_SUN : ICON_MOON;
+}
+function initTheme() {
+  paintThemeButton();
+  $("#theme").addEventListener("click", () => {
+    const next = currentTheme() === "dark" ? "light" : "dark";
+    document.documentElement.dataset.theme = next;
+    try { localStorage.setItem("cantera:theme", next); } catch {}
+    paintThemeButton();
+  });
+}
+
+/* ─────────────── Eventos ─────────────── */
+function init() {
+  initTheme();
+  $("#nav").addEventListener("change", e => { location.href = e.target.value; });
+  window.addEventListener("pageshow", () => { $("#nav").value = "juveniles.html"; });   // al volver atrás, el menú debe indicar esta sección
+  buildHead();
+  $("#head").addEventListener("click", e => {
+    const th = e.target.closest("th"); if (!th) return;
+    const key = th.dataset.key;
+    state.sort = state.sort.key === key
+      ? { key, dir: -state.sort.dir }
+      : { key, dir: key === "name" || key === "n" || key === "weeks" ? 1 : -1 };
+    render();
+  });
+  $("#q").addEventListener("input", e => { state.q = e.target.value; render(); });
+  const ageInput = (id, field) => $(id).addEventListener("input", e => {
+    const v = e.target.value.trim();
+    state[field] = v !== "" && Number.isFinite(Number(v)) ? Number(v) : null;
+    render();
+  });
+  ageInput("#ageMin", "ageMin"); ageInput("#ageMax", "ageMax");
+  $("#copy").addEventListener("click", copyTable);
+  $("#pwForm").addEventListener("submit", ev => {
+    ev.preventDefault();
+    const pw = $("#pwInput").value;
+    const dlg = $("#pwDlg"), res = dlg._res; dlg._res = null;
+    $("#pwInput").value = "";
+    if (res) res(pw);
+  });
+  $("#pwDlg").addEventListener("cancel", ev => ev.preventDefault());   // no se puede cerrar sin contraseña
+  $("#forgetPw").addEventListener("click", () => { forgetPw(); location.reload(); });
+  loadPrefs();
+  render();
+  load();
+}
+init();
+</script>
+<div id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

@@ -56,17 +56,25 @@ body {
 [hidden] { display: none !important; }
 
 .wrap { max-width: 1680px; margin: 0 auto; padding: 0 16px; position: relative; }
-header.top { padding: 28px 0 16px; }
+header.top { padding: 10px 0 16px; }
+.topbar { display: flex; justify-content: flex-end; align-items: center; gap: 10px; padding-top: 14px; }
+.navwrap { position: relative; display: inline-block; }
+.navwrap::after { content: "▾"; position: absolute; right: 13px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--ink); }
+select.nav {
+  appearance: none; -webkit-appearance: none; font: inherit; font-weight: 600; cursor: pointer; color: var(--ink);
+  min-height: 42px; padding: 0 36px 0 14px; border: 1px solid var(--ink); border-radius: 4px; background: var(--panel);
+}
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 h1 {
   margin: 0; font-family: "Barlow Condensed", "Arial Narrow", sans-serif; font-weight: 700;
-  font-size: clamp(3rem, 9vw, 5.5rem); line-height: 0.9; letter-spacing: -0.01em; padding-right: 56px;
+  font-size: clamp(2.2rem, 9vw, 5.5rem); line-height: 0.9; letter-spacing: -0.01em;
 }
 .headrow { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 16px 24px; }
 .headtext { flex: 1 1 360px; min-width: 0; }
 .brand { display: flex; align-items: center; gap: clamp(10px, 2vw, 20px); }
 .brand .logo { flex: none; width: clamp(64px, 11vw, 104px); height: auto; filter: drop-shadow(0 2px 4px rgba(0,0,0,.25)); }
-.brand h1 { min-width: 0; }
-.summary { flex: 0 0 auto; margin-right: 56px; min-width: 250px; padding: 10px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; font-variant-numeric: tabular-nums; }
+.brand h1 { min-width: 0; overflow-wrap: anywhere; }
+.summary { flex: 0 0 auto; min-width: 250px; padding: 10px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; font-variant-numeric: tabular-nums; }
 .summary dl { margin: 0; display: grid; grid-template-columns: auto auto; gap: 3px 22px; }
 .summary dt { color: var(--muted); font-size: .875rem; }
 .summary dd { margin: 0; text-align: right; font-weight: 600; white-space: nowrap; }
@@ -196,7 +204,7 @@ tbody tr td.hl { background-color: var(--hl); font-weight: 600; }
 .dim { color: var(--muted); }
 .empty { padding: 36px 16px; text-align: center; color: var(--muted); }
 .theme {
-  position: absolute; top: 14px; right: 16px; width: 42px; height: 42px; padding: 0;
+  flex: none; width: 42px; height: 42px; padding: 0;
   display: grid; place-items: center; border-radius: 50%; cursor: pointer;
   border: 1px solid var(--ink); background: var(--panel); color: var(--ink);
 }
@@ -225,7 +233,15 @@ dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
 </head>
 <body>
 <div class="wrap">
-  <button class="theme" id="theme" type="button" aria-label="Cambiar a modo oscuro" title="Cambiar a modo oscuro"></button>
+  <div class="topbar">
+    <label class="navwrap"><span class="sr">Cambiar de sección</span>
+      <select class="nav" id="nav">
+        <option value="./" selected>Plantel</option>
+        <option value="juveniles.html">Juveniles</option>
+      </select>
+    </label>
+    <button class="theme" id="theme" type="button" aria-label="Cambiar a modo oscuro" title="Cambiar a modo oscuro"></button>
+  </div>
   <header class="top">
     <div class="headrow">
       <div class="headtext">
@@ -1122,6 +1138,8 @@ function initTheme() {
 /* ─────────────── Eventos ─────────────── */
 function init() {
   initTheme();
+  $("#nav").addEventListener("change", e => { location.href = e.target.value; });
+  window.addEventListener("pageshow", () => { $("#nav").value = "./"; });   // al volver atrás, el menú debe indicar esta sección
   buildHead();
   $("#head").addEventListener("click", e => {
     const th = e.target.closest("th"); if (!th) return;
