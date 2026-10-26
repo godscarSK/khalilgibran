@@ -944,7 +944,9 @@ function loadPrefs() {
 
 /* ─────────────── Simplificar y Calculadora ─────────────── */
 const SIMPLE_HIDE = ["talent", "formation", "prog", "reg"];
-const hiddenKeys = () => state.simple ? SIMPLE_HIDE : [];
+// En la calculadora solo quedan visibles las últimas cinco columnas (desde Progreso); Simplificar no aplica ahí.
+const CALC_SHOW = COLS.slice(COLS.findIndex(c => c.key === "prog")).map(c => c.key);
+const hiddenKeys = () => state.calc ? COLS.map(c => c.key).filter(k => !CALC_SHOW.includes(k)) : state.simple ? SIMPLE_HIDE : [];
 const visibleCols = () => COLS.filter(c => !hiddenKeys().includes(c.key));
 function applyColVis() {
   const hid = hiddenKeys();
@@ -986,6 +988,7 @@ function setCalc(on) {
   const b = $("#calcBtn"); b.setAttribute("aria-pressed", String(on)); b.textContent = on ? "Salir de la calculadora" : "Calculadora";
   document.querySelectorAll(".toolbar .field").forEach(el => { el.hidden = on; });
   $("#copy").disabled = on;
+  $("#simplify").disabled = on;
 }
 function setSimple(on) {
   state.simple = on;
@@ -1049,7 +1052,7 @@ function render() {
 
   const total = state.players.length;
   const when = state.stamp ? fmtDate(state.stamp) : "";
-  if (state.calc) { $("#lede").innerHTML = "<strong>Calculadora:</strong> fila vacía para hacer cálculos. Lo que escribas aquí no se guarda ni se sincroniza."; return; }
+  if (state.calc) { $("#lede").innerHTML = "<strong>Calculadora:</strong> escribe el Progreso y se calculan Talento Estimado, R2, Regresión y Recuento. Lo que escribas aquí no se guarda ni se sincroniza."; return; }
   $("#lede").innerHTML = total
     ? `Juveniles: <strong>${total} en la academia</strong>, ${rows.length} visibles.${when ? esc(` Datos al ${when}${when.endsWith(".") ? "" : "."}`) : ""}${state.prevStamp ? esc(` Flechas ▲▼ en Nivel: cambios respecto al ${fmtDate(state.prevStamp).replace(/,.*$/, "")}.`) : ""}<span id="syncMsg">${syncText() ? " " + esc(syncText()) : ""}</span>`
     : "No hay juveniles para mostrar.";
