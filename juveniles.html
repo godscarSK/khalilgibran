@@ -136,6 +136,12 @@ th.c-name button { justify-content: flex-start; }
 th[aria-sort="ascending"] button::after { content: "▲"; font-size: .65em; color: var(--accent); }
 th[aria-sort="descending"] button::after { content: "▼"; font-size: .65em; color: var(--accent); }
 td.c-name { text-align: left; }
+.mk { font-weight: 700; margin-left: 2px; }
+.mk.ok { color: #1f8f4e; }
+.mk.bad { color: #c0392b; }
+:root[data-theme="dark"] .mk.ok { color: #5fd08a; }
+:root[data-theme="dark"] .mk.bad { color: #ff7b6e; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .mk.ok { color: #5fd08a; } :root:not([data-theme="light"]) .mk.bad { color: #ff7b6e; } }
 th.c-prog, td.c-prog { min-width: 14rem; text-align: left; }
 td.c-prog input { width: 100%; min-width: 12rem; box-sizing: border-box; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; min-height: 32px; }
 td.c-prog input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
@@ -334,6 +340,12 @@ try {
 } catch {}
 const saveProg = () => { try { localStorage.setItem(PROG_KEY, JSON.stringify(progMap)); localStorage.setItem(PROG_DIRTY_KEY, JSON.stringify([...sync.dirty])); } catch {} };
 const progKey = id => "j" + id;
+const cntHtml = (n, wi) => {
+  if (wi == null) return String(n);
+  return n === wi ? `${n} <span class="mk ok" title="Coincide con Semanas de Entreno" aria-label="coincide">✓</span>`
+                  : `${n} <span class="mk bad" title="No coincide con Semanas de Entreno (${wi})" aria-label="no coincide">✗</span>`;
+};
+const countItems = t => String(t || "").split(",").filter(x => x.trim() !== "").length;
 const progOf = p => { const e = p.id != null ? progMap[progKey(p.id)] : null; return e && typeof e.v === "string" ? e.v : ""; };
 function setProg(id, v) {
   const k = progKey(id);
@@ -468,6 +480,10 @@ function refreshProgInputs() {
     const v = e && typeof e.v === "string" ? e.v : "";
     if (inp.value !== v) inp.value = v;
   });
+  document.querySelectorAll("#body td[data-cnt]").forEach(td => {
+    const e = progMap[progKey(td.dataset.cnt)];
+    td.innerHTML = cntHtml(countItems(e && typeof e.v === "string" ? e.v : ""), td.dataset.wi === "" ? null : Number(td.dataset.wi));
+  });
 }
 let estStarted = "";
 async function estStart(pw) {
@@ -511,7 +527,8 @@ const COLS = [
   { key: "weeksIn", label: "Semanas de Entreno", title: "Semanas de entreno (weeksIn)" },
   { key: "talent", label: "Talento", title: "Talento (talent)" },
   { key: "formation", label: "Tipo", title: "Tipo (formation)" },
-  { key: "prog", label: "Progreso", cls: "c-prog", left: true, title: "Texto libre tuyo para cada juvenil; se sincroniza entre dispositivos" }
+  { key: "prog", label: "Progreso", cls: "c-prog", left: true, title: "Texto libre tuyo para cada juvenil; se sincroniza entre dispositivos" },
+  { key: "progN", label: "Recuento de Semanas", title: "Cantidad de elementos de Progreso (separados por coma). ✓ si coincide con Semanas de Entreno, ✗ si no" }
 ];
 
 /* ─────────────── Utilidades ─────────────── */
@@ -727,6 +744,7 @@ function buildHead() {
 }
 function sortValue(p, key) {
   if (key === "prog") return progOf(p).toLowerCase() || null;
+  if (key === "progN") return countItems(progOf(p));
   const v = p[key];
   return v === undefined || v === "" ? null : v;
 }
@@ -751,6 +769,7 @@ function visibleRows() {
 }
 function cellText(p, key) {
   if (key === "prog") return progOf(p);
+  if (key === "progN") return String(countItems(progOf(p)));
   const v = p[key];
   return v == null ? "" : String(v);
 }
@@ -796,6 +815,7 @@ function render() {
     const tds = COLS.map(c => {
       if (c.key === "n") return `<td class="c-n">${rowIdx + 1}</td>`;
       if (c.key === "name") return `<td class="l c-name">${esc(p.name)}</td>`;
+      if (c.key === "progN") return `<td class="c-progn" data-cnt="${esc(String(p.id ?? ""))}" data-wi="${p.weeksIn ?? ""}">${cntHtml(countItems(progOf(p)), p.weeksIn)}</td>`;
       if (c.key === "prog") {
         return p.id == null ? `<td class="c-prog dim">—</td>`
           : `<td class="c-prog"><input type="text" maxlength="200" data-jid="${esc(String(p.id))}" value="${esc(progOf(p))}" placeholder="Escribe aquí" aria-label="Progreso de ${esc(p.name)}" autocomplete="off"></td>`;
@@ -905,7 +925,7 @@ function init() {
   });
   ageInput("#ageMin", "ageMin"); ageInput("#ageMax", "ageMax");
   $("#copy").addEventListener("click", copyTable);
-  $("#body").addEventListener("input", ev => { const t = ev.target; if (t && t.dataset && t.dataset.jid) setProg(t.dataset.jid, t.value); });
+  $("#body").addEventListener("input", ev => { const t = ev.target; if (t && t.dataset && t.dataset.jid) { setProg(t.dataset.jid, t.value); const td = t.closest("tr").querySelector("td[data-cnt]"); if (td) td.innerHTML = cntHtml(countItems(t.value), td.dataset.wi === "" ? null : Number(td.dataset.wi)); } });
   $("#pwForm").addEventListener("submit", ev => {
     ev.preventDefault();
     const pw = $("#pwInput").value;
