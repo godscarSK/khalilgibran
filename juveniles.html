@@ -336,7 +336,7 @@ const CONFIG = {
   encPrevData: "data/juniors.prev.enc.json",   // respaldo de la semana anterior (para las flechas ▲▼ de Nivel)
   staticData: "data/juniors.json",      // alternativa sin cifrar (opcional)
   estUrl: (window.CANTERA_CONFIG && window.CANTERA_CONFIG.estUrl) || "",   // el mismo config.js de la página del plantel; vacío = Progreso solo en este navegador
-  autoAppendDiff: 1,                          // se añade el Nivel a Progreso cuando Semanas de Entreno supera al Recuento de Semanas en exactamente este número
+  autoAppendDiff: 1,                          // se añade el Nivel a Progreso cuando Semanas de Entreno supera al Recuento de Entrenos en exactamente este número
   timeoutMs: 15000
 };
 
@@ -381,6 +381,12 @@ const nf1r = new Intl.NumberFormat("es-CL", { minimumFractionDigits: 1, maximumF
 const nf3 = new Intl.NumberFormat("es-CL", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
 // Valor de cada columna derivada de la regresión: texto para mostrar y número para ordenar.
 function regCol(key, text) {
+  if (key === "first") {
+    const f = String(text || "").split(",").map(x => x.trim()).find(x => x !== "");
+    if (f === undefined) return { t: "", v: null };
+    const n = Number(f.replace(",", "."));
+    return { t: f, v: Number.isFinite(n) ? n : null };
+  }
   const r = regress(text);
   if (!r) return { t: "", v: null };
   if (key === "reg") return { t: `y = ${nf2.format(r.b)}x ${r.a < 0 ? "−" : "+"} ${nf1r.format(Math.abs(r.a))}`, v: r.b };
@@ -390,7 +396,7 @@ function regCol(key, text) {
 }
 // Umbrales de resaltado (se comparan con el valor redondeado, tal como se ve en la celda).
 const HI_TREAL = 4.5, HI_R2 = 0.7;
-const REG_KEYS = ["reg", "treal", "r2"];
+const REG_KEYS = ["first", "reg", "treal", "r2"];
 // Edad de salida: semana actual de la temporada + semanas restantes; cada tramo de 13 semanas suma un año.
 function ageOutOf(p) {
   const wk = state.calendar && Number.isFinite(state.calendar.week) ? state.calendar.week : null;
@@ -557,7 +563,7 @@ function refreshProgInputs() {
     td.innerHTML = cntHtml(countItems(e && typeof e.v === "string" ? e.v : ""), td.dataset.wi === "" ? null : Number(td.dataset.wi));
   });
 }
-// Si Semanas de Entreno supera al Recuento de Semanas en exactamente CONFIG.autoAppendDiff, se añade el Nivel actual al final de Progreso.
+// Si Semanas de Entreno supera al Recuento de Entrenos en exactamente CONFIG.autoAppendDiff, se añade el Nivel actual al final de Progreso.
 // Tras añadirlo, el Recuento sube y la condición deja de cumplirse, así que cada juvenil se actualiza una sola vez por semana de entreno.
 function autoAppend() {
   if (CONFIG.estUrl && (!sync.key || (sync.state !== "ok"))) return;   // con sincronización, solo sobre datos ya al día
@@ -620,15 +626,16 @@ const COLS = [
   { key: "ageOut", label: "Edad de Salida", title: "Edad con la que sale de la academia. Se suma la semana actual de la temporada y las Semanas Restantes: hasta 13 → Edad; 14–26 → Edad+1; 27–39 → Edad+2; 40–52 → Edad+3" },
   { key: "exitWeek", label: "Semana de Salida", title: "Semana de la temporada (1 a 13) en que las Semanas Restantes llegan a 0: semana actual + Semanas Restantes, con temporadas de 13 semanas" },
   { key: "skill", label: "Nivel", title: "Nivel (skill) general del juvenil" },
+  { key: "first", label: "Nivel Inicial", title: "Primer elemento de Progreso" },
   { key: "weeks", label: "Semanas Restantes", title: "Semanas que le faltan en la academia (Listo = puede ascender)" },
   { key: "weeksIn", label: "Semanas de Entreno", title: "Semanas de entreno (weeksIn)" },
   { key: "talent", label: "Talento", title: "Talento (talent)" },
   { key: "formation", label: "Tipo", title: "Tipo (formation)" },
   { key: "prog", label: "Progreso", cls: "c-prog", left: true, title: "Texto libre tuyo para cada juvenil; se sincroniza entre dispositivos" },
-  { key: "treal", label: "Talento real", title: "1 / pendiente de la regresión lineal de Progreso" },
+  { key: "treal", label: "Talento Estimado", title: "1 / pendiente de la regresión lineal de Progreso" },
   { key: "r2", label: "R2", title: "Coeficiente de determinación (R²) de la regresión lineal de Progreso" },
   { key: "reg", label: "Regresión", title: "Recta de regresión lineal de Progreso: y = nivel, x = semana (0, 1, 2…). El número que acompaña a x es la pendiente" },
-  { key: "progN", label: "Recuento de Semanas", title: "Cantidad de elementos de Progreso (separados por coma) menos 1. ✓ si coincide con Semanas de Entreno, ✗ si no" }
+  { key: "progN", label: "Recuento de Entrenos", title: "Cantidad de elementos de Progreso (separados por coma) menos 1. ✓ si coincide con Semanas de Entreno, ✗ si no" }
 ];
 
 /* ─────────────── Utilidades ─────────────── */
