@@ -79,7 +79,7 @@ La API entrega los datos de los juveniles bajo nombres de campo que la página b
 
 **Flechas ▲▼ en Nivel:** igual que en Plantel, el script guarda cada jueves un respaldo de los juveniles (`juniors.prev.enc.json`) y la página marca con ▲ o ▼ los juveniles cuyo Nivel subió o bajó respecto a la semana anterior (se compara por id). La primera comparación aparece después de la segunda semana de ejecuciones; sube los dos archivos a `data`. Un juvenil que no estaba la semana anterior no lleva flecha.
 
-Los textos se identifican por el id del juvenil. Junto a Progreso, la columna **Recuento de Entrenos** cuenta cuántos elementos tiene el texto (separados por coma, sin espacios) y le resta 1 (nunca baja de 0) y se actualiza mientras escribes. Muestra ✓ si el número coincide con **Sem. Entrenadas** y ✗ si no.
+Los textos se identifican por el id del juvenil. Si pegas (o escribes) números separados por espacios, la página pone una coma entre ellos automáticamente («10 12 14» queda «10,12,14»). Junto a Progreso, la columna **Recuento de Entrenos** cuenta cuántos elementos tiene el texto (separados por coma, sin espacios) y le resta 1 (nunca baja de 0) y se actualiza mientras escribes. Muestra ✓ si el número coincide con **Sem. Entrenadas** y ✗ si no.
 
 Para actualizar esta página hay que volver a ejecutar `node fetch-team.mjs` y subir `data/juniors.enc.json`.
 

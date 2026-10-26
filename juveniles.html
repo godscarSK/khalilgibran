@@ -449,6 +449,16 @@ function lfCell(p) {
     tip: r.fixed ? "Último Progreso + Sem. Restantes / 3,5" : "Último Progreso + Sem. Restantes / Talento Est." };
 }
 const lfText = p => lfCell(p).t;
+// Convierte los espacios entre números de Progreso en comas («10 12 14» → «10,12,14») y mantiene el cursor en su sitio.
+const normProgText = t => String(t).replace(/\s*,\s*/g, ",").replace(/\s+/g, ",");
+function normProgInput(inp) {
+  const v = inp.value;
+  if (!/\s/.test(v)) return;
+  const pos = inp.selectionStart ?? v.length;
+  const nv = normProgText(v), np = normProgText(v.slice(0, pos)).length;
+  inp.value = nv;
+  try { inp.setSelectionRange(np, np); } catch {}
+}
 const countItems = t => Math.max(0, String(t || "").split(",").filter(x => x.trim() !== "").length - 1);   // elementos de Progreso menos 1
 const progOf = p => { if (p.calc) return p.progText || ""; const e = p.id != null ? progMap[progKey(p.id)] : null; return e && typeof e.v === "string" ? e.v : ""; };
 function setProg(id, v) {
@@ -658,9 +668,9 @@ const COLS = [
   { key: "n",     label: "#", cls: "c-n", left: true, title: "Número de fila. Al pulsarlo vuelves al orden original." },
   { key: "name",  label: "Juvenil", cls: "c-name", left: true },
   { key: "age",   label: "Edad" },
+  { key: "skill", label: "Nivel", title: "Nivel (skill) general del juvenil" },
   { key: "ageOut", label: "Edad Final", title: "Edad con la que sale de la academia. Se suma la semana actual de la temporada y las Sem. Restantes: hasta 13 → Edad; 14–26 → Edad+1; 27–39 → Edad+2; 40–52 → Edad+3" },
   { key: "exitWeek", label: "Sem. Final", title: "Semana de la temporada (1 a 13) en que las Sem. Restantes llegan a 0: semana actual + Sem. Restantes, con temporadas de 13 semanas" },
-  { key: "skill", label: "Nivel", title: "Nivel (skill) general del juvenil" },
   { key: "lvlFinal", label: "Nivel Final", title: "Último elemento de Progreso + Sem. Restantes / 3,5 (si Sem. Entrenadas < 10 o Talento Est. < 0 o > 10); en otro caso, + Sem. Restantes / Talento Est." },
   { key: "first", label: "Nivel Inicial", title: "Primer elemento de Progreso" },
   { key: "weeks", label: "Sem. Restantes", title: "Semanas que le faltan en la academia (Listo = puede ascender)" },
@@ -1177,11 +1187,12 @@ function init() {
   $("#body").addEventListener("input", ev => {
     const t = ev.target; if (!t || !t.dataset || !t.dataset.calc || !state.calcP) return;
     const k = t.dataset.calc;
+    if (k === "progText") normProgInput(t);
     if (CALC_NUM.includes(k)) { const n = t.value === "" ? null : Number(t.value); state.calcP[k] = Number.isFinite(n) ? n : null; }
     else state.calcP[k] = t.value;
     calcRefresh();
   });
-  $("#body").addEventListener("input", ev => { const t = ev.target; if (t && t.dataset && t.dataset.jid) { setProg(t.dataset.jid, t.value); t.closest("tr").querySelectorAll("td[data-reg]").forEach(rg => { const rc = regCol(rg.dataset.f, t.value), x = rc.t; rg.textContent = x || "—"; rg.classList.toggle("dim", !x); rg.classList.toggle("hi", !!rc.hi); }); const lf = t.closest("tr").querySelector("td[data-lf]"); if (lf) { const pl = state.players.find(q => String(q.id) === lf.dataset.lf); if (pl) { const l = lfCell(pl); lf.innerHTML = l.h || "—"; lf.classList.toggle("dim", !l.t); lf.title = l.tip; } } const td = t.closest("tr").querySelector("td[data-cnt]"); if (td) td.innerHTML = cntHtml(countItems(t.value), td.dataset.wi === "" ? null : Number(td.dataset.wi)); } });
+  $("#body").addEventListener("input", ev => { const t = ev.target; if (t && t.dataset && t.dataset.jid) { normProgInput(t); setProg(t.dataset.jid, t.value); t.closest("tr").querySelectorAll("td[data-reg]").forEach(rg => { const rc = regCol(rg.dataset.f, t.value), x = rc.t; rg.textContent = x || "—"; rg.classList.toggle("dim", !x); rg.classList.toggle("hi", !!rc.hi); }); const lf = t.closest("tr").querySelector("td[data-lf]"); if (lf) { const pl = state.players.find(q => String(q.id) === lf.dataset.lf); if (pl) { const l = lfCell(pl); lf.innerHTML = l.h || "—"; lf.classList.toggle("dim", !l.t); lf.title = l.tip; } } const td = t.closest("tr").querySelector("td[data-cnt]"); if (td) td.innerHTML = cntHtml(countItems(t.value), td.dataset.wi === "" ? null : Number(td.dataset.wi)); } });
   $("#pwForm").addEventListener("submit", ev => {
     ev.preventDefault();
     const pw = $("#pwInput").value;
