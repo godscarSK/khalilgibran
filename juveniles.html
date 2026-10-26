@@ -333,14 +333,15 @@ const SKILL_ALIASES = {
   playmaker: ["playmaker", "playmaking", "pm", "cre", "creacion", "creación"],
   striker:   ["striker", "scoring", "str", "ano", "anotacion", "anotación"]
 };
-const SEP = { sk_stamina: "sepl", sk_keeper: "sepl", c_sum: "sepl" };
+const SEP = {};
 const COLS = [
   { key: "n",     label: "#", cls: "c-n", left: true, title: "Número de fila. Al pulsarlo vuelves al orden original." },
   { key: "name",  label: "Juvenil", cls: "c-name", left: true },
   { key: "age",   label: "Edad" },
-  { key: "weeks", label: "Sem.", title: "Semanas que le faltan en la academia (Listo = puede ascender)" },
-  ...SKILL_COLUMNS.map(s => ({ key: "sk_" + s.skill, label: s.label, title: s.title, skill: s.skill })),
-  { key: "c_sum", label: "Suma", title: "Suma de las 8 skills", ctr: true }
+  { key: "weeksIn", label: "Iniciales", title: "Semanas que el juvenil ya llevaba en la academia (weeksIn)" },
+  { key: "weeks", label: "Restantes", title: "Semanas que le faltan en la academia (Listo = puede ascender)" },
+  { key: "skill", label: "Skill", title: "Skill general del juvenil" },
+  { key: "talent", label: "Talento", title: "Talento (talent)" }
 ];
 
 /* ─────────────── Utilidades ─────────────── */
@@ -419,16 +420,17 @@ function juniorName(o) {
 
 function normalize(it, i) {
   const src = it && it.info && typeof it.info === "object" ? it.info : (it || {});
-  const sk = findSkillsSource(src);
   const id = src.id ?? src.juniorId ?? it?.id ?? it?.juniorId ?? null;
   return {
     n: i + 1, id,
     name: juniorName(src) || (id != null ? "Juvenil " + id : "Juvenil " + (i + 1)),
     age: num(deepFind(src, /^age$/i)), weeks: num(deepFind(src, /^weeksLeft$/i)),
-    skills: pickSkills(sk), skillKeys: Object.keys(sk), allKeys: keyPaths(src)
+    weeksIn: num(deepFind(src, /^weeksIn$/i)),
+    skill: num(src.skill ?? deepFind(src, /^skill$/i)),
+    talent: num(deepFind(src, /^talent$/i)),
+    allKeys: keyPaths(src)
   };
 }
-const sumOf = p => SKILL_KEYS.every(k => Number.isFinite(p.skills[k])) ? SKILL_KEYS.reduce((a, k) => a + p.skills[k], 0) : null;
 
 /* ─────────────── Estado y datos ─────────────── */
 const state = { players: [], q: "", ageMin: null, ageMax: null, sort: { key: "n", dir: 1 }, stamp: null, teamName: "" };
@@ -523,7 +525,9 @@ async function load() {
   const notices = [], ps = state.players;
   if (ps.length) {
     const missing = [];
-    if (!ps.some(p => SKILL_KEYS.some(k => Number.isFinite(p.skills[k])))) missing.push("skills");
+    if (!ps.some(p => p.skill != null)) missing.push("skill");
+    if (!ps.some(p => p.weeksIn != null)) missing.push("weeksIn");
+    if (!ps.some(p => p.talent != null)) missing.push("talent");
     if (!ps.some(p => p.age != null)) missing.push("edad");
     if (!ps.some(p => p.weeks != null)) missing.push("semanas restantes");
     if (missing.length) {
@@ -542,13 +546,11 @@ const tdCls = (c, extra = "") => [c.cls || "", SEP[c.key] || "", extra].filter(B
 function buildHead() {
   $("#head").innerHTML = COLS.map(c => {
     const title = c.title ? ` title="${esc(c.title)}"` : "";
-    const cls = [c.cls || "", SEP[c.key] || "", c.left ? "l" : "", c.skill || c.ctr ? "ctr" : ""].filter(Boolean).join(" ");
+    const cls = [c.cls || "", SEP[c.key] || "", c.left ? "l" : ""].filter(Boolean).join(" ");
     return `<th class="${cls}" data-key="${c.key}" scope="col" aria-sort="none"><button type="button"${title}>${esc(c.label)}</button></th>`;
   }).join("");
 }
 function sortValue(p, key) {
-  if (key.startsWith("sk_")) { const s = p.skills?.[key.slice(3)]; return Number.isFinite(s) ? s : null; }
-  if (key === "c_sum") return sumOf(p);
   const v = p[key];
   return v === undefined || v === "" ? null : v;
 }
@@ -572,8 +574,6 @@ function visibleRows() {
   return out;
 }
 function cellText(p, key) {
-  if (key.startsWith("sk_")) { const s = p.skills?.[key.slice(3)]; return Number.isFinite(s) ? String(s) : ""; }
-  if (key === "c_sum") { const v = sumOf(p); return v == null ? "" : String(v); }
   const v = p[key];
   return v == null ? "" : String(v);
 }
@@ -623,11 +623,6 @@ function render() {
         if (p.weeks == null) return `<td class="dim">—</td>`;
         return p.weeks === 0 ? `<td><span class="ready" title="Terminó la academia: puede ascender al plantel">Listo</span></td>` : `<td>${p.weeks}</td>`;
       }
-      if (c.skill) {
-        const v = p.skills?.[c.skill];
-        return Number.isFinite(v) ? `<td class="${tdCls(c, "sk")}">${v}</td>` : `<td class="${tdCls(c, "sk dim")}">—</td>`;
-      }
-      if (c.key === "c_sum") { const v = sumOf(p); return v == null ? `<td class="${tdCls(c, "pos dim")}">—</td>` : `<td class="${tdCls(c, "pos")}">${v}</td>`; }
       const t = cellText(p, c.key);
       return `<td class="${tdCls(c)}">${t === "" ? '<span class="dim">—</span>' : esc(t)}</td>`;
     }).join("");
