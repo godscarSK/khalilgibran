@@ -289,15 +289,8 @@ dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
     <label class="field">Buscar
       <input type="search" id="q" placeholder="Nombre" autocomplete="off">
     </label>
-    <div class="field" role="group" aria-label="Edad">
-      Edad
-      <span class="range">
-        <input type="number" id="ageMin" min="10" max="30" inputmode="numeric" placeholder="mín." aria-label="Edad mínima">
-        <span aria-hidden="true">–</span>
-        <input type="number" id="ageMax" min="10" max="30" inputmode="numeric" placeholder="máx." aria-label="Edad máxima">
-      </span>
-    </div>
     <div class="actions" role="group" aria-label="Acciones">
+      <button class="btn" id="stars" type="button" aria-pressed="false" title="Muestra solo a los juveniles con tres estrellas ★★★">Talentosos</button>
       <button class="btn" id="simplify" type="button" aria-pressed="false" title="Oculta las columnas Talento, Tipo, Progreso y Regresión">Simplificar</button>
       <button class="btn" id="calcBtn" type="button" aria-pressed="false" title="Muestra una fila vacía para hacer cálculos; no se guarda ni se sincroniza">Calculadora</button>
       <button class="btn" id="forgetPw" type="button" hidden title="Olvidar la contraseña en este navegador">Bloquear</button>
@@ -676,7 +669,7 @@ const SKILL_ALIASES = {
   playmaker: ["playmaker", "playmaking", "pm", "cre", "creacion", "creación"],
   striker:   ["striker", "scoring", "str", "ano", "anotacion", "anotación"]
 };
-const SEP = {};
+const SEP = { ageOut: "sepl", lvlFinal: "sepr" };   // líneas verticales: a la izquierda de Edad Final y a la derecha de Nivel Final
 const COLS = [
   { key: "n",     label: "#", cls: "c-n", left: true, title: "Número de fila. Al pulsarlo vuelves al orden original." },
   { key: "name",  label: "Juvenil", cls: "c-name", left: true },
@@ -787,7 +780,7 @@ function normalize(it, i) {
 }
 
 /* ─────────────── Estado y datos ─────────────── */
-const state = { players: [], q: "", ageMin: null, ageMax: null, sort: { key: "n", dir: 1 }, stamp: null, prevStamp: null, teamName: "", simple: false, calc: false, calcP: null };
+const state = { players: [], q: "", onlyStars: false, sort: { key: "n", dir: 1 }, stamp: null, prevStamp: null, teamName: "", simple: false, calc: false, calcP: null };
 
 async function fetchWithTimeout(url, opts = {}) {
   const ctl = new AbortController();
@@ -940,8 +933,7 @@ function visibleRows() {
   const q = state.q.trim().toLowerCase();
   const out = state.players.filter(p => {
     if (q && !p.name.toLowerCase().includes(q)) return false;
-    if (state.ageMin != null && (p.age == null || p.age < state.ageMin)) return false;
-    if (state.ageMax != null && (p.age == null || p.age > state.ageMax)) return false;
+    if (state.onlyStars && !tripleStar(p)) return false;
     return true;
   });
   const { key, dir } = state.sort;
@@ -987,17 +979,14 @@ const PREFS_KEY = "juveniles:prefs";
 let prefsReady = false;
 function savePrefs() {
   if (!prefsReady) return;
-  try { localStorage.setItem(PREFS_KEY, JSON.stringify({ ageMin: state.ageMin, ageMax: state.ageMax, sort: state.sort, simple: state.simple })); } catch {}
+  try { localStorage.setItem(PREFS_KEY, JSON.stringify({ sort: state.sort, simple: state.simple })); } catch {}
 }
 function loadPrefs() {
   let p = null;
   prefsReady = true;
   try { p = JSON.parse(localStorage.getItem(PREFS_KEY)); } catch {}
   if (!p || typeof p !== "object") return;
-  const age = v => Number.isFinite(v) ? v : null;
   if (p.simple === true) setSimple(true);
-  state.ageMin = age(p.ageMin); state.ageMax = age(p.ageMax);
-  $("#ageMin").value = state.ageMin ?? ""; $("#ageMax").value = state.ageMax ?? "";
   if (p.sort && COLS.some(c => c.key === p.sort.key) && (p.sort.dir === 1 || p.sort.dir === -1)) state.sort = { key: p.sort.key, dir: p.sort.dir };
 }
 
@@ -1012,8 +1001,8 @@ function applyColVis() {
   COLS.forEach((c, i) => {
     const off = hid.includes(c.key);
     const th = document.querySelector(`#head th:nth-child(${i + 1})`);
-    if (th) th.style.display = off ? "none" : "";
-    document.querySelectorAll(`#body td:nth-child(${i + 1})`).forEach(td => { if (!td.classList.contains("empty")) td.style.display = off ? "none" : ""; });
+    if (th) { th.style.display = off ? "none" : ""; if (SEP[c.key]) th.classList.add(SEP[c.key]); }
+    document.querySelectorAll(`#body td:nth-child(${i + 1})`).forEach(td => { if (!td.classList.contains("empty")) { td.style.display = off ? "none" : ""; if (SEP[c.key]) td.classList.add(SEP[c.key]); } });
   });
 }
 const CALC_NUM = ["age", "skill", "weeks", "weeksIn", "talent"];
@@ -1048,6 +1037,7 @@ function setCalc(on) {
   document.querySelectorAll(".toolbar .field").forEach(el => { el.hidden = on; });
   $("#copy").disabled = on;
   $("#simplify").disabled = on;
+  $("#stars").disabled = on;
 }
 function setSimple(on) {
   state.simple = on;
@@ -1095,7 +1085,7 @@ function render() {
   $("#body").innerHTML = state.calc ? calcRowHtml() : rows.length ? rows.map((p, rowIdx) => {
     const tds = COLS.map(c => cellHtml(c, p, rowIdx)).join("");
     return `<tr>${tds}</tr>`;
-  }).join("") : `<tr><td class="empty" colspan="${COLS.length}">${state.players.length ? "Ningún juvenil coincide con los filtros. Borra la búsqueda o amplía el rango de edad." : "No hay juveniles para mostrar."}</td></tr>`;
+  }).join("") : `<tr><td class="empty" colspan="${COLS.length}">${state.players.length ? "Ningún juvenil coincide con los filtros. Borra la búsqueda o desactiva «Talentosos»." : "No hay juveniles para mostrar."}</td></tr>`;
 
   applyFreeze();
   applyColVis();
@@ -1188,13 +1178,8 @@ function init() {
     render();
   });
   $("#q").addEventListener("input", e => { state.q = e.target.value; render(); });
-  const ageInput = (id, field) => $(id).addEventListener("input", e => {
-    const v = e.target.value.trim();
-    state[field] = v !== "" && Number.isFinite(Number(v)) ? Number(v) : null;
-    render();
-  });
-  ageInput("#ageMin", "ageMin"); ageInput("#ageMax", "ageMax");
   $("#copy").addEventListener("click", copyTable);
+  $("#stars").addEventListener("click", () => { state.onlyStars = !state.onlyStars; $("#stars").setAttribute("aria-pressed", String(state.onlyStars)); render(); });
   $("#simplify").addEventListener("click", () => { setSimple(!state.simple); render(); });
   $("#calcBtn").addEventListener("click", () => { setCalc(!state.calc); render(); });
   $("#body").addEventListener("input", ev => {
