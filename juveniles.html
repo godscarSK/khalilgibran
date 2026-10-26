@@ -145,6 +145,10 @@ td.c-name { text-align: left; }
 .mk { font-weight: 700; font-size: .7em; margin-left: 1px; vertical-align: super; line-height: 0; }
 .mk.ok { color: #1f8f4e; }
 .mk.bad { color: #c0392b; }
+.mk.star { color: #e0a800; font-size: 1em; vertical-align: baseline; }
+.mk.warn { color: #d11a1a; font-size: .95em; vertical-align: baseline; }
+:root[data-theme="dark"] .mk.warn { color: #ff6b6b; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .mk.warn { color: #ff6b6b; } }
 :root[data-theme="dark"] .mk.ok { color: #5fd08a; }
 :root[data-theme="dark"] .mk.bad { color: #ff7b6e; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .mk.ok { color: #5fd08a; } :root:not([data-theme="light"]) .mk.bad { color: #ff7b6e; } }
@@ -429,8 +433,22 @@ function levelFinalOf(p) {
   const div = fixed ? 3.5 : te;
   return { v: last + p.weeks / div, fixed };
 }
-const lfText = p => { const r = levelFinalOf(p); return r ? nf1r.format(r.v) : ""; };
-const lfCell = p => { const r = levelFinalOf(p); return r ? { t: nf1r.format(r.v), tip: r.fixed ? "Último Progreso + Sem. Restantes / 3,5" : "Último Progreso + Sem. Restantes / Talento Est." } : { t: "", tip: "" }; };
+// Marca del Nivel Final según la Edad Final: ★ dorada si cumple el mínimo de su edad (16: siempre; 17: ≥5; 18: ≥8; 19: ≥11; 20: ≥14); en cualquier otro caso, ! roja.
+const LF_MIN = { 16: -Infinity, 17: 5, 18: 8, 19: 11, 20: 14 };
+function lfMark(p, v) {
+  const ao = ageOutOf(p), min = ao == null ? undefined : LF_MIN[ao];
+  const ok = min !== undefined && Math.round(v * 10) / 10 >= min;
+  return ok ? { ch: "★", cls: "star", tip: `Edad Final ${ao}: cumple el criterio` }
+            : { ch: "!", cls: "warn", tip: ao == null ? "No se puede evaluar: falta la Edad Final" : (min === undefined ? `Edad Final ${ao}: sin criterio de estrella` : `Edad Final ${ao}: Nivel Final menor que ${min}`) };
+}
+function lfCell(p) {
+  const r = levelFinalOf(p);
+  if (!r) return { t: "", h: "", tip: "" };
+  const m = lfMark(p, r.v), t = nf1r.format(r.v);
+  return { t: t + " " + m.ch, h: `${t} <span class="mk ${m.cls}" title="${m.tip}" aria-label="${m.cls === "star" ? "cumple" : "no cumple"}">${m.ch}</span>`,
+    tip: r.fixed ? "Último Progreso + Sem. Restantes / 3,5" : "Último Progreso + Sem. Restantes / Talento Est." };
+}
+const lfText = p => lfCell(p).t;
 const countItems = t => Math.max(0, String(t || "").split(",").filter(x => x.trim() !== "").length - 1);   // elementos de Progreso menos 1
 const progOf = p => { if (p.calc) return p.progText || ""; const e = p.id != null ? progMap[progKey(p.id)] : null; return e && typeof e.v === "string" ? e.v : ""; };
 function setProg(id, v) {
@@ -573,7 +591,7 @@ function refreshProgInputs() {
   });
   document.querySelectorAll("#body td[data-lf]").forEach(td => {
     const p = state.players.find(q => String(q.id) === td.dataset.lf); if (!p) return;
-    const l = lfCell(p); td.textContent = l.t || "—"; td.classList.toggle("dim", !l.t); td.title = l.tip;
+    const l = lfCell(p); td.innerHTML = l.h || "—"; td.classList.toggle("dim", !l.t); td.title = l.tip;
   });
   document.querySelectorAll("#body td[data-cnt]").forEach(td => {
     const e = progMap[progKey(td.dataset.cnt)];
@@ -1018,7 +1036,7 @@ function cellHtml(c, p, rowIdx) {
     if (c.key === "name") return `<td class="l c-name">${esc(p.name)}</td>`;
     if (REG_KEYS.includes(c.key)) { const rc = regCol(c.key, progOf(p)), t = rc.t; return `<td class="c-reg${t ? "" : " dim"}${rc.hi ? " hi" : ""}" ${p.calc ? "" : `data-reg="${esc(String(p.id ?? ""))}"`} data-f="${c.key}">${t ? esc(t) : "—"}</td>`; }
     if (c.key === "progN") return `<td class="c-progn" ${p.calc ? "" : `data-cnt="${esc(String(p.id ?? ""))}"`} data-wi="${p.weeksIn ?? ""}">${cntHtml(countItems(progOf(p)), p.weeksIn)}</td>`;
-    if (c.key === "lvlFinal") { const l = lfCell(p); return `<td class="c-lf${l.t ? "" : " dim"}" ${p.calc ? "" : `data-lf="${esc(String(p.id ?? ""))}"`}${l.tip ? ` title="${l.tip}"` : ""}>${l.t || "—"}</td>`; }
+    if (c.key === "lvlFinal") { const l = lfCell(p); return `<td class="c-lf${l.t ? "" : " dim"}" ${p.calc ? "" : `data-lf="${esc(String(p.id ?? ""))}"`}${l.tip ? ` title="${l.tip}"` : ""}>${l.h || "—"}</td>`; }
   if (c.key === "exitWeek") {
       const e = exitWeekOf(p);
       if (!e) return `<td class="dim">—</td>`;
@@ -1163,7 +1181,7 @@ function init() {
     else state.calcP[k] = t.value;
     calcRefresh();
   });
-  $("#body").addEventListener("input", ev => { const t = ev.target; if (t && t.dataset && t.dataset.jid) { setProg(t.dataset.jid, t.value); t.closest("tr").querySelectorAll("td[data-reg]").forEach(rg => { const rc = regCol(rg.dataset.f, t.value), x = rc.t; rg.textContent = x || "—"; rg.classList.toggle("dim", !x); rg.classList.toggle("hi", !!rc.hi); }); const lf = t.closest("tr").querySelector("td[data-lf]"); if (lf) { const pl = state.players.find(q => String(q.id) === lf.dataset.lf); if (pl) { const l = lfCell(pl); lf.textContent = l.t || "—"; lf.classList.toggle("dim", !l.t); lf.title = l.tip; } } const td = t.closest("tr").querySelector("td[data-cnt]"); if (td) td.innerHTML = cntHtml(countItems(t.value), td.dataset.wi === "" ? null : Number(td.dataset.wi)); } });
+  $("#body").addEventListener("input", ev => { const t = ev.target; if (t && t.dataset && t.dataset.jid) { setProg(t.dataset.jid, t.value); t.closest("tr").querySelectorAll("td[data-reg]").forEach(rg => { const rc = regCol(rg.dataset.f, t.value), x = rc.t; rg.textContent = x || "—"; rg.classList.toggle("dim", !x); rg.classList.toggle("hi", !!rc.hi); }); const lf = t.closest("tr").querySelector("td[data-lf]"); if (lf) { const pl = state.players.find(q => String(q.id) === lf.dataset.lf); if (pl) { const l = lfCell(pl); lf.innerHTML = l.h || "—"; lf.classList.toggle("dim", !l.t); lf.title = l.tip; } } const td = t.closest("tr").querySelector("td[data-cnt]"); if (td) td.innerHTML = cntHtml(countItems(t.value), td.dataset.wi === "" ? null : Number(td.dataset.wi)); } });
   $("#pwForm").addEventListener("submit", ev => {
     ev.preventDefault();
     const pw = $("#pwInput").value;
