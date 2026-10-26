@@ -338,7 +338,7 @@ const CONFIG = {
   encPrevData: "data/juniors.prev.enc.json",   // respaldo de la semana anterior (para las flechas ▲▼ de Nivel)
   staticData: "data/juniors.json",      // alternativa sin cifrar (opcional)
   estUrl: (window.CANTERA_CONFIG && window.CANTERA_CONFIG.estUrl) || "",   // el mismo config.js de la página del plantel; vacío = Progreso solo en este navegador
-  autoAppendDiff: 1,                          // se añade el Nivel a Progreso cuando Semanas de Entreno supera al Recuento de Entrenos en exactamente este número
+  autoAppendDiff: 1,                          // se añade el Nivel a Progreso cuando Sem. Entrenadas supera al Recuento de Entrenos en exactamente este número
   timeoutMs: 15000
 };
 
@@ -360,8 +360,8 @@ const saveProg = () => { try { localStorage.setItem(PROG_KEY, JSON.stringify(pro
 const progKey = id => "j" + id;
 const cntHtml = (n, wi) => {
   if (wi == null) return String(n);
-  return n === wi ? `${n} <span class="mk ok" title="Coincide con Semanas de Entreno" aria-label="coincide">✓</span>`
-                  : `${n} <span class="mk bad" title="No coincide con Semanas de Entreno (${wi})" aria-label="no coincide">✗</span>`;
+  return n === wi ? `${n} <span class="mk ok" title="Coincide con Sem. Entrenadas" aria-label="coincide">✓</span>`
+                  : `${n} <span class="mk bad" title="No coincide con Sem. Entrenadas (${wi})" aria-label="no coincide">✗</span>`;
 };
 // Regresión lineal de los elementos de Progreso: y = valor del elemento, x = posición (0, 1, 2…). Los elementos no numéricos se omiten.
 function regress(text) {
@@ -406,20 +406,16 @@ function ageOutOf(p) {
   const n = wk + p.weeks;
   return p.age + (n <= 13 ? 0 : Math.floor((n - 1) / 13));
 }
-// Semana de salida: semana de la temporada (1–13) en que las Semanas Restantes llegan a 0; seasons = temporadas que faltan hasta entonces.
+// Semana de salida: semana de la temporada (1–13) en que las Sem. Restantes llegan a 0; seasons = temporadas que faltan hasta entonces.
 function exitWeekOf(p) {
   const wk = state.calendar && Number.isFinite(state.calendar.week) ? state.calendar.week : null;
   if (wk == null || !Number.isFinite(p.weeks)) return null;
   const n = wk + p.weeks - 1;
   return { week: (n % 13) + 1, seasons: Math.floor(n / 13) };
 }
-// Color de cada Edad de Salida (tono HSL). Fijos: 16 naranjo, 18 verde; el resto cicla por una paleta que no se parece a esos dos.
-const AGE_HUES = { 16: 28, 18: 130 };
-const AGE_PALETTE = [215, 335, 180, 0, 250, 310, 55, 275];   // azul, rosado, celeste, rojo, índigo, magenta, amarillo, violeta
-function ageHue(a) {
-  if (a in AGE_HUES) return AGE_HUES[a];
-  return AGE_PALETTE[(((a - 15) % AGE_PALETTE.length) + AGE_PALETTE.length) % AGE_PALETTE.length];
-}
+// Color de cada Edad Final (matiz HSL). Solo las edades de la tabla tienen color; el resto se muestra sin color.
+const AGE_HUES = { 16: 28, 17: 335, 18: 165, 19: 52, 20: 250, 21: 200 };   // 16 naranjo, 17 rosado, 18 verde turquesa, 19 amarillo, 20 índigo, 21 celeste
+const ageHue = a => AGE_HUES[a] ?? null;   // otras edades: sin color
 const countItems = t => Math.max(0, String(t || "").split(",").filter(x => x.trim() !== "").length - 1);   // elementos de Progreso menos 1
 const progOf = p => { if (p.calc) return p.progText || ""; const e = p.id != null ? progMap[progKey(p.id)] : null; return e && typeof e.v === "string" ? e.v : ""; };
 function setProg(id, v) {
@@ -565,7 +561,7 @@ function refreshProgInputs() {
     td.innerHTML = cntHtml(countItems(e && typeof e.v === "string" ? e.v : ""), td.dataset.wi === "" ? null : Number(td.dataset.wi));
   });
 }
-// Si Semanas de Entreno supera al Recuento de Entrenos en exactamente CONFIG.autoAppendDiff, se añade el Nivel actual al final de Progreso.
+// Si Sem. Entrenadas supera al Recuento de Entrenos en exactamente CONFIG.autoAppendDiff, se añade el Nivel actual al final de Progreso.
 // Tras añadirlo, el Recuento sube y la condición deja de cumplirse, así que cada juvenil se actualiza una sola vez por semana de entreno.
 function autoAppend() {
   if (CONFIG.estUrl && (!sync.key || (sync.state !== "ok"))) return;   // con sincronización, solo sobre datos ya al día
@@ -625,19 +621,19 @@ const COLS = [
   { key: "n",     label: "#", cls: "c-n", left: true, title: "Número de fila. Al pulsarlo vuelves al orden original." },
   { key: "name",  label: "Juvenil", cls: "c-name", left: true },
   { key: "age",   label: "Edad" },
-  { key: "ageOut", label: "Edad de Salida", title: "Edad con la que sale de la academia. Se suma la semana actual de la temporada y las Semanas Restantes: hasta 13 → Edad; 14–26 → Edad+1; 27–39 → Edad+2; 40–52 → Edad+3" },
-  { key: "exitWeek", label: "Semana de Salida", title: "Semana de la temporada (1 a 13) en que las Semanas Restantes llegan a 0: semana actual + Semanas Restantes, con temporadas de 13 semanas" },
+  { key: "ageOut", label: "Edad Final", title: "Edad con la que sale de la academia. Se suma la semana actual de la temporada y las Sem. Restantes: hasta 13 → Edad; 14–26 → Edad+1; 27–39 → Edad+2; 40–52 → Edad+3" },
+  { key: "exitWeek", label: "Sem. Final", title: "Semana de la temporada (1 a 13) en que las Sem. Restantes llegan a 0: semana actual + Sem. Restantes, con temporadas de 13 semanas" },
   { key: "skill", label: "Nivel", title: "Nivel (skill) general del juvenil" },
   { key: "first", label: "Nivel Inicial", title: "Primer elemento de Progreso" },
-  { key: "weeks", label: "Semanas Restantes", title: "Semanas que le faltan en la academia (Listo = puede ascender)" },
-  { key: "weeksIn", label: "Semanas de Entreno", title: "Semanas de entreno (weeksIn)" },
+  { key: "weeks", label: "Sem. Restantes", title: "Semanas que le faltan en la academia (Listo = puede ascender)" },
+  { key: "weeksIn", label: "Sem. Entrenadas", title: "Semanas de entreno (weeksIn)" },
   { key: "talent", label: "Talento", title: "Talento (talent)" },
   { key: "formation", label: "Tipo", title: "Tipo (formation)" },
   { key: "prog", label: "Progreso", cls: "c-prog", left: true, title: "Texto libre tuyo para cada juvenil; se sincroniza entre dispositivos" },
-  { key: "treal", label: "Talento Estimado", title: "1 / pendiente de la regresión lineal de Progreso" },
+  { key: "treal", label: "Talento Est.", title: "1 / pendiente de la regresión lineal de Progreso" },
   { key: "r2", label: "R2", title: "Coeficiente de determinación (R²) de la regresión lineal de Progreso" },
   { key: "reg", label: "Regresión", title: "Recta de regresión lineal de Progreso: y = nivel, x = semana (0, 1, 2…). El número que acompaña a x es la pendiente" },
-  { key: "progN", label: "Recuento de Entrenos", title: "Cantidad de elementos de Progreso (separados por coma) menos 1. ✓ si coincide con Semanas de Entreno, ✗ si no" }
+  { key: "progN", label: "Recuento de Entrenos", title: "Cantidad de elementos de Progreso (separados por coma) menos 1. ✓ si coincide con Sem. Entrenadas, ✗ si no" }
 ];
 
 /* ─────────────── Utilidades ─────────────── */
@@ -845,7 +841,7 @@ async function load() {
     if (!ps.some(p => p.age != null)) missing.push("edad");
     if (!ps.some(p => p.weeks != null)) missing.push("semanas restantes");
     if (!(state.calendar && Number.isFinite(state.calendar.week))) {
-      notices.push({ html: `<p><strong>No tengo la semana actual de la temporada</strong> (campo <code>seasonweek</code>), así que las columnas Edad de Salida y Semana de Salida quedan en «—». Vuelve a ejecutar <code>node fetch-team.mjs</code> con la versión nueva y sube <code>juniors.enc.json</code>; si el aviso del script dice que no encontró la semana, pásamelo.</p>` });
+      notices.push({ html: `<p><strong>No tengo la semana actual de la temporada</strong> (campo <code>seasonweek</code>), así que las columnas Edad Final y Sem. Final quedan en «—». Vuelve a ejecutar <code>node fetch-team.mjs</code> con la versión nueva y sube <code>juniors.enc.json</code>; si el aviso del script dice que no encontró la semana, pásamelo.</p>` });
     }
     if (missing.length) {
       notices.push({ html:
@@ -1004,9 +1000,10 @@ function cellHtml(c, p, rowIdx) {
       const e = exitWeekOf(p);
       if (!e) return `<td class="dim">—</td>`;
       const tip = e.seasons === 0 ? "En la temporada actual" : e.seasons === 1 ? "En la próxima temporada" : `En ${e.seasons} temporadas más`;
-      return `<td title="${tip}">${e.week}</td>`;
+      const ao = ageOutOf(p), h = ao == null ? null : ageHue(ao);
+        return `<td title="${tip}">${h == null ? e.week : `<span class="ao" style="--h:${h}">${e.week}</span>`}</td>`;
     }
-    if (c.key === "ageOut") { const v = ageOutOf(p); return v == null ? `<td class="dim">—</td>` : `<td><span class="ao" style="--h:${ageHue(v)}">${v}</span></td>`; }
+    if (c.key === "ageOut") { const v = ageOutOf(p); return v == null ? `<td class="dim">—</td>` : `<td>${ageHue(v) == null ? v : `<span class="ao" style="--h:${ageHue(v)}">${v}</span>`}</td>`; }
     if (c.key === "skill") {
       const v = p.skill;
       if (!Number.isFinite(v)) return `<td class="${tdCls(c)}"><span class="dim">—</span></td>`;
@@ -1052,7 +1049,7 @@ function render() {
 
   const total = state.players.length;
   const when = state.stamp ? fmtDate(state.stamp) : "";
-  if (state.calc) { $("#lede").innerHTML = "<strong>Calculadora:</strong> escribe el Progreso y se calculan Talento Estimado, R2, Regresión y Recuento. Lo que escribas aquí no se guarda ni se sincroniza."; return; }
+  if (state.calc) { $("#lede").innerHTML = "<strong>Calculadora:</strong> escribe el Progreso y se calculan Talento Est., R2, Regresión y Recuento. Lo que escribas aquí no se guarda ni se sincroniza."; return; }
   $("#lede").innerHTML = total
     ? `Juveniles: <strong>${total} en la academia</strong>, ${rows.length} visibles.${when ? esc(` Datos al ${when}${when.endsWith(".") ? "" : "."}`) : ""}${state.prevStamp ? esc(` Flechas ▲▼ en Nivel: cambios respecto al ${fmtDate(state.prevStamp).replace(/,.*$/, "")}.`) : ""}<span id="syncMsg">${syncText() ? " " + esc(syncText()) : ""}</span>`
     : "No hay juveniles para mostrar.";
