@@ -340,10 +340,11 @@ const COLS = [
   { key: "n",     label: "#", cls: "c-n", left: true, title: "Número de fila. Al pulsarlo vuelves al orden original." },
   { key: "name",  label: "Juvenil", cls: "c-name", left: true },
   { key: "age",   label: "Edad" },
-  { key: "weeksIn", label: "Iniciales", title: "Semanas que el juvenil ya llevaba en la academia (weeksIn)" },
+  { key: "skill", label: "Nivel", title: "Nivel (skill) general del juvenil" },
   { key: "weeks", label: "Restantes", title: "Semanas que le faltan en la academia (Listo = puede ascender)" },
-  { key: "skill", label: "Skill", title: "Skill general del juvenil" },
-  { key: "talent", label: "Talento", title: "Talento (talent)" }
+  { key: "weeksIn", label: "Entrenos", title: "Entrenos (weeksIn)" },
+  { key: "talent", label: "Talento", title: "Talento (talent)" },
+  { key: "formation", label: "Tipo", title: "Tipo (formation)" }
 ];
 
 /* ─────────────── Utilidades ─────────────── */
@@ -430,6 +431,7 @@ function normalize(it, i) {
     weeksIn: num(deepFind(src, /^weeksIn$/i)),
     skill: num(src.skill ?? deepFind(src, /^skill$/i)),
     talent: num(deepFind(src, /^talent$/i)),
+    formation: (v => v == null || typeof v === "object" ? null : v)(src.formation ?? deepFind(src, /^formation$/i)),
     allKeys: keyPaths(src)
   };
 }
@@ -531,6 +533,7 @@ async function load() {
     if (!ps.some(p => p.skill != null)) missing.push("skill");
     if (!ps.some(p => p.weeksIn != null)) missing.push("weeksIn");
     if (!ps.some(p => p.talent != null)) missing.push("talent");
+    if (!ps.some(p => p.formation != null)) missing.push("formation");
     if (!ps.some(p => p.age != null)) missing.push("edad");
     if (!ps.some(p => p.weeks != null)) missing.push("semanas restantes");
     if (missing.length) {

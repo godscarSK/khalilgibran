@@ -60,7 +60,7 @@ Finanzas y Salario dependen de los nombres de campo que entregue la API de Sokke
 
 ## Página de juveniles
 
-Tabla con los juveniles de la academia del equipo: nombre, edad, **Iniciales** (`weeksIn`), **Restantes** (semanas que le faltan; «Listo» cuando terminó la academia y puede ascender), **Skill** (la skill general del juvenil) y **Talento** (`talent`). Se puede buscar por nombre, filtrar por rango de edad, ordenar por cualquier columna y copiar como CSV.
+Tabla con los juveniles de la academia del equipo: nombre, edad, **Nivel** (campo `skill`), **Restantes** (semanas que le faltan; «Listo» cuando terminó la academia y puede ascender), **Entrenos** (`weeksIn`), **Talento** (`talent`) y **Tipo** (`formation`). Se puede buscar por nombre, filtrar por rango de edad, ordenar por cualquier columna y copiar como CSV.
 
 La API entrega los datos de los juveniles bajo nombres de campo que la página busca de forma flexible. Si no encuentra edad, semanas, skill o talento, muestra un aviso con los nombres de los campos disponibles, para poder ajustarla. Para actualizar esta página hay que volver a ejecutar `node fetch-team.mjs` y subir `data/juniors.enc.json`.
 

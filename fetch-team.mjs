@@ -175,7 +175,7 @@ async function readCalendar(me) {
   }
   const pick = re => found.find(f => re.test(f.path.split(".").pop()) && Number.isFinite(Number(f.value)));
   const season = pick(/^season(Number|No|Id|Num)?$/i);
-  const week = pick(/^(week|weekNumber|weekNo|gameWeek|weekOfSeason|seasonWeek)$/i);
+  const week = pick(/^season_?week$/i);
   return { season: season ? Number(season.value) : null, week: week ? Number(week.value) : null, fields: found.slice(0, 40) };
 }
 
