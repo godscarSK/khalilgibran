@@ -120,15 +120,15 @@ button.btn[aria-pressed="true"] { background: var(--ink); color: var(--panel); b
 .notice p:last-child { margin: 0; }
 
 .tablewrap { overflow: auto; max-height: 78vh; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; }
-table { border-collapse: separate; border-spacing: 0; width: 100%; font-variant-numeric: tabular-nums; }
-th, td { padding: 7px 8px; white-space: nowrap; text-align: center; border-bottom: 1px solid var(--line); }
+table { border-collapse: separate; border-spacing: 0; width: 100%; font-variant-numeric: tabular-nums; font-size: .93rem; line-height: 1.25; }
+th, td { padding: 3px 6px; white-space: nowrap; text-align: center; border-bottom: 1px solid var(--line); }
 th {
   position: sticky; top: 0; z-index: 2; background: var(--head-bg); font-weight: 600;
   font-size: 0.9rem; padding: 0; border-bottom: 2px solid var(--ink);
 }
 th button {
   all: unset; box-sizing: border-box; display: flex; align-items: center; justify-content: center;
-  gap: 4px; width: 100%; padding: 9px 10px; cursor: pointer;
+  gap: 4px; width: 100%; padding: 6px 7px; cursor: pointer;
 }
 th button:hover { background: rgba(0,0,0,.06); }
 th button:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
@@ -145,19 +145,19 @@ td.c-name { text-align: left; }
 .mk { font-weight: 700; font-size: .7em; margin-left: 1px; vertical-align: super; line-height: 0; }
 .mk.ok { color: #1f8f4e; }
 .mk.bad { color: #c0392b; }
-.tipo { display: inline-block; margin-left: 6px; padding: 0 7px; border-radius: 999px; font-size: .68rem; font-weight: 700; letter-spacing: .03em; vertical-align: middle; background: var(--line); color: var(--ink); border: 1px solid var(--muted); white-space: nowrap; }
+.tipo { display: inline-block; margin-left: 6px; padding: 0 7px; border-radius: 999px; font-size: .68rem; font-weight: 700; letter-spacing: .03em; vertical-align: .22em; line-height: 1.25; background: var(--line); color: var(--ink); border: 1px solid var(--muted); white-space: nowrap; }
 .tipo.gk { background: #fbefc2; border-color: #c9a227; color: #5c4700; }
 :root[data-theme="dark"] .tipo.gk { background: #4a3f12; border-color: #c9a227; color: #f6e29b; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tipo.gk { background: #4a3f12; border-color: #c9a227; color: #f6e29b; } }
-.stars { color: #e0a800; font-weight: 700; letter-spacing: 1px; white-space: nowrap; }
-.mk.star { color: #e0a800; font-size: 1em; vertical-align: baseline; }
-.mk.warn { color: #d11a1a; font-size: .95em; vertical-align: baseline; }
+.stars { color: #e0a800; font-weight: 700; letter-spacing: 1px; white-space: nowrap; vertical-align: .18em; line-height: 1.1; }
+.mk.star { color: #e0a800; font-size: 1em; vertical-align: .22em; }
+.mk.warn { color: #d11a1a; font-size: .95em; vertical-align: .22em; }
 :root[data-theme="dark"] .mk.warn { color: #ff6b6b; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .mk.warn { color: #ff6b6b; } }
 :root[data-theme="dark"] .mk.ok { color: #5fd08a; }
 :root[data-theme="dark"] .mk.bad { color: #ff7b6e; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .mk.ok { color: #5fd08a; } :root:not([data-theme="light"]) .mk.bad { color: #ff7b6e; } }
-.ao { display: inline-block; min-width: 2.2em; padding: 1px 8px; border-radius: 999px; font-weight: 700; font-variant-numeric: tabular-nums;
+.ao { display: inline-block; min-width: 2em; padding: 0 7px; line-height: 1.35; border-radius: 999px; font-weight: 700; font-variant-numeric: tabular-nums;
   background: hsl(var(--h) 65% 86%); color: hsl(var(--h) 65% 20%); border: 1px solid hsl(var(--h) 45% 62%); }
 :root[data-theme="dark"] .ao { background: hsl(var(--h) 40% 25%); color: hsl(var(--h) 75% 86%); border-color: hsl(var(--h) 40% 45%); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .ao { background: hsl(var(--h) 40% 25%); color: hsl(var(--h) 75% 86%); border-color: hsl(var(--h) 40% 45%); } }
@@ -166,13 +166,13 @@ td.c-reg.hi { background: #d6f0dd; color: #14532d; font-weight: 700; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) td.c-reg.hi { background: #1f4130; color: #b8f0cc; } }
 td.c-reg { white-space: nowrap; font-variant-numeric: tabular-nums; }
 th.c-prog, td.c-prog { min-width: 14rem; text-align: left; }
-td.c-prog input { width: 100%; min-width: 12rem; box-sizing: border-box; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; min-height: 32px; }
+td.c-prog input { width: 100%; min-width: 12rem; box-sizing: border-box; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 1px 7px; min-height: 26px; }
 td.c-prog input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 tbody tr:nth-child(even) td { background-color: var(--zebra); }
 tbody tr:hover td { background-color: color-mix(in srgb, var(--accent) 7%, var(--panel)); }
 
 th.c-chk, td.c-chk { width: 2.4rem; min-width: 2.4rem; padding-left: 4px; padding-right: 4px; text-align: center; }
-select.chk { width: 3.1rem; height: 30px; padding: 0 2px; font: inherit; font-weight: 700; font-size: 1.05rem; text-align: center; text-align-last: center; cursor: pointer; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); }
+select.chk { width: 3rem; height: 24px; padding: 0 2px; font: inherit; font-weight: 700; font-size: 1.05rem; text-align: center; text-align-last: center; cursor: pointer; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); }
 select.chk[data-v="1"] { color: #1d6fdc; border-color: #1d6fdc; }
 select.chk[data-v="2"] { color: #d11a1a; border-color: #d11a1a; }
 select.chk option[value="1"] { color: #1d6fdc; }
@@ -1218,7 +1218,7 @@ function render() {
   const when = state.stamp ? fmtDate(state.stamp) : "";
   if (state.calc) { $("#lede").innerHTML = "<strong>Calculadora:</strong> escribe el Progreso y se calculan Talento Est., R2, Regresión y Recuento. Lo que escribas aquí no se guarda ni se sincroniza."; return; }
   $("#lede").innerHTML = total
-    ? `Juveniles: <strong>${total} en la academia</strong>, ${rows.length} visibles.${when ? esc(` Datos al ${when}${when.endsWith(".") ? "" : "."}`) : ""}${state.prevStamp ? esc(` Flechas ▲▼ en Nivel: cambios respecto al ${fmtDate(state.prevStamp).replace(/,.*$/, "")}.`) : ""}<span id="syncMsg">${syncText() ? " " + esc(syncText()) : ""}</span>`
+    ? `${when ? esc(`Datos al ${when}${when.endsWith(".") ? "" : "."}`) : ""}${state.prevStamp ? esc(`${when ? " " : ""}Flechas ▲▼ en Nivel: cambios respecto al ${fmtDate(state.prevStamp).replace(/,.*$/, "")}.`) : ""}<span id="syncMsg">${syncText() ? " " + esc(syncText()) : ""}</span>`
     : "No hay juveniles para mostrar.";
 }
 
