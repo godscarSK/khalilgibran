@@ -120,15 +120,15 @@ button.btn[aria-pressed="true"] { background: var(--ink); color: var(--panel); b
 .notice p:last-child { margin: 0; }
 
 .tablewrap { overflow: auto; max-height: 78vh; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; }
-table { border-collapse: separate; border-spacing: 0; width: 100%; font-variant-numeric: tabular-nums; font-size: .93rem; line-height: 1.25; }
-th, td { padding: 3px 6px; white-space: nowrap; text-align: center; border-bottom: 1px solid var(--line); }
+table { border-collapse: separate; border-spacing: 0; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { padding: 7px 8px; white-space: nowrap; text-align: center; border-bottom: 1px solid var(--line); }
 th {
   position: sticky; top: 0; z-index: 2; background: var(--head-bg); font-weight: 600;
   font-size: 0.9rem; padding: 0; border-bottom: 2px solid var(--ink);
 }
 th button {
   all: unset; box-sizing: border-box; display: flex; align-items: center; justify-content: center;
-  gap: 4px; width: 100%; padding: 6px 7px; cursor: pointer;
+  gap: 4px; width: 100%; padding: 9px 10px; cursor: pointer;
 }
 th button:hover { background: rgba(0,0,0,.06); }
 th button:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
@@ -148,7 +148,7 @@ th.frz { z-index: 3; background: var(--head-bg); }
 td.c-name a { color: var(--ink); font-weight: 600; text-decoration-color: var(--line); text-underline-offset: 3px; }
 td.c-name a:hover { text-decoration-color: var(--accent); }
 select.est {
-  font: inherit; font-size: .85rem; width: 100%; min-height: 24px; padding: 1px 2px; border-radius: 4px; cursor: pointer;
+  font: inherit; font-size: .85rem; width: 100%; min-height: 30px; padding: 2px 2px; border-radius: 4px; cursor: pointer;
   color: var(--ink); background: var(--bg); border: 1px solid var(--line);
 }
 select.est[data-v="GK"] { background: #fbefc2; border-color: #c9a227; font-weight: 700; }

@@ -1014,18 +1014,24 @@ function cellText(p, key) {
   return v == null ? "" : String(v);
 }
 
-const FREEZE_KEYS = ["n", "chk", "name"];
+const FREEZE_KEYS = ["n", "chk", "name", "age", "skill"];   // columnas inmovilizadas al hacer scroll horizontal: hasta Nivel
 function applyFreeze() {
+  const wrap = document.querySelector(".tablewrap");
   document.querySelectorAll(".frz").forEach(el => { el.classList.remove("frz", "frz-last"); el.style.left = ""; });
-  if (document.querySelector("#body td.empty")) return;
+  if (!wrap || document.querySelector("#body td.empty")) return;
+  const ths = FREEZE_KEYS.map(k => document.querySelector(`#head th[data-key="${k}"]`)).filter(th => th && th.offsetWidth > 0);
+  const limit = (wrap.clientWidth || window.innerWidth) * 0.8;   // en pantallas angostas se inmovilizan menos columnas
   let left = 0;
-  FREEZE_KEYS.forEach((k, idx) => {
-    const th = document.querySelector(`#head th[data-key="${k}"]`);
-    if (!th) return;
-    const col = COLS.findIndex(c => c.key === k);
+  const chosen = [];
+  ths.forEach((th, i) => {
+    const w = th.getBoundingClientRect().width;
+    if (i < 3 || left + w <= limit) { chosen.push([th, left]); left += w; }
+  });
+  chosen.forEach(([th, l], idx) => {
+    const last = idx === chosen.length - 1;
+    const col = COLS.findIndex(c => c.key === th.dataset.key);
     const cells = [th, ...document.querySelectorAll(`#body tr td:nth-child(${col + 1})`)];
-    for (const el of cells) { el.classList.add("frz"); if (idx === FREEZE_KEYS.length - 1) el.classList.add("frz-last"); el.style.left = left + "px"; }
-    left += th.getBoundingClientRect().width;
+    for (const el of cells) { el.classList.add("frz"); if (last) el.classList.add("frz-last"); el.style.left = l + "px"; }
   });
 }
 window.addEventListener("resize", () => applyFreeze());
@@ -1213,8 +1219,8 @@ function render() {
     return `<tr>${tds}</tr>`;
   }).join("") : `<tr><td class="empty" colspan="${COLS.length}">${state.players.length ? "Ningún juvenil coincide con los filtros. Borra la búsqueda o desactiva «Talentosos»." : "No hay juveniles para mostrar."}</td></tr>`;
 
-  applyFreeze();
   applyColVis();
+  applyFreeze();
   document.querySelectorAll("#head th").forEach(th => {
     th.setAttribute("aria-sort", th.dataset.key === state.sort.key ? (state.sort.dir === 1 ? "ascending" : "descending") : "none");
   });
