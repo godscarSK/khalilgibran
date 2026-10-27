@@ -125,7 +125,7 @@ th, td { padding: 3px 6px; white-space: nowrap; text-align: center; border-botto
 th {
   white-space: normal;
   position: sticky; top: 0; z-index: 2; background: var(--head-bg); font-weight: 600;
-  font-size: 1rem; padding: 0; border-bottom: 2px solid var(--ink);
+  font-size: 0.85rem; padding: 0; border-bottom: 2px solid var(--ink);
 }
 th button {
   all: unset; box-sizing: border-box; display: flex; align-items: center; justify-content: center;
@@ -134,7 +134,7 @@ th button {
 }
 th button:hover { background: rgba(0,0,0,.06); }
 th button:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
-th.c-name button { justify-content: flex-start; }
+th.c-name button { justify-content: center; }
 th[aria-sort="ascending"] button::after { content: "▲"; font-size: .65em; color: var(--accent); }
 th[aria-sort="descending"] button::after { content: "▼"; font-size: .65em; color: var(--accent); }
 td.c-name { text-align: left; }
@@ -710,7 +710,7 @@ const SKILL_ALIASES = {
   playmaker: ["playmaker", "playmaking", "pm", "cre", "creacion", "creación"],
   striker:   ["striker", "scoring", "str", "ano", "anotacion", "anotación"]
 };
-const SEP = { ageOut: "sepl", lvlFinal: "sepr" };   // líneas verticales: a la izquierda de Edad Final y a la derecha de Nivel Final
+const SEP = { age: "sepl", ageOut: "sepl", lvlFinal: "sepr" };   // líneas verticales: a la izquierda de Edad y de Edad Final, y a la derecha de Nivel Final
 const COLS = [
   { key: "n",     label: "#", cls: "c-n", left: true, title: "Número de fila. Al pulsarlo vuelves al orden original." },
   { key: "chk",   label: "Pos.", cls: "c-chk", title: "Marca manual: GK, DEF, MID, ATT o ✘; se sincroniza entre dispositivos. Al pulsar el encabezado se ordenan GK, DEF, MID, ATT y ✘" },
@@ -1119,7 +1119,7 @@ function renderSummary() {
 }
 
 /* ─────────────── Simplificar y Calculadora ─────────────── */
-const SIMPLE_HIDE = ["talent", "prog", "reg"];
+const SIMPLE_HIDE = ["talent", "prog", "reg", "progN"];
 // En la calculadora solo quedan visibles las últimas cinco columnas (desde Progreso); Simplificar no aplica ahí.
 const CALC_SHOW = COLS.slice(COLS.findIndex(c => c.key === "prog")).map(c => c.key);
 const hiddenKeys = () => state.calc ? COLS.map(c => c.key).filter(k => !CALC_SHOW.includes(k)) : state.simple ? SIMPLE_HIDE : [];
