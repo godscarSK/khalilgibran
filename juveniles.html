@@ -123,12 +123,14 @@ button.btn[aria-pressed="true"] { background: var(--ink); color: var(--panel); b
 table { border-collapse: separate; border-spacing: 0; width: 100%; font-variant-numeric: tabular-nums; font-size: .93rem; line-height: 1.25; }
 th, td { padding: 3px 6px; white-space: nowrap; text-align: center; border-bottom: 1px solid var(--line); }
 th {
+  white-space: normal;
   position: sticky; top: 0; z-index: 2; background: var(--head-bg); font-weight: 600;
   font-size: 0.9rem; padding: 0; border-bottom: 2px solid var(--ink);
 }
 th button {
   all: unset; box-sizing: border-box; display: flex; align-items: center; justify-content: center;
-  gap: 4px; width: 100%; padding: 6px 7px; cursor: pointer;
+  gap: 4px; width: 100%; padding: 6px 5px; cursor: pointer;
+  white-space: normal; line-height: 1.15; text-wrap: balance; text-align: center; min-height: calc(2.3em + 12px);   /* encabezados de hasta dos líneas, todos con la misma altura */
 }
 th button:hover { background: rgba(0,0,0,.06); }
 th button:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
