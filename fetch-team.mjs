@@ -196,7 +196,7 @@ async function readSchool(teamId, currencyHint) {
     if (["string", "number", "boolean"].includes(typeof o)) fields.push({ src, path, value: o });
   };
   if (junMeta) { walk(junMeta, "junior"); ok.push("/junior"); }
-  const eps = ["/junior/school", "/junior/academy", "/junior/info", "/junior/overview", "/junior/coach", "/junior/trainer", "/juniors/school", "/school", "/academy",
+  const eps = ["/trainer", "/trainers", "/junior/school", "/junior/academy", "/junior/info", "/junior/overview", "/junior/coach", "/junior/trainer", "/juniors/school", "/school", "/academy",
     `/team/${teamId}/junior/school`, `/team/${teamId}/school`, `/team/${teamId}/academy`, `/team/${teamId}/coach`, `/team/${teamId}/coaches`, `/team/${teamId}/trainer`, `/team/${teamId}/staff`, "/coach", "/coaches"];
   for (const ep of eps) {
     try { walk(await getJson(ep), ep.replace(/^\//, ""), "", 0, /coach|trainer|staff/i.test(ep)); ok.push(ep); } catch {}

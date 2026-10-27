@@ -1041,7 +1041,7 @@ function schoolInfo(sc) {
   const out = { size: null, avg: null, value: null, coach: null, salary: null, cur: "", paths: {} };
   const fields = (sc && sc.fields) || [];
   const last = f => f.path.split(".").pop().replace(/\[\d+\]$/, "");
-  const isCoach = f => /coach|trainer/i.test(f.path);
+  const isCoach = f => /coach|trainer/i.test(f.path) || /coach|trainer/i.test(f.src);
   const numOf = f => { const n = Number(f.value); return f.value !== "" && f.value !== null && typeof f.value !== "boolean" && Number.isFinite(n) ? n : null; };
   const pick = (re, notCoach) => fields.find(f => re.test(last(f)) && numOf(f) !== null && !(notCoach && isCoach(f)));
   const fs = pick(/^size$/i, true), fa = pick(/^averageSkill$/i, true), fv = pick(/^weeklyCost$/i, true) || pick(/^value$/i, true);
@@ -1051,11 +1051,11 @@ function schoolInfo(sc) {
   // Entrenador: se busca dentro de «trainers» (lista) o de cualquier objeto coach/trainer. Si hay varios entrenadores, se elige el que parezca asignado
   // a la escuela (un campo tipo assigned/junior/school/academy/active/current verdadero); si no, el primero.
   const cf = fields.filter(isCoach);
-  const prefixOf = f => { const m = f.path.match(/^(.*?(?:trainers?|coach(?:es)?|staff)\[\d+\])/i); return m ? f.src + "|" + m[1] : f.src + "|"; };
+  const prefixOf = f => { const m = f.path.match(/^(.*?\[\d+\])/); return f.src + "|" + (m ? m[1] : ""); };
   const groups = new Map();
   for (const f of cf) { const k = prefixOf(f); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(f); }
   const truthy = f => f.value === true || f.value === 1 || f.value === "1" || (typeof f.value === "string" && /junior|school|academy|assigned|yes|true/i.test(f.value));
-  const assigned = g => g.some(f => /(assign|junior|school|academy|active|current|hired)/i.test(last(f)) && truthy(f));
+  const assigned = g => g.some(f => (/(assign|junior|school|academy|active|current|hired)/i.test(last(f)) && truthy(f)) || (typeof f.value === "string" && /junior|academy/i.test(f.value)));
   const list = [...groups.values()];
   const g = list.find(assigned) || list[0];
   out.coachCount = list.length;
