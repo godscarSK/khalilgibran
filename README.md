@@ -52,6 +52,7 @@ Arriba a la derecha, junto al botón de tema, hay un menú desplegable con dos o
 Se muestra siempre y cuenta a todo el equipo, sin importar los filtros ni los botones:
 
 - **Finanzas**: dinero disponible en tu cuenta. Sigue al botón **Ocultar Val/Sal**: muestra «-» mientras Valor y Salario están ocultos.
+- **Jugadores**: cantidad de jugadores del equipo principal.
 - **Valor Total** y **Salario Total**: suma de todos los jugadores.
 - **Edad Titulares**: promedio de edad de los marcados GK, DEF, MID y ATT (todos juntos).
 - **Edad Entrenables**: promedio de edad de los marcados ENT.
