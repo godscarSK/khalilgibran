@@ -171,15 +171,25 @@ td.c-prog input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 tbody tr:nth-child(even) td { background-color: var(--zebra); }
 tbody tr:hover td { background-color: color-mix(in srgb, var(--accent) 7%, var(--panel)); }
 
-th.c-chk, td.c-chk { width: 2.4rem; min-width: 2.4rem; padding-left: 4px; padding-right: 4px; text-align: center; }
-select.chk { width: 3rem; height: 24px; padding: 0 2px; font: inherit; font-weight: 700; font-size: 1.05rem; text-align: center; text-align-last: center; cursor: pointer; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); }
-select.chk[data-v="1"] { color: #1d6fdc; border-color: #1d6fdc; }
-select.chk[data-v="2"] { color: #d11a1a; border-color: #d11a1a; }
-select.chk option[value="1"] { color: #1d6fdc; }
-select.chk option[value="2"] { color: #d11a1a; }
-:root[data-theme="dark"] select.chk[data-v="1"], :root[data-theme="dark"] select.chk option[value="1"] { color: #6aa9ff; border-color: #6aa9ff; }
-:root[data-theme="dark"] select.chk[data-v="2"], :root[data-theme="dark"] select.chk option[value="2"] { color: #ff6b6b; border-color: #ff6b6b; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) select.chk[data-v="1"], :root:not([data-theme="light"]) select.chk option[value="1"] { color: #6aa9ff; border-color: #6aa9ff; } :root:not([data-theme="light"]) select.chk[data-v="2"], :root:not([data-theme="light"]) select.chk option[value="2"] { color: #ff6b6b; border-color: #ff6b6b; } }
+th.c-chk, td.c-chk { width: 4.6rem; min-width: 4.6rem; padding-left: 4px; padding-right: 4px; text-align: center; }
+select.chk { width: 4.1rem; height: 24px; padding: 0 2px; font: inherit; font-weight: 700; font-size: .9rem; text-align: center; text-align-last: center; cursor: pointer; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); }
+select.chk[data-v="2"] { color: #d11a1a; border-color: #d11a1a; font-size: 1.05rem; }
+select.chk[data-v="GK"] { background: #fbefc2; border-color: #c9a227; }
+select.chk[data-v="DEF"] { background: #dbe7fb; border-color: #6b8fd0; }
+select.chk[data-v="MID"] { background: #d4efdc; border-color: #5b9a74; }
+select.chk[data-v="ATT"] { background: #f9d9d6; border-color: #d0605a; }
+:root[data-theme="dark"] select.chk[data-v="2"] { color: #ff6b6b; border-color: #ff6b6b; }
+:root[data-theme="dark"] select.chk[data-v="GK"] { background: #4a3f12; border-color: #c9a227; }
+:root[data-theme="dark"] select.chk[data-v="DEF"] { background: #1d3157; border-color: #5a82c9; }
+:root[data-theme="dark"] select.chk[data-v="MID"] { background: #1f4130; border-color: #4f9d73; }
+:root[data-theme="dark"] select.chk[data-v="ATT"] { background: #4a1f1c; border-color: #d0605a; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) select.chk[data-v="2"] { color: #ff6b6b; border-color: #ff6b6b; }
+  :root:not([data-theme="light"]) select.chk[data-v="GK"] { background: #4a3f12; border-color: #c9a227; }
+  :root:not([data-theme="light"]) select.chk[data-v="DEF"] { background: #1d3157; border-color: #5a82c9; }
+  :root:not([data-theme="light"]) select.chk[data-v="MID"] { background: #1f4130; border-color: #4f9d73; }
+  :root:not([data-theme="light"]) select.chk[data-v="ATT"] { background: #4a1f1c; border-color: #d0605a; }
+}
 th.c-n, td.c-n { width: 3.2rem; min-width: 3.2rem; color: var(--muted); }
 th.c-est, td.c-est { width: 5.6rem; min-width: 5.6rem; padding-left: 4px; padding-right: 4px; }
 td.frz { position: sticky; z-index: 1; background-color: var(--panel); }
@@ -478,11 +488,14 @@ function normProgInput(inp) {
   try { inp.setSelectionRange(np, np); } catch {}
 }
 // Casilla de verificación de cada juvenil. Viaja por el mismo servicio que Progreso, con una clave propia («j1» + id con 12 dígitos) que la página del plantel ignora.
+// Opciones de la marca de cada juvenil: ✘ (valor "2", se conserva el de antes) y las posiciones, con los colores de la página Plantel.
+const CHK_OPTS = ["2", "GK", "DEF", "MID", "ATT"];
+const CHK_LABEL = { "2": "✘" };
 const chkKey = id => "j1" + String(id).padStart(12, "0");
-const chkVal = p => (!p.calc && p.id != null && /^\d+$/.test(String(p.id)) && ["1", "2"].includes(progMap[chkKey(p.id)]?.v)) ? progMap[chkKey(p.id)].v : "";   // "1" = ✔ azul, "2" = ✘ roja
+const chkVal = p => (!p.calc && p.id != null && /^\d+$/.test(String(p.id)) && CHK_OPTS.includes(progMap[chkKey(p.id)]?.v)) ? progMap[chkKey(p.id)].v : "";   // "2" = ✘ roja; GK / DEF / MID / ATT
 function setCheck(id, v) {
   const k = chkKey(id);
-  progMap[k] = { v: ["1", "2"].includes(v) ? v : "", t: nextT(k) };
+  progMap[k] = { v: CHK_OPTS.includes(v) ? v : "", t: nextT(k) };
   sync.dirty.add(k); saveProg();
   clearTimeout(setCheck.tm); setCheck.tm = setTimeout(pushDirty, 300);
 }
@@ -616,7 +629,7 @@ async function pullProg() {
 // Actualiza los campos de texto sin recrear la tabla y sin pisar lo que se está escribiendo.
 function refreshProgInputs() {
   setTimeout(() => { try { renderSummary(); } catch {} }, 0);
-  document.querySelectorAll("#body select[data-chk]").forEach(sel => { const v = progMap[chkKey(sel.dataset.chk)]?.v; sel.value = ["1", "2"].includes(v) ? v : ""; sel.dataset.v = sel.value; });
+  document.querySelectorAll("#body select[data-chk]").forEach(sel => { const v = progMap[chkKey(sel.dataset.chk)]?.v; sel.value = CHK_OPTS.includes(v) ? v : ""; sel.dataset.v = sel.value; });
   document.querySelectorAll("#body input[data-jid]").forEach(inp => {
     if (inp === document.activeElement) return;
     const e = progMap[progKey(inp.dataset.jid)];
@@ -698,7 +711,7 @@ const SKILL_ALIASES = {
 const SEP = { ageOut: "sepl", lvlFinal: "sepr" };   // líneas verticales: a la izquierda de Edad Final y a la derecha de Nivel Final
 const COLS = [
   { key: "n",     label: "#", cls: "c-n", left: true, title: "Número de fila. Al pulsarlo vuelves al orden original." },
-  { key: "chk",   label: "✔✘", cls: "c-chk", title: "Marca manual: ✔ azul o ✘ roja; se sincroniza entre dispositivos. Al pulsar el encabezado se ordenan primero los ✔ y luego las ✘" },
+  { key: "chk",   label: "Pos.", cls: "c-chk", title: "Marca manual: GK, DEF, MID, ATT o ✘; se sincroniza entre dispositivos. Al pulsar el encabezado se ordenan GK, DEF, MID, ATT y ✘" },
   { key: "name",  label: "Juvenil", cls: "c-name", left: true },
   { key: "age",   label: "Edad" },
   { key: "skill", label: "Nivel", title: "Nivel (skill) general del juvenil" },
@@ -961,7 +974,7 @@ function buildHead() {
   }).join("");
 }
 function sortValue(p, key) {
-  if (key === "chk") return { "1": 2, "2": 1 }[chkVal(p)] || 0;
+  if (key === "chk") return { GK: 6, DEF: 5, MID: 4, ATT: 3, "2": 2 }[chkVal(p)] || 0;
   if (key === "lvlFinal") { const r = levelFinalOf(p); return r ? r.v : null; }
   if (key === "ageOut") return ageOutOf(p);
   if (key === "exitWeek") { const e = exitWeekOf(p); return e ? e.seasons * 13 + e.week : null; }
@@ -991,7 +1004,7 @@ function visibleRows() {
 }
 function cellText(p, key) {
   if (key === "exitWeek") { const e = exitWeekOf(p); return e ? String(e.week) : ""; }
-  if (key === "chk") return { "1": "✔", "2": "✘" }[chkVal(p)] || "";
+  if (key === "chk") return CHK_LABEL[chkVal(p)] || chkVal(p);
   if (key === "lvlFinal") return lfText(p);
   if (key === "ageOut") { const v = ageOutOf(p); return v == null ? "" : String(v); }
   if (key === "prog") return progOf(p);
@@ -1156,7 +1169,7 @@ function cellHtml(c, p, rowIdx) {
     if (c.key === "chk") {
     if (p.calc || p.id == null || !/^\d+$/.test(String(p.id))) return `<td class="c-chk"></td>`;
     const v = chkVal(p);
-    return `<td class="c-chk"><select class="chk" data-chk="${esc(String(p.id))}" data-v="${v}" aria-label="Marca de ${esc(p.name)}"><option value=""${v === "" ? " selected" : ""}></option><option value="1"${v === "1" ? " selected" : ""}>✔</option><option value="2"${v === "2" ? " selected" : ""}>✘</option></select></td>`;
+    return `<td class="c-chk"><select class="chk" data-chk="${esc(String(p.id))}" data-v="${v}" aria-label="Marca de ${esc(p.name)}"><option value=""${v === "" ? " selected" : ""}></option>${CHK_OPTS.map(o => `<option value="${o}"${v === o ? " selected" : ""}>${CHK_LABEL[o] || o}</option>`).join("")}</select></td>`;
   }
   if (c.key === "name") return `<td class="l c-name" ${p.calc ? "" : `data-nm="${esc(String(p.id ?? ""))}"`}>${nameHtml(p)}</td>`;
     if (REG_KEYS.includes(c.key)) { const rc = regCol(c.key, progOf(p)), t = rc.t; return `<td class="c-reg${t ? "" : " dim"}${rc.hi ? " hi" : ""}" ${p.calc ? "" : `data-reg="${esc(String(p.id ?? ""))}"`} data-f="${c.key}">${t ? esc(t) : "—"}</td>`; }
