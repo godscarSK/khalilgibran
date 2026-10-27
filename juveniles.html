@@ -145,6 +145,7 @@ td.c-name { text-align: left; }
 .mk { font-weight: 700; font-size: .7em; margin-left: 1px; vertical-align: super; line-height: 0; }
 .mk.ok { color: #1f8f4e; }
 .mk.bad { color: #c0392b; }
+.tipo { display: inline-block; margin-left: 6px; padding: 0 7px; border-radius: 999px; font-size: .68rem; font-weight: 700; letter-spacing: .03em; vertical-align: middle; background: var(--line); color: var(--ink); border: 1px solid var(--muted); white-space: nowrap; }
 .stars { color: #e0a800; font-weight: 700; letter-spacing: 1px; white-space: nowrap; }
 .mk.star { color: #e0a800; font-size: 1em; vertical-align: baseline; }
 .mk.warn { color: #d11a1a; font-size: .95em; vertical-align: baseline; }
@@ -453,7 +454,8 @@ function tripleStar(p) {
   const t = Math.round(te * 100) / 100;
   return t >= TRIPLE_MIN && t <= TRIPLE_MAX;
 }
-const nameHtml = p => esc(p.name) + (tripleStar(p) ? ` <span class="stars" title="Nivel Final con ★ y Talento Est. entre ${TRIPLE_MIN} y ${String(TRIPLE_MAX).replace(".", ",")}" aria-label="tres estrellas">★★★</span>` : "");
+const tipoHtml = p => (p.formation == null || p.formation === "" || state.simple) ? "" : ` <span class="tipo" title="Tipo (formation)">${esc(String(p.formation))}</span>`;
+const nameHtml = p => esc(p.name) + tipoHtml(p) + (tripleStar(p) ? ` <span class="stars" title="Nivel Final con ★ y Talento Est. entre ${TRIPLE_MIN} y ${String(TRIPLE_MAX).replace(".", ",")}" aria-label="tres estrellas">★★★</span>` : "");
 // Convierte los espacios entre números de Progreso en comas («10 12 14» → «10,12,14») y mantiene el cursor en su sitio.
 const normProgText = t => String(t).replace(/\s*,\s*/g, ",").replace(/\s+/g, ",");
 function normProgInput(inp) {
@@ -695,7 +697,6 @@ const COLS = [
   { key: "weeks", label: "Sem. Restantes", title: "Semanas que le faltan en la academia (Listo = puede ascender)" },
   { key: "weeksIn", label: "Sem. Entrenadas", title: "Semanas de entreno (weeksIn)" },
   { key: "talent", label: "Talento", title: "Talento (talent)" },
-  { key: "formation", label: "Tipo", title: "Tipo (formation)" },
   { key: "prog", label: "Progreso", cls: "c-prog", left: true, title: "Texto libre tuyo para cada juvenil; se sincroniza entre dispositivos" },
   { key: "treal", label: "Talento Est.", title: "1 / pendiente de la regresión lineal de Progreso" },
   { key: "r2", label: "R2", title: "Coeficiente de determinación (R²) de la regresión lineal de Progreso" },
@@ -912,7 +913,7 @@ async function load() {
     }
     if (missing.length) {
       notices.push({ html:
-        `<p><strong>No encontré en los datos de la API: ${esc(missing.join(", "))}.</strong> Esas columnas quedan en «—».</p>
+        `<p><strong>No encontré en los datos de la API: ${esc(missing.join(", "))}.</strong> Esos datos quedan en «—».</p>
          <p>Campos que entrega la API para el primer juvenil: <code>${esc(ps[0].allKeys.slice(0, 60).join(", ") || "ninguno")}</code>.</p>` });
     }
   }
@@ -1006,7 +1007,7 @@ function loadPrefs() {
 }
 
 /* ─────────────── Simplificar y Calculadora ─────────────── */
-const SIMPLE_HIDE = ["talent", "formation", "prog", "reg"];
+const SIMPLE_HIDE = ["talent", "prog", "reg"];   // en modo Simplificar también se oculta la marca de Tipo junto al nombre
 // En la calculadora solo quedan visibles las últimas cinco columnas (desde Progreso); Simplificar no aplica ahí.
 const CALC_SHOW = COLS.slice(COLS.findIndex(c => c.key === "prog")).map(c => c.key);
 const hiddenKeys = () => state.calc ? COLS.map(c => c.key).filter(k => !CALC_SHOW.includes(k)) : state.simple ? SIMPLE_HIDE : [];
@@ -1021,7 +1022,7 @@ function applyColVis() {
   });
 }
 const CALC_NUM = ["age", "skill", "weeks", "weeksIn", "talent"];
-const CALC_EDIT = ["name", "age", "skill", "weeks", "weeksIn", "talent", "formation", "prog"];
+const CALC_EDIT = ["name", "age", "skill", "weeks", "weeksIn", "talent", "prog"];
 const newCalcP = () => ({ calc: true, id: null, n: 1, name: "", age: null, skill: null, weeks: null, weeksIn: null, talent: null, formation: "", progText: "" });
 function calcRowHtml() {
   const p = state.calcP;
