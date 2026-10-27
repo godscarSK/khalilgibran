@@ -180,6 +180,30 @@ async function readCalendar(me) {
   return { season: season ? Number(season.value) : null, week: week ? Number(week.value) : null, fields: found.slice(0, 40) };
 }
 
+let junMeta = null;   // respuesta de /junior cuando no es una lista simple (puede traer datos de la escuela)
+// Datos de la escuela de juveniles (plazas, nivel promedio, valor, entrenador y su salario). No conozco el endpoint exacto, así que se junta
+// todo lo escalar que entreguen /junior (sin la lista de juveniles) y algunos endpoints candidatos; la página busca por nombre de campo.
+async function readSchool(teamId, currencyHint) {
+  const fields = [], ok = [];
+  const walk = (o, src, path = "", d = 0, arrays = false) => {
+    if (o == null || d > 5 || fields.length >= 400) return;
+    if (Array.isArray(o)) { if (arrays) o.slice(0, 5).forEach((x, i) => walk(x, src, `${path}[${i}]`, d + 1, arrays)); return; }
+    if (typeof o === "object") {
+      if ("value" in o && "currency" in o && typeof o.value !== "object") { fields.push({ src, path, value: o.value, currency: String(o.currency || "") }); return; }
+      for (const [k, v] of Object.entries(o)) walk(v, src, path ? `${path}.${k}` : k, d + 1, arrays);
+      return;
+    }
+    if (["string", "number", "boolean"].includes(typeof o)) fields.push({ src, path, value: o });
+  };
+  if (junMeta) { walk(junMeta, "junior"); ok.push("/junior"); }
+  const eps = ["/junior/school", "/junior/academy", "/junior/info", "/junior/overview", "/junior/coach", "/junior/trainer", "/juniors/school", "/school", "/academy",
+    `/team/${teamId}/junior/school`, `/team/${teamId}/school`, `/team/${teamId}/academy`, `/team/${teamId}/coach`, `/team/${teamId}/coaches`, `/team/${teamId}/trainer`, `/team/${teamId}/staff`, "/coach", "/coaches"];
+  for (const ep of eps) {
+    try { walk(await getJson(ep), ep.replace(/^\//, ""), "", 0, /coach|trainer|staff/i.test(ep)); ok.push(ep); } catch {}
+  }
+  return { fields, ok, currency: currencyHint || "" };
+}
+
 async function readJuniors() {
   const PAGE = 50, items = [], seen = new Set();
   let offset = 0;
@@ -190,7 +214,9 @@ async function readJuniors() {
       if (res.status === 400) return listFrom(await getJson("/junior"));   // la API no aceptó la paginación
       throw new Error(`/junior → HTTP ${res.status}`);
     }
-    const batch = listFrom(await res.json());
+    const body = await res.json();
+    if (guard === 0 && body && !Array.isArray(body)) junMeta = body;
+    const batch = listFrom(body);
     const fresh = batch.filter(it => {
       const id = String(it?.id ?? it?.juniorId ?? it?.info?.id ?? JSON.stringify(it).slice(0, 120));
       if (seen.has(id)) return false;
@@ -288,7 +314,12 @@ async function main() {
   try {
     console.log("Leyendo los juveniles…");
     const items = await readJuniors();
-    const jout = { generatedAt: out.generatedAt, team: out.team, calendar, items };
+    console.log("Leyendo los datos de la escuela de juveniles…");
+    const school = await readSchool(teamId, api[ok[0]]?.info?.value?.currency || "");
+    const seen = k => school.fields.some(f => new RegExp(`(^|\\.)${k}$`, "i").test(f.path));
+    console.log(`  Endpoints con datos: ${school.ok.join(", ") || "ninguno"}. size: ${seen("size") ? "sí" : "NO"}, averageSkill: ${seen("averageSkill") ? "sí" : "NO"}, value: ${seen("value") ? "sí" : "NO"}.`);
+    if (!school.fields.length) console.warn("  Aviso: no encontré datos de la escuela; el cuadro resumen de Juveniles quedará con «—» en esas filas.");
+    const jout = { generatedAt: out.generatedAt, team: out.team, calendar, school, items };
     // Respaldo semanal de los juveniles (mismas reglas que el del plantel: se renueva el primer día de cada semana, de jueves a miércoles).
     let jold = null;
     try { jold = JSON.parse(await readFile(JFILE, "utf8")); } catch {}

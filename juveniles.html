@@ -146,6 +146,9 @@ td.c-name { text-align: left; }
 .mk.ok { color: #1f8f4e; }
 .mk.bad { color: #c0392b; }
 .tipo { display: inline-block; margin-left: 6px; padding: 0 7px; border-radius: 999px; font-size: .68rem; font-weight: 700; letter-spacing: .03em; vertical-align: middle; background: var(--line); color: var(--ink); border: 1px solid var(--muted); white-space: nowrap; }
+.tipo.gk { background: #fbefc2; border-color: #c9a227; color: #5c4700; }
+:root[data-theme="dark"] .tipo.gk { background: #4a3f12; border-color: #c9a227; color: #f6e29b; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tipo.gk { background: #4a3f12; border-color: #c9a227; color: #f6e29b; } }
 .stars { color: #e0a800; font-weight: 700; letter-spacing: 1px; white-space: nowrap; }
 .mk.star { color: #e0a800; font-size: 1em; vertical-align: baseline; }
 .mk.warn { color: #d11a1a; font-size: .95em; vertical-align: baseline; }
@@ -169,7 +172,14 @@ tbody tr:nth-child(even) td { background-color: var(--zebra); }
 tbody tr:hover td { background-color: color-mix(in srgb, var(--accent) 7%, var(--panel)); }
 
 th.c-chk, td.c-chk { width: 2.4rem; min-width: 2.4rem; padding-left: 4px; padding-right: 4px; text-align: center; }
-td.c-chk input { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+select.chk { width: 3.1rem; height: 30px; padding: 0 2px; font: inherit; font-weight: 700; font-size: 1.05rem; text-align: center; text-align-last: center; cursor: pointer; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); }
+select.chk[data-v="1"] { color: #1d6fdc; border-color: #1d6fdc; }
+select.chk[data-v="2"] { color: #d11a1a; border-color: #d11a1a; }
+select.chk option[value="1"] { color: #1d6fdc; }
+select.chk option[value="2"] { color: #d11a1a; }
+:root[data-theme="dark"] select.chk[data-v="1"], :root[data-theme="dark"] select.chk option[value="1"] { color: #6aa9ff; border-color: #6aa9ff; }
+:root[data-theme="dark"] select.chk[data-v="2"], :root[data-theme="dark"] select.chk option[value="2"] { color: #ff6b6b; border-color: #ff6b6b; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) select.chk[data-v="1"], :root:not([data-theme="light"]) select.chk option[value="1"] { color: #6aa9ff; border-color: #6aa9ff; } :root:not([data-theme="light"]) select.chk[data-v="2"], :root:not([data-theme="light"]) select.chk option[value="2"] { color: #ff6b6b; border-color: #ff6b6b; } }
 th.c-n, td.c-n { width: 3.2rem; min-width: 3.2rem; color: var(--muted); }
 th.c-est, td.c-est { width: 5.6rem; min-width: 5.6rem; padding-left: 4px; padding-right: 4px; }
 td.frz { position: sticky; z-index: 1; background-color: var(--panel); }
@@ -285,6 +295,7 @@ dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
         <p class="season" id="season" hidden></p>
         <p class="lede" id="lede">Cargando juveniles…</p>
       </div>
+      <aside class="summary" id="summary" aria-label="Resumen de la escuela" hidden></aside>
     </div>
   </header>
 
@@ -454,7 +465,7 @@ function tripleStar(p) {
   const t = Math.round(te * 100) / 100;
   return t >= TRIPLE_MIN && t <= TRIPLE_MAX;
 }
-const tipoHtml = p => (p.formation == null || p.formation === "" || state.simple) ? "" : ` <span class="tipo" title="Tipo (formation)">${esc(String(p.formation))}</span>`;
+const tipoHtml = p => (p.formation == null || p.formation === "") ? "" : ` <span class="tipo${String(p.formation).trim().toLowerCase() === "gk" ? " gk" : ""}" title="Tipo (formation)">${esc(String(p.formation))}</span>`;
 const nameHtml = p => esc(p.name) + tipoHtml(p) + (tripleStar(p) ? ` <span class="stars" title="Nivel Final con ★ y Talento Est. entre ${TRIPLE_MIN} y ${String(TRIPLE_MAX).replace(".", ",")}" aria-label="tres estrellas">★★★</span>` : "");
 // Convierte los espacios entre números de Progreso en comas («10 12 14» → «10,12,14») y mantiene el cursor en su sitio.
 const normProgText = t => String(t).replace(/\s*,\s*/g, ",").replace(/\s+/g, ",");
@@ -468,10 +479,10 @@ function normProgInput(inp) {
 }
 // Casilla de verificación de cada juvenil. Viaja por el mismo servicio que Progreso, con una clave propia («j1» + id con 12 dígitos) que la página del plantel ignora.
 const chkKey = id => "j1" + String(id).padStart(12, "0");
-const isChecked = p => !p.calc && p.id != null && /^\d+$/.test(String(p.id)) && progMap[chkKey(p.id)]?.v === "1";
-function setCheck(id, on) {
+const chkVal = p => (!p.calc && p.id != null && /^\d+$/.test(String(p.id)) && ["1", "2"].includes(progMap[chkKey(p.id)]?.v)) ? progMap[chkKey(p.id)].v : "";   // "1" = ✔ azul, "2" = ✘ roja
+function setCheck(id, v) {
   const k = chkKey(id);
-  progMap[k] = { v: on ? "1" : "", t: nextT(k) };
+  progMap[k] = { v: ["1", "2"].includes(v) ? v : "", t: nextT(k) };
   sync.dirty.add(k); saveProg();
   clearTimeout(setCheck.tm); setCheck.tm = setTimeout(pushDirty, 300);
 }
@@ -604,7 +615,8 @@ async function pullProg() {
 }
 // Actualiza los campos de texto sin recrear la tabla y sin pisar lo que se está escribiendo.
 function refreshProgInputs() {
-  document.querySelectorAll("#body input[data-chk]").forEach(cb => { cb.checked = progMap[chkKey(cb.dataset.chk)]?.v === "1"; });
+  setTimeout(() => { try { renderSummary(); } catch {} }, 0);
+  document.querySelectorAll("#body select[data-chk]").forEach(sel => { const v = progMap[chkKey(sel.dataset.chk)]?.v; sel.value = ["1", "2"].includes(v) ? v : ""; sel.dataset.v = sel.value; });
   document.querySelectorAll("#body input[data-jid]").forEach(inp => {
     if (inp === document.activeElement) return;
     const e = progMap[progKey(inp.dataset.jid)];
@@ -686,7 +698,7 @@ const SKILL_ALIASES = {
 const SEP = { ageOut: "sepl", lvlFinal: "sepr" };   // líneas verticales: a la izquierda de Edad Final y a la derecha de Nivel Final
 const COLS = [
   { key: "n",     label: "#", cls: "c-n", left: true, title: "Número de fila. Al pulsarlo vuelves al orden original." },
-  { key: "chk",   label: "✓", cls: "c-chk", title: "Casilla para marcar a mano; se sincroniza entre dispositivos. Al pulsar el encabezado se ordenan los marcados primero" },
+  { key: "chk",   label: "✔✘", cls: "c-chk", title: "Marca manual: ✔ azul o ✘ roja; se sincroniza entre dispositivos. Al pulsar el encabezado se ordenan primero los ✔ y luego las ✘" },
   { key: "name",  label: "Juvenil", cls: "c-name", left: true },
   { key: "age",   label: "Edad" },
   { key: "skill", label: "Nivel", title: "Nivel (skill) general del juvenil" },
@@ -794,7 +806,7 @@ function normalize(it, i) {
 }
 
 /* ─────────────── Estado y datos ─────────────── */
-const state = { players: [], q: "", onlyStars: false, sort: { key: "n", dir: 1 }, stamp: null, prevStamp: null, teamName: "", simple: false, calc: false, calcP: null };
+const state = { players: [], q: "", onlyStars: false, sort: { key: "n", dir: 1 }, stamp: null, prevStamp: null, teamName: "", simple: false, calc: false, calcP: null, school: null };
 
 async function fetchWithTimeout(url, opts = {}) {
   const ctl = new AbortController();
@@ -884,6 +896,7 @@ async function load() {
   }
   state.teamName = st.team?.name || "";
   state.calendar = st.calendar || null;
+  state.school = st.school || null;
   state.stamp = st.generatedAt ? Date.parse(st.generatedAt) : null;
   state.players = (st.items || []).map(normalize);
 
@@ -917,6 +930,20 @@ async function load() {
          <p>Campos que entrega la API para el primer juvenil: <code>${esc(ps[0].allKeys.slice(0, 60).join(", ") || "ninguno")}</code>.</p>` });
     }
   }
+  {
+    const si = schoolInfo(state.school), miss = [];
+    if (si.size == null) miss.push("size (Plazas)");
+    if (si.avg == null) miss.push("averageSkill (Nivel Escuela)");
+    if (si.value == null) miss.push("value (Costo Escuela)");
+    if (!si.coach) miss.push("nombre del entrenador");
+    if (si.salary == null) miss.push("salario del entrenador");
+    if (miss.length) {
+      const names = [...new Set(((state.school && state.school.fields) || []).map(f => f.src + "." + f.path))].slice(0, 80);
+      notices.push({ html: state.school
+        ? `<p><strong>No encontré en los datos de la escuela: ${esc(miss.join(", "))}.</strong> Esas filas del cuadro resumen quedan en «—».</p><p>Endpoints que respondieron: <code>${esc(((state.school.ok) || []).join(", ") || "ninguno")}</code>.</p><p>Campos disponibles: <code>${esc(names.join(", ") || "ninguno")}</code>.</p>`
+        : `<p><strong>Faltan los datos de la escuela.</strong> Vuelve a ejecutar <code>node fetch-team.mjs</code> con la versión nueva y sube <code>juniors.enc.json</code>.</p>` });
+    }
+  }
   setNotices(notices);
   setStatus("");
   render();
@@ -934,7 +961,7 @@ function buildHead() {
   }).join("");
 }
 function sortValue(p, key) {
-  if (key === "chk") return isChecked(p) ? 1 : 0;
+  if (key === "chk") return { "1": 2, "2": 1 }[chkVal(p)] || 0;
   if (key === "lvlFinal") { const r = levelFinalOf(p); return r ? r.v : null; }
   if (key === "ageOut") return ageOutOf(p);
   if (key === "exitWeek") { const e = exitWeekOf(p); return e ? e.seasons * 13 + e.week : null; }
@@ -964,7 +991,7 @@ function visibleRows() {
 }
 function cellText(p, key) {
   if (key === "exitWeek") { const e = exitWeekOf(p); return e ? String(e.week) : ""; }
-  if (key === "chk") return isChecked(p) ? "✓" : "";
+  if (key === "chk") return { "1": "✔", "2": "✘" }[chkVal(p)] || "";
   if (key === "lvlFinal") return lfText(p);
   if (key === "ageOut") { const v = ageOutOf(p); return v == null ? "" : String(v); }
   if (key === "prog") return progOf(p);
@@ -1006,8 +1033,61 @@ function loadPrefs() {
   if (p.sort && COLS.some(c => c.key === p.sort.key) && (p.sort.dir === 1 || p.sort.dir === -1)) state.sort = { key: p.sort.key, dir: p.sort.dir };
 }
 
+/* ─────────────── Cuadro resumen de la escuela ───────────────
+   Plazas (size), Juveniles, Talentosos (★★★), Nivel Escuela (averageSkill), Entrenador, Salario DT y Costo Escuela (value + salario del DT).
+   Los datos de la escuela los junta el script con nombres de campo flexibles; si falta alguno, la fila muestra «—». */
+const snf = new Intl.NumberFormat("es-CL"), snf1 = new Intl.NumberFormat("es-CL", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+function schoolInfo(sc) {
+  const out = { size: null, avg: null, value: null, coach: null, salary: null, cur: "", paths: {} };
+  const fields = (sc && sc.fields) || [];
+  const last = f => f.path.split(".").pop().replace(/\[\d+\]$/, "");
+  const isCoach = f => /coach|trainer/i.test(f.path);
+  const numOf = f => { const n = Number(f.value); return f.value !== "" && f.value !== null && typeof f.value !== "boolean" && Number.isFinite(n) ? n : null; };
+  const pick = (re, notCoach) => fields.find(f => re.test(last(f)) && numOf(f) !== null && !(notCoach && isCoach(f)));
+  const fs = pick(/^size$/i, true), fa = pick(/^averageSkill$/i, true), fv = pick(/^value$/i, true);
+  if (fs) { out.size = numOf(fs); out.paths.size = `${fs.src}.${fs.path}`; }
+  if (fa) { out.avg = numOf(fa); out.paths.avg = `${fa.src}.${fa.path}`; }
+  if (fv) { out.value = numOf(fv); out.paths.value = `${fv.src}.${fv.path}`; out.cur = fv.currency || ""; }
+  // Entrenador: nombre completo, o nombre + apellido, dentro de un objeto cuyo camino menciona coach/trainer.
+  const cf = fields.filter(isCoach);
+  const str = f => typeof f.value === "string" && f.value.trim() ? f.value.trim() : null;
+  const full = cf.find(f => /(^|\.)(fullName|name\.full|full)$/i.test(f.path) && str(f)) || cf.find(f => /(^|\.)name$/i.test(f.path) && str(f));
+  if (full) { out.coach = str(full); out.paths.coach = `${full.src}.${full.path}`; }
+  else {
+    const fn = cf.find(f => /(^|\.)(name\.first|name\.firstName|firstName|first)$/i.test(f.path) && str(f));
+    if (fn) {
+      const pre = fn.path.replace(/(name\.)?(firstName|first)$/i, "");
+      const ln = cf.find(f => f.src === fn.src && f.path.startsWith(pre) && /(name\.last|name\.lastName|lastName|surname|last)$/i.test(f.path) && str(f));
+      out.coach = [str(fn), ln && str(ln)].filter(Boolean).join(" "); out.paths.coach = `${fn.src}.${fn.path}`;
+    }
+  }
+  const fsal = cf.find(f => /^(salary|wage|cost|price|pay|payment)$/i.test(last(f)) && numOf(f) !== null);
+  if (fsal) { out.salary = numOf(fsal); out.paths.salary = `${fsal.src}.${fsal.path}`; out.salCur = fsal.currency || ""; }
+  out.cur = out.cur || (fsal && fsal.currency) || (sc && sc.currency) || "";
+  return out;
+}
+function renderSummary() {
+  const el = $("#summary"), ps = state.players;
+  if (!ps.length && !state.school) { el.hidden = true; return; }
+  el.hidden = false;
+  const si = schoolInfo(state.school);
+  const money = n => n == null ? "—" : snf.format(n) + (si.cur ? " " + si.cur : "");
+  const cost = si.value != null ? si.value + (si.salary ?? 0) : null;
+  const tip = k => si.paths[k] ? "Campo usado: " + si.paths[k] : (state.school ? "No se encontró este dato en la API." : "Vuelve a ejecutar node fetch-team.mjs para obtener los datos de la escuela.");
+  const rows = [
+    ["Plazas", si.size == null ? "—" : snf.format(si.size), tip("size")],
+    ["Juveniles", String(ps.length)],
+    ["Talentosos", String(ps.filter(tripleStar).length)],
+    ["Nivel Escuela", si.avg == null ? "—" : snf1.format(si.avg), tip("avg")],
+    ["Entrenador", si.coach || "—", tip("coach")],
+    ["Salario DT", money(si.salary), tip("salary")],
+    ["Costo Escuela", cost == null ? "—" : money(cost), si.value == null ? tip("value") : `value (${si.paths.value}) + salario del DT${si.salary == null ? " (no encontrado: solo value)" : ""}`]
+  ];
+  el.innerHTML = `<dl>${rows.map(([k, v, t]) => `<dt>${k}</dt><dd${t ? ` title="${esc(t)}"` : ""}>${esc(v)}</dd>`).join("")}</dl>`;
+}
+
 /* ─────────────── Simplificar y Calculadora ─────────────── */
-const SIMPLE_HIDE = ["talent", "prog", "reg"];   // en modo Simplificar también se oculta la marca de Tipo junto al nombre
+const SIMPLE_HIDE = ["talent", "prog", "reg"];
 // En la calculadora solo quedan visibles las últimas cinco columnas (desde Progreso); Simplificar no aplica ahí.
 const CALC_SHOW = COLS.slice(COLS.findIndex(c => c.key === "prog")).map(c => c.key);
 const hiddenKeys = () => state.calc ? COLS.map(c => c.key).filter(k => !CALC_SHOW.includes(k)) : state.simple ? SIMPLE_HIDE : [];
@@ -1064,7 +1144,8 @@ function cellHtml(c, p, rowIdx) {
     if (c.key === "n") return `<td class="c-n">${rowIdx + 1}</td>`;
     if (c.key === "chk") {
     if (p.calc || p.id == null || !/^\d+$/.test(String(p.id))) return `<td class="c-chk"></td>`;
-    return `<td class="c-chk"><input type="checkbox" data-chk="${esc(String(p.id))}" ${isChecked(p) ? "checked" : ""} aria-label="Marcar a ${esc(p.name)}"></td>`;
+    const v = chkVal(p);
+    return `<td class="c-chk"><select class="chk" data-chk="${esc(String(p.id))}" data-v="${v}" aria-label="Marca de ${esc(p.name)}"><option value=""${v === "" ? " selected" : ""}></option><option value="1"${v === "1" ? " selected" : ""}>✔</option><option value="2"${v === "2" ? " selected" : ""}>✘</option></select></td>`;
   }
   if (c.key === "name") return `<td class="l c-name" ${p.calc ? "" : `data-nm="${esc(String(p.id ?? ""))}"`}>${nameHtml(p)}</td>`;
     if (REG_KEYS.includes(c.key)) { const rc = regCol(c.key, progOf(p)), t = rc.t; return `<td class="c-reg${t ? "" : " dim"}${rc.hi ? " hi" : ""}" ${p.calc ? "" : `data-reg="${esc(String(p.id ?? ""))}"`} data-f="${c.key}">${t ? esc(t) : "—"}</td>`; }
@@ -1101,6 +1182,7 @@ function cellHtml(c, p, rowIdx) {
 
 function render() {
   savePrefs();
+  renderSummary();
   const rows = state.calc ? [state.calcP] : visibleRows();
   $("#body").innerHTML = state.calc ? calcRowHtml() : rows.length ? rows.map((p, rowIdx) => {
     const tds = COLS.map(c => cellHtml(c, p, rowIdx)).join("");
@@ -1199,7 +1281,7 @@ function init() {
   });
   $("#q").addEventListener("input", e => { state.q = e.target.value; render(); });
   $("#copy").addEventListener("click", copyTable);
-  $("#body").addEventListener("change", ev => { const t = ev.target; if (t && t.dataset && t.dataset.chk) setCheck(t.dataset.chk, t.checked); });
+  $("#body").addEventListener("change", ev => { const t = ev.target; if (t && t.dataset && t.dataset.chk) { setCheck(t.dataset.chk, t.value); t.dataset.v = t.value; } });
   $("#stars").addEventListener("click", () => { state.onlyStars = !state.onlyStars; $("#stars").setAttribute("aria-pressed", String(state.onlyStars)); render(); });
   $("#simplify").addEventListener("click", () => { setSimple(!state.simple); render(); });
   $("#calcBtn").addEventListener("click", () => { setCalc(!state.calc); render(); });
@@ -1211,7 +1293,7 @@ function init() {
     else state.calcP[k] = t.value;
     calcRefresh();
   });
-  $("#body").addEventListener("input", ev => { const t = ev.target; if (t && t.dataset && t.dataset.jid) { normProgInput(t); setProg(t.dataset.jid, t.value); t.closest("tr").querySelectorAll("td[data-reg]").forEach(rg => { const rc = regCol(rg.dataset.f, t.value), x = rc.t; rg.textContent = x || "—"; rg.classList.toggle("dim", !x); rg.classList.toggle("hi", !!rc.hi); }); const nm = t.closest("tr").querySelector("td[data-nm]"); if (nm) { const pl = state.players.find(q => String(q.id) === nm.dataset.nm); if (pl) nm.innerHTML = nameHtml(pl); } const lf = t.closest("tr").querySelector("td[data-lf]"); if (lf) { const pl = state.players.find(q => String(q.id) === lf.dataset.lf); if (pl) { const l = lfCell(pl); lf.innerHTML = l.h || "—"; lf.classList.toggle("dim", !l.t); lf.title = l.tip; } } const td = t.closest("tr").querySelector("td[data-cnt]"); if (td) td.innerHTML = cntHtml(countItems(t.value), td.dataset.wi === "" ? null : Number(td.dataset.wi)); } });
+  $("#body").addEventListener("input", ev => { const t = ev.target; if (t && t.dataset && t.dataset.jid) { normProgInput(t); setProg(t.dataset.jid, t.value); renderSummary(); t.closest("tr").querySelectorAll("td[data-reg]").forEach(rg => { const rc = regCol(rg.dataset.f, t.value), x = rc.t; rg.textContent = x || "—"; rg.classList.toggle("dim", !x); rg.classList.toggle("hi", !!rc.hi); }); const nm = t.closest("tr").querySelector("td[data-nm]"); if (nm) { const pl = state.players.find(q => String(q.id) === nm.dataset.nm); if (pl) nm.innerHTML = nameHtml(pl); } const lf = t.closest("tr").querySelector("td[data-lf]"); if (lf) { const pl = state.players.find(q => String(q.id) === lf.dataset.lf); if (pl) { const l = lfCell(pl); lf.innerHTML = l.h || "—"; lf.classList.toggle("dim", !l.t); lf.title = l.tip; } } const td = t.closest("tr").querySelector("td[data-cnt]"); if (td) td.innerHTML = cntHtml(countItems(t.value), td.dataset.wi === "" ? null : Number(td.dataset.wi)); } });
   $("#pwForm").addEventListener("submit", ev => {
     ev.preventDefault();
     const pw = $("#pwInput").value;
