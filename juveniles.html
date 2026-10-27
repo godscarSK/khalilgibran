@@ -934,7 +934,7 @@ async function load() {
     const si = schoolInfo(state.school), miss = [];
     if (si.size == null) miss.push("size (Plazas)");
     if (si.avg == null) miss.push("averageSkill (Nivel Escuela)");
-    if (si.value == null) miss.push("value (Costo Escuela)");
+    if (si.value == null) miss.push("weeklyCost (Costo Escuela)");
     if (!si.coach) miss.push("nombre del entrenador");
     if (si.salary == null) miss.push("salario del entrenador");
     if (miss.length) {
@@ -1044,26 +1044,37 @@ function schoolInfo(sc) {
   const isCoach = f => /coach|trainer/i.test(f.path);
   const numOf = f => { const n = Number(f.value); return f.value !== "" && f.value !== null && typeof f.value !== "boolean" && Number.isFinite(n) ? n : null; };
   const pick = (re, notCoach) => fields.find(f => re.test(last(f)) && numOf(f) !== null && !(notCoach && isCoach(f)));
-  const fs = pick(/^size$/i, true), fa = pick(/^averageSkill$/i, true), fv = pick(/^value$/i, true);
+  const fs = pick(/^size$/i, true), fa = pick(/^averageSkill$/i, true), fv = pick(/^weeklyCost$/i, true) || pick(/^value$/i, true);
   if (fs) { out.size = numOf(fs); out.paths.size = `${fs.src}.${fs.path}`; }
   if (fa) { out.avg = numOf(fa); out.paths.avg = `${fa.src}.${fa.path}`; }
   if (fv) { out.value = numOf(fv); out.paths.value = `${fv.src}.${fv.path}`; out.cur = fv.currency || ""; }
-  // Entrenador: nombre completo, o nombre + apellido, dentro de un objeto cuyo camino menciona coach/trainer.
+  // Entrenador: se busca dentro de «trainers» (lista) o de cualquier objeto coach/trainer. Si hay varios entrenadores, se elige el que parezca asignado
+  // a la escuela (un campo tipo assigned/junior/school/academy/active/current verdadero); si no, el primero.
   const cf = fields.filter(isCoach);
-  const str = f => typeof f.value === "string" && f.value.trim() ? f.value.trim() : null;
-  const full = cf.find(f => /(^|\.)(fullName|name\.full|full)$/i.test(f.path) && str(f)) || cf.find(f => /(^|\.)name$/i.test(f.path) && str(f));
-  if (full) { out.coach = str(full); out.paths.coach = `${full.src}.${full.path}`; }
-  else {
-    const fn = cf.find(f => /(^|\.)(name\.first|name\.firstName|firstName|first)$/i.test(f.path) && str(f));
-    if (fn) {
-      const pre = fn.path.replace(/(name\.)?(firstName|first)$/i, "");
-      const ln = cf.find(f => f.src === fn.src && f.path.startsWith(pre) && /(name\.last|name\.lastName|lastName|surname|last)$/i.test(f.path) && str(f));
-      out.coach = [str(fn), ln && str(ln)].filter(Boolean).join(" "); out.paths.coach = `${fn.src}.${fn.path}`;
+  const prefixOf = f => { const m = f.path.match(/^(.*?(?:trainers?|coach(?:es)?|staff)\[\d+\])/i); return m ? f.src + "|" + m[1] : f.src + "|"; };
+  const groups = new Map();
+  for (const f of cf) { const k = prefixOf(f); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(f); }
+  const truthy = f => f.value === true || f.value === 1 || f.value === "1" || (typeof f.value === "string" && /junior|school|academy|assigned|yes|true/i.test(f.value));
+  const assigned = g => g.some(f => /(assign|junior|school|academy|active|current|hired)/i.test(last(f)) && truthy(f));
+  const list = [...groups.values()];
+  const g = list.find(assigned) || list[0];
+  out.coachCount = list.length;
+  if (g) {
+    const str = f => typeof f.value === "string" && f.value.trim() ? f.value.trim() : null;
+    const full = g.find(f => /(^|\.)(fullName|name\.full|full)$/i.test(f.path) && str(f)) || g.find(f => /(^|\.)name$/i.test(f.path) && str(f));
+    if (full) { out.coach = str(full); out.paths.coach = `${full.src}.${full.path}`; }
+    else {
+      const fn = g.find(f => /(^|\.)(name\.first|name\.firstName|firstName|first)$/i.test(f.path) && str(f));
+      if (fn) {
+        const pre = fn.path.replace(/(name\.)?(firstName|first)$/i, "");
+        const ln = g.find(f => f.path.startsWith(pre) && /(name\.last|name\.lastName|lastName|surname|last)$/i.test(f.path) && str(f));
+        out.coach = [str(fn), ln && str(ln)].filter(Boolean).join(" "); out.paths.coach = `${fn.src}.${fn.path}`;
+      }
     }
+    const fsal = g.find(f => /^(salary|wage|weeklySalary|weeklyWage|weeklyCost|cost|price|pay|payment)$/i.test(last(f)) && numOf(f) !== null);
+    if (fsal) { out.salary = numOf(fsal); out.paths.salary = `${fsal.src}.${fsal.path}`; out.salCur = fsal.currency || ""; }
   }
-  const fsal = cf.find(f => /^(salary|wage|cost|price|pay|payment)$/i.test(last(f)) && numOf(f) !== null);
-  if (fsal) { out.salary = numOf(fsal); out.paths.salary = `${fsal.src}.${fsal.path}`; out.salCur = fsal.currency || ""; }
-  out.cur = out.cur || (fsal && fsal.currency) || (sc && sc.currency) || "";
+  out.cur = out.cur || out.salCur || (sc && sc.currency) || "";
   return out;
 }
 function renderSummary() {
@@ -1079,9 +1090,9 @@ function renderSummary() {
     ["Juveniles", String(ps.length)],
     ["Talentosos", String(ps.filter(tripleStar).length)],
     ["Nivel Escuela", si.avg == null ? "—" : snf1.format(si.avg), tip("avg")],
-    ["Entrenador", si.coach || "—", tip("coach")],
+    ["Entrenador", si.coach || "—", si.coach ? `${tip("coach")}${si.coachCount > 1 ? ` (${si.coachCount} entrenadores en la API: se eligió el asignado a la escuela o, si no se distingue, el primero)` : ""}` : tip("coach")],
     ["Salario DT", money(si.salary), tip("salary")],
-    ["Costo Escuela", cost == null ? "—" : money(cost), si.value == null ? tip("value") : `value (${si.paths.value}) + salario del DT${si.salary == null ? " (no encontrado: solo value)" : ""}`]
+    ["Costo Escuela", cost == null ? "—" : money(cost), si.value == null ? tip("value") : `${si.paths.value} + salario del DT${si.salary == null ? " (no encontrado: solo el costo)" : ""}`]
   ];
   el.innerHTML = `<dl>${rows.map(([k, v, t]) => `<dt>${k}</dt><dd${t ? ` title="${esc(t)}"` : ""}>${esc(v)}</dd>`).join("")}</dl>`;
 }

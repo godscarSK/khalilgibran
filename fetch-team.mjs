@@ -187,7 +187,7 @@ async function readSchool(teamId, currencyHint) {
   const fields = [], ok = [];
   const walk = (o, src, path = "", d = 0, arrays = false) => {
     if (o == null || d > 5 || fields.length >= 400) return;
-    if (Array.isArray(o)) { if (arrays) o.slice(0, 5).forEach((x, i) => walk(x, src, `${path}[${i}]`, d + 1, arrays)); return; }
+    if (Array.isArray(o)) { if (arrays || /(^|\.)(trainers?|coach(es)?|staff)$/i.test(path)) o.slice(0, 10).forEach((x, i) => walk(x, src, `${path}[${i}]`, d + 1, arrays)); return; }
     if (typeof o === "object") {
       if ("value" in o && "currency" in o && typeof o.value !== "object") { fields.push({ src, path, value: o.value, currency: String(o.currency || "") }); return; }
       for (const [k, v] of Object.entries(o)) walk(v, src, path ? `${path}.${k}` : k, d + 1, arrays);
