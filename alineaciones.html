@@ -244,7 +244,7 @@ dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
 #poolList { overflow-y: auto; padding: 4px 0; flex: 1; }
 .pool.over { outline: 3px dashed var(--accent); outline-offset: -3px; }
 .pl, .slot { user-select: none; -webkit-user-select: none; }
-.pl { display: flex; align-items: center; gap: 7px; padding: 3px 10px; cursor: pointer; border-bottom: 1px solid var(--line); min-height: 36px; }
+.pl { display: flex; align-items: center; gap: 7px; padding: 3px 14px 3px 18px; cursor: pointer; border-bottom: 1px solid var(--line); min-height: 36px; }
 .pl:last-child { border-bottom: 0; }
 .pl:hover { background: var(--zebra); }
 .pl.sel, .slot.filled.sel { background: var(--hl); }
@@ -265,7 +265,7 @@ select.sp { appearance: none; -webkit-appearance: none; cursor: pointer; font: i
 .pop .selbtn { margin-top: 8px; width: 100%; }
 @media (max-width: 640px) { .pop { left: 8px !important; right: 8px; bottom: 8px; top: auto !important; width: auto; } }
 .grip { flex: none; width: 26px; text-align: center; color: var(--muted); cursor: grab; font-size: 1.25rem; line-height: 1; touch-action: none; padding: 9px 0; }
-@media (pointer: coarse) { .grip { width: 44px; font-size: 1.7rem; padding: 12px 0; margin: -4px 0 -4px -6px; background: var(--head-bg); border-radius: 6px; color: var(--ink); } .slot, .pl { min-height: 48px; } }
+@media (pointer: coarse) { .grip { width: 44px; font-size: 1.7rem; padding: 12px 0; margin: -4px 0; background: var(--head-bg); border-radius: 6px; color: var(--ink); } .slot, .pl { min-height: 48px; } }
 .cnt { flex: none; min-width: 26px; text-align: center; padding: 1px 6px; border-radius: 10px; font-weight: 700; font-size: .82rem; font-variant-numeric: tabular-nums; background: var(--head-bg); color: var(--ink); border: 1px solid var(--line); }
 .cnt.z { background: transparent; color: var(--muted); }
 .cnt.full { background: var(--ink); color: var(--panel); border-color: var(--ink); }
@@ -292,7 +292,13 @@ select.sp { appearance: none; -webkit-appearance: none; cursor: pointer; font: i
 .redcard { display: inline-block; width: 10px; height: 14px; border-radius: 2px; background: #d6232a; border: 1px solid rgba(0,0,0,.35); transform: rotate(8deg); }
 .mins { flex: none; padding: 1px 6px; border-radius: 10px; font-weight: 700; font-size: .8rem; font-variant-numeric: tabular-nums; border: 1px solid var(--line); color: var(--ink); background: var(--panel); }
 .mins.z { color: var(--muted); opacity: .6; }
-.lineups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.lineups { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.lrow { display: flex; gap: 16px; align-items: flex-start; }
+.lrow > .lu { flex: 1 1 0; min-width: 0; }
+.lu.off, .lrow.off { display: none; }
+.hbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.hbar[hidden] { display: none; }
+.hbar .btn { min-height: 34px; padding: 4px 12px; }
 .lu { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 10px 12px 12px; }
 .lu .lh { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; border-bottom: 2px solid var(--ink); padding-bottom: 6px; }
 .lu .lh .n { color: var(--muted); font-weight: 600; font-size: .9rem; font-variant-numeric: tabular-nums; }
@@ -343,6 +349,16 @@ select.trs { appearance: none; -webkit-appearance: none; cursor: pointer; font: 
   :root:not([data-theme="light"]) :is(.chip, select.trs)[data-t="PAS"] { background: #5a2440; } :root:not([data-theme="light"]) :is(.chip, select.trs)[data-t="DEF"] { background: #5a3a12; }
   :root:not([data-theme="light"]) :is(.chip, select.trs)[data-t="CRE"] { background: #5a1a17; } :root:not([data-theme="light"]) :is(.chip, select.trs)[data-t="ATT"] { background: #3a4248; } }
 .hintline { color: var(--muted); margin: 0 0 10px; max-width: 80ch; }
+html.cust-RAP :is(.chip, select.trs)[data-t="RAP"] { background: var(--trc-RAP) !important; color: var(--trt-RAP) !important; }
+html.cust-TEC :is(.chip, select.trs)[data-t="TEC"] { background: var(--trc-TEC) !important; color: var(--trt-TEC) !important; }
+html.cust-PAS :is(.chip, select.trs)[data-t="PAS"] { background: var(--trc-PAS) !important; color: var(--trt-PAS) !important; }
+html.cust-DEF :is(.chip, select.trs)[data-t="DEF"] { background: var(--trc-DEF) !important; color: var(--trt-DEF) !important; }
+html.cust-CRE :is(.chip, select.trs)[data-t="CRE"] { background: var(--trc-CRE) !important; color: var(--trt-CRE) !important; }
+html.cust-ATT :is(.chip, select.trs)[data-t="ATT"] { background: var(--trc-ATT) !important; color: var(--trt-ATT) !important; }
+.trcol { flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.tcw { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; font-size: .85rem; }
+.tcw input[type="color"] { width: 34px; height: 28px; padding: 0; border: 1px solid var(--line); border-radius: 4px; background: none; cursor: pointer; }
+.trcol .btn { min-height: 30px; padding: 3px 10px; }
 @media (max-width: 960px) {
   .board { grid-template-columns: minmax(0, 1fr); }
   .pool { max-height: 42vh; z-index: 5; box-shadow: 0 4px 14px rgba(0,0,0,.18); }
@@ -351,7 +367,8 @@ select.trs { appearance: none; -webkit-appearance: none; cursor: pointer; font: 
   .pool .pt { flex-wrap: nowrap; padding: 6px 12px; gap: 6px; }
   .pool .pt input { flex: 1 1 0; width: 0; }
   .pool .pt button.btn { white-space: nowrap; padding: 5px 8px; font-size: .9rem; }
-  .lineups { grid-template-columns: minmax(0, 1fr); }
+  .lrow { flex-direction: column; }
+  .lrow > .lu { width: 100%; flex: none; }
 }
 </style>
 </head>
@@ -628,9 +645,25 @@ function parseTrn() {
   const t = {};
   const OLD = { MID: "CRE", ANO: "ATT" };   // nombres antiguos de dos entrenamientos
   for (const pos of SLOT_POS_OPTS) { const v = o && (OLD[o[pos]] || o[pos]); t[pos] = TRN_OPTS.includes(v) ? v : ""; }
+  t.c = {};
+  if (o && o.c && typeof o.c === "object") for (const k of TRN_OPTS) if (/^#[0-9a-f]{6}$/i.test(o.c[k] || "")) t.c[k] = o.c[k].toLowerCase();
   return t;
 }
+const TRN_DEF = { light: { RAP: "#bfe6fa", TEC: "#dccbf5", PAS: "#f8cfe1", DEF: "#fbd5ae", CRE: "#f5b8b4", ATT: "#d9dde0" },
+                  dark:  { RAP: "#17435a", TEC: "#3b2a5c", PAS: "#5a2440", DEF: "#5a3a12", CRE: "#5a1a17", ATT: "#3a4248" } };
+// Colores elegidos a mano para cada entrenamiento (si no hay, valen los de siempre). Texto claro u oscuro según el brillo del color.
+function applyTrnColors() {
+  const r = document.documentElement;
+  for (const o of TRN_OPTS) {
+    const c = trn.c && trn.c[o];
+    if (c) {
+      const n = parseInt(c.slice(1), 16), lum = 0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255);
+      r.style.setProperty("--trc-" + o, c); r.style.setProperty("--trt-" + o, lum > 150 ? "#1b2a41" : "#ffffff"); r.classList.add("cust-" + o);
+    } else { r.style.removeProperty("--trc-" + o); r.style.removeProperty("--trt-" + o); r.classList.remove("cust-" + o); }
+  }
+}
 let trn = parseTrn();
+applyTrnColors();
 function saveTrn() {
   linMap[TRN_KEY] = { v: JSON.stringify(trn), t: nextT(TRN_KEY) };
   sync.dirty.add(TRN_KEY); saveLin();
@@ -756,7 +789,7 @@ async function pullLin() {
     }
     for (const k of Object.keys(linMap)) if (LKEYS.includes(k) && !remote.has(k)) sync.dirty.add(k);
     saveLin();
-    if (changed) { lu = LINEUPS.map((_, i) => parseLineup(i)); trn = parseTrn(); renderTrn(); renderAll(); }
+    if (changed) { lu = LINEUPS.map((_, i) => parseLineup(i)); trn = parseTrn(); applyTrnColors(); renderTrn(); renderAll(); }
     setSyncState(sync.dirty.size ? "unsynced" : "loaded");
   } catch (err) { setSyncState("offline", explainSync(err)); }
 }
@@ -813,14 +846,26 @@ function renderPool() {
       <span class="mins${minsOf(p.pid) ? "" : " z"}" title="Minutos acumulados en todas las alineaciones">${minsOf(p.pid)}′</span><span class="cnt${n === 0 ? " z" : n === LINEUPS.length ? " full" : ""}" aria-label="En ${n} alineaciones">${n}</span></div>`;
   }).join("") : `<div class="empty">${state.players.length ? "Ningún jugador coincide." : "Sin jugadores."}</div>`;
 }
+const HIDE_KEY = "equipo:alhidden";   // alineaciones ocultas: preferencia de este dispositivo (no se sincroniza)
+const hiddenLu = new Set();
+try { const h = JSON.parse(localStorage.getItem(HIDE_KEY)); if (Array.isArray(h)) h.forEach(n => { if (Number.isInteger(n) && n >= 0 && n < LINEUPS.length) hiddenLu.add(n); }); } catch {}
+function applyHidden() {
+  document.querySelectorAll("article.lu").forEach(a => a.classList.toggle("off", hiddenLu.has(+a.dataset.l)));
+  document.querySelectorAll(".lrow").forEach(r => r.classList.toggle("off", [...r.querySelectorAll("article.lu")].every(a => a.classList.contains("off"))));
+  const bar = $("#hbar");
+  bar.hidden = !hiddenLu.size;
+  bar.innerHTML = [...hiddenLu].sort().map(i => `<button class="btn" type="button" data-show="${i}" title="Volver a mostrar esta alineación">Mostrar ${esc(LINEUPS[i].name)}</button>`).join("");
+  try { localStorage.setItem(HIDE_KEY, JSON.stringify([...hiddenLu])); } catch {}
+}
 function buildLineups() {
-  $("#lineups").innerHTML = LINEUPS.map((l, i) => `<article class="lu" data-l="${i}">
-    <div class="lh"><h2>${esc(l.name)}</h2><span class="n"><span data-n="${i}">0</span>/${SLOTS} <button class="btn" type="button" data-clear="${i}" title="Vaciar esta alineación" style="min-height:28px;padding:2px 8px;margin-left:6px">Vaciar</button></span></div>
+  const art = (l, i) => `<article class="lu" data-l="${i}">
+    <div class="lh"><h2>${esc(l.name)}</h2><span class="n"><span data-n="${i}">0</span>/${SLOTS} <button class="btn" type="button" data-clear="${i}" title="Vaciar esta alineación" style="min-height:28px;padding:2px 8px;margin-left:6px">Vaciar</button><button class="btn" type="button" data-hide="${i}" title="Ocultar esta alineación (la de al lado ocupa su espacio)" style="min-height:28px;padding:2px 8px;margin-left:4px">Ocultar</button></span></div>
     <div class="meta"><span class="day">${esc(l.day)}</span>
       <input class="rival" type="text" maxlength="30" placeholder="Rival" aria-label="Rival de ${esc(l.name)}" data-r="${i}">
       <input class="date" type="date" aria-label="Fecha de ${esc(l.name)}" data-d="${i}"></div>
-    <ol class="slots" data-slots="${i}"></ol></article>`).join("");
-  syncMeta();
+    <ol class="slots" data-slots="${i}"></ol></article>`;
+  $("#lineups").innerHTML = `<div class="hbar" id="hbar" hidden></div><div class="lrow">${art(LINEUPS[0], 0)}${art(LINEUPS[1], 1)}</div><div class="lrow">${art(LINEUPS[2], 2)}${art(LINEUPS[3], 3)}</div>`;
+  applyHidden(); syncMeta();
 }
 function syncMeta() {
   LINEUPS.forEach((_, i) => {
@@ -854,7 +899,8 @@ function renderSlots() {
 function renderTrn() {
   $("#trn").innerHTML = `<strong class="trh">Entrenamiento por posición</strong>` + SLOT_POS_OPTS.map(pos => `<label class="tri"><span class="ptag" data-v="${pos}">${pos}</span>
     <select class="trs" data-trn="${pos}"${trn[pos] ? ` data-t="${trn[pos]}"` : ""} aria-label="Entrenamiento de ${pos}"><option value=""${trn[pos] ? "" : " selected"}>—</option>${TRN_OPTS.map(o => `<option${o === trn[pos] ? " selected" : ""}>${o}</option>`).join("")}</select></label>`).join("") +
-    `<span class="trnote">Los jugadores ENT toman el color del entrenamiento de la posición del puesto en que estén.</span>`;
+    `<span class="trcol"><strong>Colores</strong>${TRN_OPTS.map(o => `<label class="tcw"><input type="color" data-tcol="${o}" value="${(trn.c && trn.c[o]) || TRN_DEF[currentTheme() === "dark" ? "dark" : "light"][o]}" aria-label="Color de ${o}">${o}</label>`).join("")}<button class="btn" type="button" data-tcolreset title="Volver a los colores de siempre">Restablecer</button></span>
+    <span class="trnote">Los jugadores ENT toman el color del entrenamiento de la posición del puesto en que estén. Puedes elegir el color de cada entrenamiento.</span>`;
 }
 function renderAll() {
   dropStaleSel();
@@ -1021,8 +1067,18 @@ function init() {
   $("#syncBtn").addEventListener("click", saveNow);
   $("#forgetPw").addEventListener("click", () => { forgetPw(); location.reload(); });
   $("#trn").addEventListener("change", e => {
+    const c = e.target.closest("[data-tcol]");
+    if (c) { trn.c[c.dataset.tcol] = c.value.toLowerCase(); applyTrnColors(); saveTrn(); renderAll(); return; }
     const t = e.target.closest("[data-trn]"); if (!t) return;
     trn[t.dataset.trn] = t.value; saveTrn(); renderTrn(); renderAll();
+  });
+  $("#trn").addEventListener("input", e => {                       // vista previa mientras eliges el color
+    const c = e.target.closest("[data-tcol]"); if (!c) return;
+    trn.c[c.dataset.tcol] = c.value.toLowerCase(); applyTrnColors();
+  });
+  $("#trn").addEventListener("click", e => {
+    if (!e.target.closest("[data-tcolreset]")) return;
+    trn.c = {}; applyTrnColors(); saveTrn(); renderTrn(); renderAll();
   });
   $("#lineups").addEventListener("change", e => {
     if (e.target.closest("[data-min]")) { renderAll(); return; }
@@ -1054,6 +1110,9 @@ function init() {
     closeSkills();
     const x = e.target.closest("[data-x]");
     if (x) { const [i, j, k] = x.dataset.x.split(",").map(Number); removeEntry(i, j, k); renderAll(); return; }
+    const hd = e.target.closest("[data-hide]"), sh = e.target.closest("[data-show]");
+    if (hd) { hiddenLu.add(+hd.dataset.hide); applyHidden(); return; }
+    if (sh) { hiddenLu.delete(+sh.dataset.show); applyHidden(); return; }
     const c = e.target.closest("[data-clear]");
     if (c) {
       const i = +c.dataset.clear;
