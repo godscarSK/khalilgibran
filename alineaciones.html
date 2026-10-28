@@ -248,7 +248,7 @@ dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
 .pl:last-child { border-bottom: 0; }
 .pl:hover { background: var(--zebra); }
 .pl.sel, .slot.filled.sel { background: var(--hl); }
-.chip { display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; cursor: grab; padding: 2px 8px 2px 0; border-radius: 4px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; cursor: grab; padding: 2px 0 2px 8px; border-radius: 4px; }
 .chip:hover { background: var(--head-bg); }
 .chip .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
 .sp-fill { flex: 1; }
@@ -265,7 +265,7 @@ select.sp { appearance: none; -webkit-appearance: none; cursor: pointer; font: i
 .pop .selbtn { margin-top: 8px; width: 100%; }
 @media (max-width: 640px) { .pop { left: 8px !important; right: 8px; bottom: 8px; top: auto !important; width: auto; } }
 .grip { flex: none; width: 26px; text-align: center; color: var(--muted); cursor: grab; font-size: 1.25rem; line-height: 1; touch-action: none; padding: 9px 0; }
-@media (pointer: coarse) { .grip { width: 44px; font-size: 1.7rem; padding: 12px 0; margin: -4px 0 -4px -6px; background: var(--head-bg); border-radius: 6px; color: var(--ink); } .slot, .pl { min-height: 48px; } }
+@media (pointer: coarse) { .grip { width: 44px; font-size: 1.7rem; padding: 12px 0; margin: -4px -6px -4px 0; background: var(--head-bg); border-radius: 6px; color: var(--ink); } .slot, .pl { min-height: 48px; } }
 .cnt { flex: none; min-width: 26px; text-align: center; padding: 1px 6px; border-radius: 10px; font-weight: 700; font-size: .82rem; font-variant-numeric: tabular-nums; background: var(--head-bg); color: var(--ink); border: 1px solid var(--line); }
 .cnt.z { background: transparent; color: var(--muted); }
 .cnt.full { background: var(--ink); color: var(--panel); border-color: var(--ink); }
@@ -366,7 +366,7 @@ select.trs { appearance: none; -webkit-appearance: none; cursor: pointer; font: 
 
   <div id="status" role="status" aria-live="polite"></div>
   <div id="notices"></div>
-  <p class="hintline">Arrastra un apellido (con su marca) a un puesto; con el dedo, desde el asa ⠿. Toca un apellido para ver sus skills. También puedes tocar el espacio a la derecha del apellido para seleccionarlo y luego tocar el puesto. La posición de cada puesto se puede cambiar. Al abrir la página se cargan los datos guardados en la nube; para guardar los cambios allí, presiona «Guardar Datos». Dentro de una alineación, arrastrar sobre otro puesto los intercambia; entre alineaciones, copia al jugador. Para quitarlo, usa la ✕ o suéltalo sobre la lista de jugadores.</p>
+  <p class="hintline">Arrastra un apellido (con su marca) a un puesto; con el dedo, desde el asa ⠿ que está a la derecha del apellido. Toca un apellido para ver sus skills. También puedes tocar el espacio a la derecha del apellido para seleccionarlo y luego tocar el puesto. La posición de cada puesto se puede cambiar. Al abrir la página se cargan los datos guardados en la nube; para guardar los cambios allí, presiona «Guardar Datos». Dentro de una alineación, arrastrar sobre otro puesto los intercambia; entre alineaciones, copia al jugador. Para quitarlo, usa la ✕ o suéltalo sobre la lista de jugadores.</p>
 
   <section class="trn" id="trn" aria-label="Entrenamiento por posición"></section>
 
@@ -768,7 +768,7 @@ const countOf = pid => lu.reduce((n, L) => n + (L.s.includes(pid) ? 1 : 0), 0);
 function flags(p) {
   return (p.injury ? `<span class="fl" title="Lesionado (${p.injury} días)">✚</span>` : "") + (p.red ? `<span class="fl rc" title="Tarjeta roja"></span>` : "");
 }
-const chipHtml = (p, t) => `<span class="chip"${t ? ` data-t="${t}"` : ""} data-pid="${esc(p.pid)}" title="${esc(p.full)}${t ? " · entrenando " + t : ""} · toca para ver sus skills"><span class="grip" aria-hidden="true">⠿</span><span class="nm">${esc(p.label)}</span>${flags(p)}</span>`;
+const chipHtml = (p, t) => `<span class="chip"${t ? ` data-t="${t}"` : ""} data-pid="${esc(p.pid)}" title="${esc(p.full)}${t ? " · entrenando " + t : ""} · toca para ver sus skills"><span class="nm">${esc(p.label)}</span>${flags(p)}<span class="grip" aria-hidden="true">⠿</span></span>`;
 const spSelect = (i, j) => { const v = lu[i].p[j]; return `<select class="ptag sp"${v ? ` data-v="${v}"` : ""} data-sp="${i},${j}" aria-label="Posición del puesto ${j + 1} de ${esc(LINEUPS[i].name)}"><option value=""${v ? "" : " selected"}>—</option>${SLOT_POS_OPTS.map(o => `<option${o === v ? " selected" : ""}>${o}</option>`).join("")}</select>`; };
 const posTag = pid => estPos[pid] ? `<span class="ptag" data-v="${estPos[pid]}" title="Posición asignada en el Plantel">${estPos[pid]}</span>` : `<span class="ptag" style="visibility:hidden">—</span>`;
 
@@ -812,7 +812,7 @@ function renderSlots() {
       const dup = pid && seen.has(pid); if (pid) seen.add(pid);
       if (!pid) return `<li class="slot empty-s" data-l="${i}" data-i="${j}"><span class="no">${j + 1}</span>${spSelect(i, j)}<span class="nm">Vacío</span></li>`;
       return `<li class="slot filled${dup ? " dup" : ""}${state.sel === pid ? " sel" : ""}" data-l="${i}" data-i="${j}" data-pid="${esc(pid)}"><span class="no">${j + 1}</span>${spSelect(i, j)}
-        ${p ? chipHtml(p, estPos[pid] === "ENT" && L.p[j] ? trn[L.p[j]] : "") : `<span class="chip" data-pid="${esc(pid)}"><span class="grip" aria-hidden="true">⠿</span><span class="nm">Jugador ${esc(pid)}</span></span>`}<span class="sp-fill"></span>
+        ${p ? chipHtml(p, estPos[pid] === "ENT" && L.p[j] ? trn[L.p[j]] : "") : `<span class="chip" data-pid="${esc(pid)}"><span class="nm">Jugador ${esc(pid)}</span><span class="grip" aria-hidden="true">⠿</span></span>`}<span class="sp-fill"></span>
         <button class="x" type="button" data-x="${i},${j}" aria-label="Quitar a ${esc(p ? p.label : pid)} de ${esc(LINEUPS[i].name)}" title="Quitar">✕</button></li>`;
     }).join("");
     document.querySelector(`[data-n="${i}"]`).textContent = L.s.filter(Boolean).length;
