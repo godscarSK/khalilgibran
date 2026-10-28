@@ -95,10 +95,12 @@ Para actualizar esta página hay que volver a ejecutar `node fetch-team.mjs` y s
 
 `alineaciones.html` (sección **Alineaciones** del menú) arma cuatro alineaciones de 11 puestos con los jugadores del plantel: **Copa Int** (viernes), **Liga 1** (domingo), **Copa/Amist** (lunes) y **Liga 2** (miércoles). Cada una tiene, bajo el título, el día, un campo para el **rival** y otro para la **fecha**.
 
-- **Armar:** arrastra un apellido desde la lista «Jugadores» a un puesto. En el celular el arrastre se hace desde el asa ⠿; también puedes tocar un jugador y luego tocar el puesto (la selección se mantiene para ponerlo en otras alineaciones).
+- **Armar:** arrastra un apellido (junto con sus marcas ✚ lesión y tarjeta roja, que siempre lo acompañan) desde la lista «Jugadores» a un puesto; la posición y el contador de la lista no se mueven. En el celular el arrastre se hace desde el asa ⠿. También puedes tocar el espacio a la derecha del apellido para seleccionar al jugador y luego tocar el puesto (la selección se mantiene para ponerlo en otras alineaciones).
+- **Skills:** al tocar un apellido se abre un cuadro con Forma, Condición, Rapidez, Técnica y Pases (primera columna) y Portería, Defensa, Creación y Anotación (segunda). Se cierra con ✕, Escape o tocando fuera.
+- **Posición de cada puesto:** cada número tiene un desplegable (GK, DEF, MID, ATT o vacío), por defecto 1 GK, 4 DEF, 4 MID y 2 ATT. Es independiente del jugador, se cambia a mano y se guarda y sincroniza con la alineación.
 - **Mover:** dentro de una alineación, arrastrar sobre otro puesto los intercambia; entre alineaciones, copia al jugador (los jugadores pueden repetirse entre alineaciones, pero no dentro de una). Para quitarlo: la ✕ del puesto, o soltarlo sobre la lista de jugadores. **Vaciar** limpia una alineación.
 - **Contador:** cada jugador muestra en cuántas de las 4 alineaciones está (0 a 4). **Sin alinear** muestra solo a los que están en 0. Si dos jugadores comparten apellido, se agrega la inicial del nombre.
-- **Marcas:** junto a cada jugador aparece su posición asignada en el Plantel (GK, DEF, MID, ATT, ENT, EXT; solo lectura), ✚ si está lesionado y una tarjeta roja si está suspendido.
+- **Marcas:** en la lista de jugadores aparece su posición asignada en el Plantel (GK, DEF, MID, ATT, ENT, EXT; solo lectura). Junto al apellido, en la lista y en los puestos, ✚ si está lesionado y una tarjeta roja si está suspendido.
 - **Sincronización:** igual que Progreso: se guarda en el navegador y, con `estUrl` en `config.js`, se sincroniza entre dispositivos por el mismo servicio (claves `j2…`; no hace falta cambiar `est-sync.gs`). Usa los mismos datos y la misma contraseña que el Plantel.
 
 ## Columna «Pos.»

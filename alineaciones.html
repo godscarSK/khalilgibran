@@ -243,11 +243,26 @@ dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
 #poolList { overflow-y: auto; padding: 4px 0; flex: 1; }
 .pool.over { outline: 3px dashed var(--accent); outline-offset: -3px; }
 .pl, .slot { user-select: none; -webkit-user-select: none; }
-.pl { display: flex; align-items: center; gap: 7px; padding: 5px 10px; cursor: grab; border-bottom: 1px solid var(--line); min-height: 36px; }
+.pl { display: flex; align-items: center; gap: 7px; padding: 3px 10px; cursor: pointer; border-bottom: 1px solid var(--line); min-height: 36px; }
 .pl:last-child { border-bottom: 0; }
 .pl:hover { background: var(--zebra); }
 .pl.sel, .slot.filled.sel { background: var(--hl); }
-.pl .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.chip { display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; cursor: grab; padding: 2px 8px 2px 0; border-radius: 4px; }
+.chip:hover { background: var(--head-bg); }
+.chip .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.sp-fill { flex: 1; }
+select.sp { appearance: none; -webkit-appearance: none; cursor: pointer; font: inherit; font-size: .78rem; font-weight: 700; min-height: 28px; min-width: 58px; padding: 0 4px; text-align: center; text-align-last: center; background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 3px; line-height: 1.2; }
+.pop { position: fixed; z-index: 70; width: min(330px, calc(100vw - 16px)); background: var(--panel); color: var(--ink); border: 2px solid var(--ink); border-radius: 6px; padding: 10px 12px 12px; box-shadow: 0 8px 28px rgba(0,0,0,.35); }
+.pop .pt2 { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.pop .pt2 h3 { margin: 0; flex: 1; min-width: 0; font-family: "Barlow Condensed", "Arial Narrow", sans-serif; font-size: 1.4rem; line-height: 1.1; }
+.pop .pt2 button.cl { font: inherit; width: 30px; height: 30px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); cursor: pointer; font-size: 1.1rem; }
+.pop .pt2 button.cl:hover { background: var(--head-bg); }
+.pop table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.pop td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.pop td.v { text-align: right; font-weight: 700; padding-right: 14px; }
+.pop tr:last-child td { border-bottom: 0; }
+.pop .selbtn { margin-top: 8px; width: 100%; }
+@media (max-width: 640px) { .pop { left: 8px !important; right: 8px; bottom: 8px; top: auto !important; width: auto; } }
 .grip { flex: none; width: 22px; text-align: center; color: var(--muted); cursor: grab; font-size: 1.05rem; line-height: 1; touch-action: none; padding: 6px 0; }
 .cnt { flex: none; min-width: 26px; text-align: center; padding: 1px 6px; border-radius: 10px; font-weight: 700; font-size: .82rem; font-variant-numeric: tabular-nums; background: var(--head-bg); color: var(--ink); border: 1px solid var(--line); }
 .cnt.z { background: transparent; color: var(--muted); }
@@ -279,16 +294,14 @@ dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
 .lu .meta input.rival { flex: 1 1 8rem; }
 .lu .meta input.date { flex: 0 0 auto; }
 .slots { list-style: none; margin: 0; padding: 0; }
-.slot { display: flex; align-items: center; gap: 7px; min-height: 38px; padding: 3px 4px 3px 8px; border-bottom: 1px solid var(--line); }
+.slot { display: flex; align-items: center; gap: 7px; min-height: 40px; padding: 3px 4px 3px 8px; border-bottom: 1px solid var(--line); }
 .slot:nth-child(odd) { background: var(--zebra); }
 .slot .no { flex: none; width: 1.5rem; text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; font-weight: 600; }
-.slot .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
-.slot.filled { cursor: grab; }
-.slot.empty-s .nm { color: var(--muted); font-weight: 400; }
+.slot.empty-s .nm { flex: 1; color: var(--muted); font-weight: 400; }
 .slot.over { outline: 3px solid var(--focus); outline-offset: -3px; background: var(--hl); }
 .slot .x { flex: none; font: inherit; width: 28px; height: 28px; line-height: 1; cursor: pointer; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font-size: 1.1rem; }
 .slot .x:hover { background: var(--head-bg); color: var(--inj); }
-.slot.dup .nm::after { content: " (repetido)"; color: var(--inj); font-weight: 400; font-size: .8rem; }
+.slot.dup .chip::after { content: " (repetido)"; color: var(--inj); font-weight: 400; font-size: .8rem; }
 .ghost { position: fixed; z-index: 60; pointer-events: none; padding: 6px 12px; border-radius: 6px; background: var(--ink); color: var(--panel); font-weight: 700; box-shadow: 0 6px 18px rgba(0,0,0,.35); transform: translate(-50%, -120%); }
 body.dragging, body.dragging * { cursor: grabbing !important; }
 .hintline { color: var(--muted); margin: 0 0 10px; max-width: 80ch; }
@@ -330,7 +343,7 @@ body.dragging, body.dragging * { cursor: grabbing !important; }
 
   <div id="status" role="status" aria-live="polite"></div>
   <div id="notices"></div>
-  <p class="hintline">Arrastra un apellido a un puesto (con el dedo, desde el asa ⠿). También puedes tocar un jugador y luego tocar el puesto. Dentro de una alineación, arrastrar sobre otro puesto los intercambia; entre alineaciones, copia al jugador. Para quitarlo, usa la ✕ o suéltalo sobre la lista de jugadores.</p>
+  <p class="hintline">Arrastra un apellido (con su marca) a un puesto; con el dedo, desde el asa ⠿. Toca un apellido para ver sus skills. También puedes tocar el espacio a la derecha del apellido para seleccionarlo y luego tocar el puesto. La posición de cada puesto se puede cambiar. Dentro de una alineación, arrastrar sobre otro puesto los intercambia; entre alineaciones, copia al jugador. Para quitarlo, usa la ✕ o suéltalo sobre la lista de jugadores.</p>
 
   <div class="board">
     <aside class="pool" id="pool" aria-label="Jugadores del plantel">
@@ -383,6 +396,20 @@ const SLOTS = 11;
 const LKEY = i => "j2" + String(i + 1).padStart(12, "0");
 const LKEYS = LINEUPS.map((_, i) => LKEY(i));
 const EST_OPTS = ["GK", "DEF", "MID", "ATT", "ENT", "EXT"];
+const SKILL_KEYS = ["stamina", "pace", "technique", "passing", "keeper", "defender", "playmaker", "striker"];
+const SKILL_ALIASES = {
+  stamina:   ["stamina", "stam", "res", "resistencia"],
+  pace:      ["pace", "rap", "rapidez"],
+  technique: ["technique", "tech", "tec", "téc", "tecnica", "técnica"],
+  passing:   ["passing", "pass", "pas", "pase"],
+  keeper:    ["keeper", "goalkeeping", "gk", "por", "portero"],
+  defender:  ["defender", "defending", "def", "defensa"],
+  playmaker: ["playmaker", "playmaking", "pm", "cre", "creacion", "creación"],
+  striker:   ["striker", "scoring", "str", "ano", "anotacion", "anotación"]
+};
+// Posición de cada puesto por defecto (1-4-4-2); se puede cambiar en cada alineación.
+const SLOT_POS_OPTS = ["GK", "DEF", "MID", "ATT"];
+const SLOT_POS_DEFAULT = ["GK", "DEF", "DEF", "DEF", "DEF", "MID", "MID", "MID", "MID", "ATT", "ATT"];
 const POS_ORDER = Object.fromEntries(EST_OPTS.map((o, i) => [o, i]));
 
 const $ = s => document.querySelector(s);
@@ -460,13 +487,40 @@ function surnameOf(info, full) {
   const parts = String(full || "").trim().split(/\s+/);
   return parts.length > 1 ? parts.slice(1).join(" ") : (parts[0] || "");
 }
+function pickSkills(src) {
+  const lower = {};
+  for (const [k, v] of Object.entries(src || {})) lower[k.toLowerCase()] = v;
+  const sk = {};
+  for (const key of SKILL_KEYS) {
+    let v = null;
+    for (const a of SKILL_ALIASES[key]) { if (a in lower) { v = num(lower[a]); if (v !== null) break; } }
+    sk[key] = v;
+  }
+  return sk;
+}
+// Busca el objeto con los niveles de skills: normalmente info.skills; si están en otro lugar, el que más nombres reconocidos tenga.
+function findSkillsSource(info) {
+  const known = new Set(Object.values(SKILL_ALIASES).flat());
+  const score = o => (o && typeof o === "object" && !Array.isArray(o)) ? Object.keys(o).filter(k => known.has(k.toLowerCase())).length : 0;
+  let best = info.skills || {}, bestScore = score(best);
+  const queue = [info];
+  for (let guard = 0; queue.length && guard < 300; guard++) {
+    const o = queue.shift();
+    for (const v of Object.values(o)) {
+      if (v && typeof v === "object" && !Array.isArray(v)) { const sc = score(v); if (sc > bestScore) { best = v; bestScore = sc; } queue.push(v); }
+    }
+  }
+  return bestScore >= 3 ? best : (info.skills || {});
+}
 function makePlayer(row, api) {
   const i = api && api.info;
   const full = (i && i.name && i.name.full) || row.name || String(row.pid);
   return {
     pid: String(row.pid), full, last: surnameOf(i, full), first: full.trim().split(/\s+/)[0] || "",
     injury: i ? (num(i.injury && i.injury.daysRemaining) > 0 ? num(i.injury.daysRemaining) : 0) : 0,
-    red: i ? (num(i.stats && i.stats.cards && i.stats.cards.red) > 0 ? 1 : 0) : 0
+    red: i ? (num(i.stats && i.stats.cards && i.stats.cards.red) > 0 ? 1 : 0) : 0,
+    form: i ? num(i.skills && i.skills.form) : null,
+    sk: i ? pickSkills(findSkillsSource(i)) : null
   };
 }
 function labelPlayers() {
@@ -517,12 +571,14 @@ function parseLineup(i) {
   try { o = JSON.parse(linMap[LKEY(i)] && linMap[LKEY(i)].v); } catch {}
   const s = String((o && o.s) || "").split(",").slice(0, SLOTS);
   while (s.length < SLOTS) s.push("");
-  return { s: s.map(x => x.trim()), r: String((o && o.r) || "").slice(0, 30), d: /^\d{4}-\d{2}-\d{2}$/.test(o && o.d) ? o.d : "" };
+  let sp = o && typeof o.p === "string" ? o.p.split(",").slice(0, SLOTS).map(x => x.trim()) : null;
+  if (!sp || sp.length < SLOTS || sp.some(x => x !== "" && !SLOT_POS_OPTS.includes(x))) sp = SLOT_POS_DEFAULT.slice();
+  return { s: s.map(x => x.trim()), p: sp, r: String((o && o.r) || "").slice(0, 30), d: /^\d{4}-\d{2}-\d{2}$/.test(o && o.d) ? o.d : "" };
 }
 let lu = LINEUPS.map((_, i) => parseLineup(i));
 function saveLineup(i) {
   const k = LKEY(i), L = lu[i];
-  linMap[k] = { v: JSON.stringify({ s: L.s.join(","), r: L.r, d: L.d }), t: nextT(k) };
+  linMap[k] = { v: JSON.stringify({ s: L.s.join(","), p: L.p.join(","), r: L.r, d: L.d }), t: nextT(k) };
   sync.dirty.add(k); saveLin();
   clearTimeout(saveLineup["tm" + i]); saveLineup["tm" + i] = setTimeout(pushDirty, 500);
 }
@@ -656,6 +712,8 @@ const countOf = pid => lu.reduce((n, L) => n + (L.s.includes(pid) ? 1 : 0), 0);
 function flags(p) {
   return (p.injury ? `<span class="fl" title="Lesionado (${p.injury} días)">✚</span>` : "") + (p.red ? `<span class="fl rc" title="Tarjeta roja"></span>` : "");
 }
+const chipHtml = p => `<span class="chip" data-pid="${esc(p.pid)}" title="${esc(p.full)} · toca para ver sus skills"><span class="grip" aria-hidden="true">⠿</span><span class="nm">${esc(p.label)}</span>${flags(p)}</span>`;
+const spSelect = (i, j) => { const v = lu[i].p[j]; return `<select class="ptag sp"${v ? ` data-v="${v}"` : ""} data-sp="${i},${j}" aria-label="Posición del puesto ${j + 1} de ${esc(LINEUPS[i].name)}"><option value=""${v ? "" : " selected"}>—</option>${SLOT_POS_OPTS.map(o => `<option${o === v ? " selected" : ""}>${o}</option>`).join("")}</select>`; };
 const posTag = pid => estPos[pid] ? `<span class="ptag" data-v="${estPos[pid]}" title="Posición asignada en el Plantel">${estPos[pid]}</span>` : `<span class="ptag" style="visibility:hidden">—</span>`;
 
 function renderPool() {
@@ -669,7 +727,7 @@ function renderPool() {
   $("#poolList").innerHTML = rows.length ? rows.map(p => {
     const n = countOf(p.pid);
     return `<div class="pl${n ? "" : " free"}${state.sel === p.pid ? " sel" : ""}" data-pid="${esc(p.pid)}" title="${esc(p.full)} · en ${n} de ${LINEUPS.length} alineaciones">
-      <span class="grip" aria-hidden="true">⠿</span><span class="nm">${esc(p.label)}</span>${posTag(p.pid)}${flags(p)}
+      ${chipHtml(p)}<span class="sp-fill"></span>${posTag(p.pid)}
       <span class="cnt${n === 0 ? " z" : n === LINEUPS.length ? " full" : ""}" aria-label="En ${n} alineaciones">${n}</span></div>`;
   }).join("") : `<div class="empty">${state.players.length ? "Ningún jugador coincide." : "Sin jugadores."}</div>`;
 }
@@ -696,9 +754,9 @@ function renderSlots() {
     $(`[data-slots="${i}"]`).innerHTML = L.s.map((pid, j) => {
       const p = pid ? byPid.get(pid) : null;
       const dup = pid && seen.has(pid); if (pid) seen.add(pid);
-      if (!pid) return `<li class="slot empty-s" data-l="${i}" data-i="${j}"><span class="no">${j + 1}</span><span class="nm">Vacío</span></li>`;
-      return `<li class="slot filled${dup ? " dup" : ""}${state.sel === pid ? " sel" : ""}" data-l="${i}" data-i="${j}" data-pid="${esc(pid)}"><span class="no">${j + 1}</span>
-        <span class="grip" aria-hidden="true">⠿</span><span class="nm">${esc(p ? p.label : "Jugador " + pid)}</span>${posTag(pid)}${p ? flags(p) : ""}
+      if (!pid) return `<li class="slot empty-s" data-l="${i}" data-i="${j}"><span class="no">${j + 1}</span>${spSelect(i, j)}<span class="nm">Vacío</span></li>`;
+      return `<li class="slot filled${dup ? " dup" : ""}${state.sel === pid ? " sel" : ""}" data-l="${i}" data-i="${j}" data-pid="${esc(pid)}"><span class="no">${j + 1}</span>${spSelect(i, j)}
+        ${p ? chipHtml(p) : `<span class="chip" data-pid="${esc(pid)}"><span class="grip" aria-hidden="true">⠿</span><span class="nm">Jugador ${esc(pid)}</span></span>`}<span class="sp-fill"></span>
         <button class="x" type="button" data-x="${i},${j}" aria-label="Quitar a ${esc(p ? p.label : pid)} de ${esc(LINEUPS[i].name)}" title="Quitar">✕</button></li>`;
     }).join("");
     document.querySelector(`[data-n="${i}"]`).textContent = L.s.filter(Boolean).length;
@@ -742,7 +800,9 @@ function onMove(e) {
     if (Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < 6) return;
     drag.on = true;
     ghost = document.createElement("div"); ghost.className = "ghost";
-    const p = byPid.get(drag.pid); ghost.textContent = p ? p.label : drag.pid;
+    const ch = document.querySelector(`.chip[data-pid="${CSS.escape(drag.pid)}"]`);
+    if (ch) { const cl = ch.cloneNode(true); cl.querySelector(".grip")?.remove(); cl.removeAttribute("title"); ghost.appendChild(cl); } else ghost.textContent = drag.pid;
+    closeSkills();
     document.body.appendChild(ghost); document.body.classList.add("dragging");
     scrollTm = setInterval(() => {      // desplaza la página cuando el dedo o el mouse se acercan al borde
       const y = drag && drag.cy; if (y == null) return;
@@ -787,7 +847,7 @@ function onCancel() { drag = null; endDrag(); }
 document.addEventListener("pointerdown", e => {
   if (drag || (e.pointerType === "mouse" && e.button !== 0)) return;
   if (e.target.closest("button, input, select, a")) return;
-  const el = e.target.closest(".pl, .slot.filled");
+  const el = e.target.closest(".chip");
   if (!el) return;
   if (e.pointerType !== "mouse" && !e.target.closest(".grip")) return;   // con el dedo solo se arrastra desde el asa; el resto desplaza la página
   startDrag(e, el);
@@ -810,6 +870,28 @@ function initTheme() {
   });
 }
 
+/* ─────────────── Skills del jugador ─────────────── */
+const SKILL_ROWS = [["Forma", "form", null, null], ["Condición", "stamina", "Portería", "keeper"], ["Rapidez", "pace", "Defensa", "defender"],
+  ["Técnica", "technique", "Creación", "playmaker"], ["Pases", "passing", "Anotación", "striker"]];
+let popPid = "";
+function skillVal(p, k) { const v = k === "form" ? p.form : p.sk && p.sk[k]; return Number.isFinite(v) ? v : "—"; }
+function showSkills(pid, anchor) {
+  const p = byPid.get(pid); if (!p) return;
+  popPid = pid;
+  const pop = $("#skillPop");
+  pop.innerHTML = `<div class="pt2"><h3>${esc(p.full)}</h3>${flags(p)}<button class="cl" type="button" data-closepop aria-label="Cerrar">✕</button></div>
+    <table><tbody>${SKILL_ROWS.map(([l1, k1, l2, k2]) => `<tr><td>${l1}</td><td class="v">${skillVal(p, k1)}</td>${l2 ? `<td>${l2}</td><td class="v">${skillVal(p, k2)}</td>` : "<td></td><td></td>"}</tr>`).join("")}</tbody></table>
+    <button class="btn selbtn" type="button" data-selpop>${state.sel === pid ? "Quitar selección" : "Seleccionar para colocar"}</button>`;
+  pop.hidden = false;
+  if (innerWidth > 640 && anchor) {
+    const r = anchor.getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight;
+    pop.style.left = Math.max(8, Math.min(r.left, innerWidth - w - 8)) + "px";
+    pop.style.top = Math.max(8, Math.min(r.bottom + 6, innerHeight - h - 8)) + "px";
+  }
+}
+function closeSkills() { const pop = $("#skillPop"); if (pop && !pop.hidden) pop.hidden = true; popPid = ""; }
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeSkills(); });
+
 /* ─────────────── Eventos ─────────────── */
 let toastTimer;
 function toast(msg) {
@@ -824,6 +906,11 @@ function init() {
   $("#q").addEventListener("input", e => { state.q = e.target.value; renderPool(); });
   $("#onlyFree").addEventListener("click", e => { state.onlyFree = !state.onlyFree; e.currentTarget.setAttribute("aria-pressed", String(state.onlyFree)); renderPool(); });
   $("#forgetPw").addEventListener("click", () => { forgetPw(); location.reload(); });
+  $("#lineups").addEventListener("change", e => {
+    const sp = e.target.closest("[data-sp]"); if (!sp) return;
+    const [i, j] = sp.dataset.sp.split(",").map(Number);
+    lu[i].p[j] = sp.value; saveLineup(i); renderAll();
+  });
   $("#lineups").addEventListener("input", e => {
     const r = e.target.closest("[data-r]"), d = e.target.closest("[data-d]");
     if (r) { lu[+r.dataset.r].r = r.value.slice(0, 30); saveLineup(+r.dataset.r); }
@@ -831,6 +918,12 @@ function init() {
   });
   document.addEventListener("click", e => {
     if (suppressClick) return;
+    if (e.target.closest("[data-closepop]")) { closeSkills(); return; }
+    if (e.target.closest("[data-selpop]")) { state.sel = state.sel === popPid ? "" : popPid; closeSkills(); renderAll(); return; }
+    if (e.target.closest("#skillPop")) return;
+    const chip = e.target.closest(".chip");
+    if (chip && !e.target.closest(".grip")) { if (popPid === chip.dataset.pid) closeSkills(); else showSkills(chip.dataset.pid, chip); return; }
+    closeSkills();
     const x = e.target.closest("[data-x]");
     if (x) { const [i, j] = x.dataset.x.split(",").map(Number); removeAt(i, j); renderAll(); return; }
     const c = e.target.closest("[data-clear]");
@@ -839,6 +932,7 @@ function init() {
       if (lu[i].s.some(Boolean) && confirm(`¿Vaciar la alineación «${LINEUPS[i].name}»?`)) { lu[i].s = Array(SLOTS).fill(""); saveLineup(i); renderAll(); }
       return;
     }
+    if (e.target.closest("select")) return;
     const slot = e.target.closest(".slot");
     if (slot && state.sel && !e.target.closest(".grip")) {                  // toque: colocar al jugador seleccionado en este puesto
       place(+slot.dataset.l, +slot.dataset.i, state.sel); renderAll(); return;
@@ -858,6 +952,7 @@ function init() {
 }
 init();
 </script>
+<div class="pop" id="skillPop" role="dialog" aria-label="Skills del jugador" hidden></div>
 <div id="toast" role="status" aria-live="polite"></div>
 </body>
 </html>
