@@ -1108,9 +1108,9 @@ async function copyText(text) {
 async function copyTable() {
   const rows = visibleRows();
   const cols = COLS.filter(c => !((c.key === "value" || c.key === "wage") && state.hideVal));
-  const lines = [cols.map(c => c.label === "#" ? "N" : c.label).join("\t")];
+  const lines = [cols.flatMap(c => c.key === "name" ? [c.label, "PID"] : [c.label === "#" ? "N" : c.label]).join("\t")];
   rows.forEach((p, i) => {
-    lines.push(cols.map(c => c.key === "n" ? i + 1 : c.key === "name" ? (p.name || p.pid) : cellText(p, c.key).replace(/\t|\n/g, " ")).join("\t"));
+    lines.push(cols.flatMap(c => c.key === "n" ? [i + 1] : c.key === "name" ? [p.name || p.pid, p.pid ?? ""] : [cellText(p, c.key).replace(/\t|\n/g, " ")]).join("\t"));
   });
   await copyText(lines.join("\n"));
   const btn = $("#copy"), old = btn.textContent;
