@@ -264,8 +264,7 @@ select.sp { appearance: none; -webkit-appearance: none; cursor: pointer; font: i
 .pop tr:last-child td { border-bottom: 0; }
 .pop .selbtn { margin-top: 8px; width: 100%; }
 @media (max-width: 640px) { .pop { left: 8px !important; right: 8px; bottom: 8px; top: auto !important; width: auto; } }
-.grip { flex: none; width: 26px; text-align: center; color: var(--muted); cursor: grab; font-size: 1.25rem; line-height: 1; touch-action: none; padding: 9px 0; }
-@media (pointer: coarse) { .grip { width: 44px; font-size: 1.7rem; padding: 12px 0; margin: -4px 0; background: var(--head-bg); border-radius: 6px; color: var(--ink); } .slot, .pl { min-height: 48px; } }
+.grip { flex: none; width: 22px; text-align: center; color: var(--muted); cursor: grab; font-size: 1.05rem; line-height: 1; touch-action: none; padding: 6px 0; }
 .cnt { flex: none; min-width: 26px; text-align: center; padding: 1px 6px; border-radius: 10px; font-weight: 700; font-size: .82rem; font-variant-numeric: tabular-nums; background: var(--head-bg); color: var(--ink); border: 1px solid var(--line); }
 .cnt.z { background: transparent; color: var(--muted); }
 .cnt.full { background: var(--ink); color: var(--panel); border-color: var(--ink); }
@@ -358,7 +357,6 @@ html.cust-ATT :is(.chip, select.trs)[data-t="ATT"] { background: var(--trc-ATT) 
 .trcol { flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
 .tcw { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; font-size: .85rem; }
 .tcw input[type="color"] { width: 34px; height: 28px; padding: 0; border: 1px solid var(--line); border-radius: 4px; background: none; cursor: pointer; }
-.trcol .btn { min-height: 30px; padding: 3px 10px; }
 @media (max-width: 960px) {
   .board { grid-template-columns: minmax(0, 1fr); }
   .pool { max-height: 42vh; z-index: 5; box-shadow: 0 4px 14px rgba(0,0,0,.18); }
@@ -603,10 +601,13 @@ async function load() {
   }
   state.players = st.rows.map(r => makePlayer(r, st.api && st.api[r.pid]));
   state.stamp = st.generatedAt ? Date.parse(st.generatedAt) : null;
+  state.teamId = st.team && st.team.id; state.teamName = (st.team && st.team.name) || ""; state.matches = st.matches && Array.isArray(st.matches.items) ? st.matches.items : null;
+  state.dataReady = true;
   labelPlayers();
   byPid.clear(); for (const p of state.players) byPid.set(p.pid, p);
   setStatus("");
   renderAll();
+  maybeAdvance();
 }
 
 /* ─────────────── Alineaciones: datos, guardado y sincronización ───────────────
@@ -635,9 +636,14 @@ function parseLineup(i) {
   const s = raw.map(x => x.split("+").slice(0, MAXSUB).map(t => { const [pid, m] = t.trim().split(":"); return pid && pid.trim() ? { p: pid.trim(), m: /^\d{1,3}$/.test(m || "") ? String(+m) : "" } : null; }).filter(Boolean));
   let sp = o && typeof o.p === "string" ? o.p.split(",").slice(0, SLOTS).map(x => x.trim()) : null;
   if (!sp || sp.length < SLOTS || sp.some(x => x !== "" && !SLOT_POS_OPTS.includes(x))) sp = SLOT_POS_DEFAULT.slice();
-  return { s, p: sp, r: String((o && o.r) || "").slice(0, 30), d: /^\d{4}-\d{2}-\d{2}$/.test(o && o.d) ? o.d : "" };
+  return { s, p: sp, w: /^\d{4}-\d{2}-\d{2}$/.test(o && o.w) ? o.w : "", r: String((o && o.r) || "").slice(0, 30), d: /^\d{4}-\d{2}-\d{2}$/.test(o && o.d) ? o.d : "" };
 }
 let lu = LINEUPS.map((_, i) => parseLineup(i));
+// La semana de Sokker va de jueves a miércoles. «w» de cada alineación = jueves de la semana de los datos con que se fijó su fecha.
+const ymd = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const weekKeyOf = t => { const d = new Date(t), back = (d.getDay() - 4 + 7) % 7; return ymd(new Date(d.getFullYear(), d.getMonth(), d.getDate() - back)); };
+const dataWeekKey = () => state.stamp ? weekKeyOf(state.stamp) : "";
+const addDays = (str, n) => { const [y, m, d] = str.split("-").map(Number); const t = new Date(Date.UTC(y, m - 1, d + n)); return `${t.getUTCFullYear()}-${String(t.getUTCMonth() + 1).padStart(2, "0")}-${String(t.getUTCDate()).padStart(2, "0")}`; };
 const touched = new Set();   // claves cambiadas en esta visita: la carga inicial desde la nube no las pisa
 function parseTrn() {
   let o = null;
@@ -672,7 +678,8 @@ function saveTrn() {
 }
 function saveLineup(i) {
   const k = LKEY(i), L = lu[i];
-  linMap[k] = { v: JSON.stringify({ s: L.s.map(es => es.map(e => e.m !== "" ? e.p + ":" + e.m : e.p).join("+")).join(","), p: L.p.join(","), r: L.r, d: L.d }), t: nextT(k) };
+  if (!L.w) L.w = dataWeekKey();
+  linMap[k] = { v: JSON.stringify({ w: L.w, s: L.s.map(es => es.map(e => e.m !== "" ? e.p + ":" + e.m : e.p).join("+")).join(","), p: L.p.join(","), r: L.r, d: L.d }), t: nextT(k) };
   sync.dirty.add(k); saveLin();
   touched.add(k);
   if (CONFIG.estUrl) setSyncState("unsynced");   // solo se sube a la nube con el botón «Guardar Datos»
@@ -790,8 +797,45 @@ async function pullLin() {
     for (const k of Object.keys(linMap)) if (LKEYS.includes(k) && !remote.has(k)) sync.dirty.add(k);
     saveLin();
     if (changed) { lu = LINEUPS.map((_, i) => parseLineup(i)); trn = parseTrn(); applyTrnColors(); renderTrn(); renderAll(); }
+    sync.pullOk = true;
     setSyncState(sync.dirty.size ? "unsynced" : "loaded");
+    maybeAdvance();
   } catch (err) { setSyncState("offline", explainSync(err)); }
+}
+// Rival de un día: el equipo contrario del partido de ese día en los datos de la API («—» si no hay partido o no tiene rival asignado).
+function rivalFor(dateStr) {
+  if (!dateStr || !state.matches) return "—";
+  for (const m of state.matches) {
+    if (!m || !m.date || ymd(new Date(m.date)) !== dateStr) continue;
+    const mine = id => id != null && state.teamId != null && String(id) === String(state.teamId);
+    const same = n => n && state.teamName && String(n).trim().toLowerCase() === state.teamName.trim().toLowerCase();
+    const opp = mine(m.homeId) || same(m.home) ? m.away : mine(m.awayId) || same(m.away) ? m.home : m.opponent;
+    if (opp && String(opp).trim()) return String(opp).trim().slice(0, 30);
+  }
+  return "—";
+}
+// Cuando llegan los datos de una semana nueva (jueves), la fecha de cada alineación avanza 7 días por cada semana transcurrida
+// y el rival se rellena con el del partido de ese día. Se hace una sola vez y queda como cambio sin guardar.
+let advancedOnce = false;
+function maybeAdvance() {
+  if (advancedOnce || !state.dataReady || !state.stamp) return;
+  if (CONFIG.estUrl && !sync.pullOk) return;                // primero se cargan las alineaciones de la nube
+  advancedOnce = true;
+  const wk = dataWeekKey(), done = [];
+  lu.forEach((L, i) => {
+    if (!(L.d || L.r || L.s.some(es => es.length))) return;
+    if (!L.w) { L.w = wk; saveLineup(i); return; }          // primera vez: solo se anota la semana
+    if (L.w >= wk) return;
+    const weeks = Math.max(1, Math.round((Date.parse(wk) - Date.parse(L.w)) / 604800000));
+    if (L.d) L.d = addDays(L.d, 7 * weeks);
+    L.r = rivalFor(L.d); L.w = wk; saveLineup(i); done.push(`${LINEUPS[i].name}: ${L.d ? L.d.split("-").reverse().join("-") : "sin fecha"}, rival ${L.r}`);
+  });
+  if (!done.length) return;
+  renderAll();
+  const box = document.createElement("div");
+  box.className = "notice";
+  box.innerHTML = `<p><strong>Llegaron datos de una semana nueva:</strong> las fechas avanzaron 7 días y se rellenaron los rivales (${esc(done.join("; "))}).${state.matches ? "" : " No encontré partidos en los datos, por eso los rivales quedaron con una raya."} Presiona «Guardar Datos» para guardarlo en la nube.</p>`;
+  $("#notices").appendChild(box);
 }
 let estStarted = "";
 async function estStart(pw) {
@@ -899,7 +943,7 @@ function renderSlots() {
 function renderTrn() {
   $("#trn").innerHTML = `<strong class="trh">Entrenamiento por posición</strong>` + SLOT_POS_OPTS.map(pos => `<label class="tri"><span class="ptag" data-v="${pos}">${pos}</span>
     <select class="trs" data-trn="${pos}"${trn[pos] ? ` data-t="${trn[pos]}"` : ""} aria-label="Entrenamiento de ${pos}"><option value=""${trn[pos] ? "" : " selected"}>—</option>${TRN_OPTS.map(o => `<option${o === trn[pos] ? " selected" : ""}>${o}</option>`).join("")}</select></label>`).join("") +
-    `<span class="trcol"><strong>Colores</strong>${TRN_OPTS.map(o => `<label class="tcw"><input type="color" data-tcol="${o}" value="${(trn.c && trn.c[o]) || TRN_DEF[currentTheme() === "dark" ? "dark" : "light"][o]}" aria-label="Color de ${o}">${o}</label>`).join("")}<button class="btn" type="button" data-tcolreset title="Volver a los colores de siempre">Restablecer</button></span>
+    `<span class="trcol"><strong>Colores</strong>${TRN_OPTS.map(o => `<label class="tcw"><input type="color" data-tcol="${o}" value="${(trn.c && trn.c[o]) || TRN_DEF[currentTheme() === "dark" ? "dark" : "light"][o]}" aria-label="Color de ${o}">${o}</label>`).join("")}</span>
     <span class="trnote">Los jugadores ENT toman el color del entrenamiento de la posición del puesto en que estén. Puedes elegir el color de cada entrenamiento.</span>`;
 }
 function renderAll() {
@@ -1076,10 +1120,7 @@ function init() {
     const c = e.target.closest("[data-tcol]"); if (!c) return;
     trn.c[c.dataset.tcol] = c.value.toLowerCase(); applyTrnColors();
   });
-  $("#trn").addEventListener("click", e => {
-    if (!e.target.closest("[data-tcolreset]")) return;
-    trn.c = {}; applyTrnColors(); saveTrn(); renderTrn(); renderAll();
-  });
+
   $("#lineups").addEventListener("change", e => {
     if (e.target.closest("[data-min]")) { renderAll(); return; }
     const sp = e.target.closest("[data-sp]"); if (!sp) return;
@@ -1098,7 +1139,7 @@ function init() {
       saveLineup(i); renderPool();
     }
     else if (r) { lu[+r.dataset.r].r = r.value.slice(0, 30); saveLineup(+r.dataset.r); }
-    else if (d) { lu[+d.dataset.d].d = d.value; saveLineup(+d.dataset.d); }
+    else if (d) { const L = lu[+d.dataset.d]; L.d = d.value; L.w = dataWeekKey() || L.w; saveLineup(+d.dataset.d); }
   });
   document.addEventListener("click", e => {
     if (suppressClick) return;
