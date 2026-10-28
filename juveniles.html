@@ -293,6 +293,7 @@ dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
       <select class="nav" id="nav">
         <option value="./">Plantel</option>
         <option value="juveniles.html" selected>Juveniles</option>
+        <option value="alineaciones.html">Alineaciones</option>
       </select>
     </label>
     <button class="theme" id="theme" type="button" aria-label="Cambiar a modo oscuro" title="Cambiar a modo oscuro"></button>
@@ -612,7 +613,7 @@ async function pullProg() {
     let changed = false;
     for (const it of j.items || []) {
       const k = String(it.pid), t = Number(it.t) || 0;
-      if (!/^j\d+$/.test(k)) continue;           // las claves numéricas son de la página del plantel
+      if (!/^j\d+$/.test(k) || /^j2\d{12}$/.test(k)) continue;           // las claves numéricas son de la página del plantel; «j2…» son las Alineaciones
       remote.add(k); remoteT[k] = Math.max(remoteT[k] || 0, t);
       let v;
       try { v = await decV(it.v); }

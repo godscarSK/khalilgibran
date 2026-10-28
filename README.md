@@ -6,6 +6,7 @@ Página con la tabla de **los jugadores de tu propio equipo en Sokker**. Es una 
 
 - `index.html`: la página del plantel.
 - `juveniles.html`: la página de juveniles.
+- `alineaciones.html`: la página de alineaciones.
 - `logo.png`: el escudo que se muestra junto al título (opcional: si falta, la página se ve igual, sin escudo).
 - `config.js`: configuración propia (dirección del servicio que sincroniza la columna «Pos.» entre dispositivos). No hace falta tocarlo al actualizar `index.html`.
 - `fetch-team.mjs`: script que se ejecuta en tu computador, inicia sesión en Sokker y genera los datos.
@@ -29,7 +30,7 @@ Si la API entrega la temporada y la semana actuales, ambas páginas las muestran
 
 ## Menú de secciones
 
-Arriba a la derecha, junto al botón de tema, hay un menú desplegable con dos opciones: **Plantel** (`index.html`) y **Juveniles** (`juveniles.html`). La contraseña se escribe una sola vez: las dos páginas la comparten en el mismo navegador.
+Arriba a la derecha, junto al botón de tema, hay un menú desplegable con tres opciones: **Plantel** (`index.html`), **Juveniles** (`juveniles.html`) y **Alineaciones** (`alineaciones.html`). La contraseña se escribe una sola vez: las tres páginas la comparten en el mismo navegador.
 
 ## Qué muestra el plantel
 
@@ -89,6 +90,16 @@ La API entrega los datos de los juveniles bajo nombres de campo que la página b
 Los textos se identifican por el id del juvenil. Si pegas (o escribes) números separados por espacios, la página pone una coma entre ellos automáticamente («10 12 14» queda «10,12,14»). Junto a Progreso, la columna **Recuento de Entrenos** cuenta cuántos elementos tiene el texto (separados por coma, sin espacios) y le resta 1 (nunca baja de 0) y se actualiza mientras escribes. Muestra ✓ si el número coincide con **Semanas Entrenadas** y ✗ si no.
 
 Para actualizar esta página hay que volver a ejecutar `node fetch-team.mjs` y subir `data/juniors.enc.json`.
+
+## Página de alineaciones
+
+`alineaciones.html` (sección **Alineaciones** del menú) arma cuatro alineaciones de 11 puestos con los jugadores del plantel: **Copa Int** (viernes), **Liga 1** (domingo), **Copa/Amist** (lunes) y **Liga 2** (miércoles). Cada una tiene, bajo el título, el día, un campo para el **rival** y otro para la **fecha**.
+
+- **Armar:** arrastra un apellido desde la lista «Jugadores» a un puesto. En el celular el arrastre se hace desde el asa ⠿; también puedes tocar un jugador y luego tocar el puesto (la selección se mantiene para ponerlo en otras alineaciones).
+- **Mover:** dentro de una alineación, arrastrar sobre otro puesto los intercambia; entre alineaciones, copia al jugador (los jugadores pueden repetirse entre alineaciones, pero no dentro de una). Para quitarlo: la ✕ del puesto, o soltarlo sobre la lista de jugadores. **Vaciar** limpia una alineación.
+- **Contador:** cada jugador muestra en cuántas de las 4 alineaciones está (0 a 4). **Sin alinear** muestra solo a los que están en 0. Si dos jugadores comparten apellido, se agrega la inicial del nombre.
+- **Marcas:** junto a cada jugador aparece su posición asignada en el Plantel (GK, DEF, MID, ATT, ENT, EXT; solo lectura), ✚ si está lesionado y una tarjeta roja si está suspendido.
+- **Sincronización:** igual que Progreso: se guarda en el navegador y, con `estUrl` en `config.js`, se sincroniza entre dispositivos por el mismo servicio (claves `j2…`; no hace falta cambiar `est-sync.gs`). Usa los mismos datos y la misma contraseña que el Plantel.
 
 ## Columna «Pos.»
 
