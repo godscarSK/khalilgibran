@@ -236,7 +236,8 @@ dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
 .pool { position: sticky; top: 8px; max-height: calc(100vh - 16px); display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; }
 .pool h2, .lu h2 { margin: 0; font-family: "Barlow Condensed", "Arial Narrow", sans-serif; font-weight: 700; font-size: 1.5rem; line-height: 1.1; }
 .pool .ph { padding: 10px 12px 8px; border-bottom: 2px solid var(--ink); display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 10px; }
-.pool .ph small { color: var(--muted); font-weight: 600; }
+.pool .ph small { color: var(--muted); font-weight: 600; flex: 1 1 100%; }
+.pool .ph .btn { min-height: 32px; padding: 3px 12px; }
 .pool .pt { padding: 8px 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; border-bottom: 1px solid var(--line); }
 .pool .pt input { flex: 1 1 100%; min-width: 0; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 6px 9px; min-height: 36px; }
 .pool .pt button.btn { min-height: 36px; padding: 5px 10px; }
@@ -343,11 +344,11 @@ body.dragging, body.dragging * { cursor: grabbing !important; }
 
   <div id="status" role="status" aria-live="polite"></div>
   <div id="notices"></div>
-  <p class="hintline">Arrastra un apellido (con su marca) a un puesto; con el dedo, desde el asa ⠿. Toca un apellido para ver sus skills. También puedes tocar el espacio a la derecha del apellido para seleccionarlo y luego tocar el puesto. La posición de cada puesto se puede cambiar. Dentro de una alineación, arrastrar sobre otro puesto los intercambia; entre alineaciones, copia al jugador. Para quitarlo, usa la ✕ o suéltalo sobre la lista de jugadores.</p>
+  <p class="hintline">Arrastra un apellido (con su marca) a un puesto; con el dedo, desde el asa ⠿. Toca un apellido para ver sus skills. También puedes tocar el espacio a la derecha del apellido para seleccionarlo y luego tocar el puesto. La posición de cada puesto se puede cambiar. Los cambios se guardan en este dispositivo; para llevarlos a la nube y traer los de otros dispositivos, presiona «Sincronizar». Dentro de una alineación, arrastrar sobre otro puesto los intercambia; entre alineaciones, copia al jugador. Para quitarlo, usa la ✕ o suéltalo sobre la lista de jugadores.</p>
 
   <div class="board">
     <aside class="pool" id="pool" aria-label="Jugadores del plantel">
-      <div class="ph"><h2>Jugadores</h2><small id="poolInfo"></small></div>
+      <div class="ph"><h2>Jugadores</h2><button class="btn primary" id="syncBtn" type="button" hidden title="Envía tus cambios a la nube y trae los de otros dispositivos">Sincronizar</button><small id="poolInfo"></small></div>
       <div class="pt">
         <input type="search" id="q" placeholder="Buscar" autocomplete="off" aria-label="Buscar jugador">
         <button class="btn" id="onlyFree" type="button" aria-pressed="false" title="Mostrar solo a los jugadores que no están en ninguna alineación">Sin alinear</button>
@@ -580,10 +581,10 @@ function saveLineup(i) {
   const k = LKEY(i), L = lu[i];
   linMap[k] = { v: JSON.stringify({ s: L.s.join(","), p: L.p.join(","), r: L.r, d: L.d }), t: nextT(k) };
   sync.dirty.add(k); saveLin();
-  clearTimeout(saveLineup["tm" + i]); saveLineup["tm" + i] = setTimeout(pushDirty, 500);
+  if (CONFIG.estUrl) setSyncState("unsynced");   // la sincronización es manual: botón «Sincronizar»
 }
 
-const SYNC_TEXT = { local: "", ok: "Alineaciones sincronizadas.", pending: "Sincronizando alineaciones…",
+const SYNC_TEXT = { local: "", unsynced: "Hay cambios sin sincronizar: presiona «Sincronizar».", ok: "Alineaciones sincronizadas.", pending: "Sincronizando alineaciones…",
   offline: "Alineaciones pendientes de sincronizar (sin conexión con el servicio).",
   token: "No se pudo sincronizar: el servicio rechazó la clave. Usa la misma contraseña que en la página del plantel." };
 const syncText = () => (SYNC_TEXT[sync.state] || "") + (sync.detail && (sync.state === "offline" || sync.state === "token") ? " Motivo: " + sync.detail : "");
@@ -701,11 +702,18 @@ let estStarted = "";
 async function estStart(pw) {
   if (!CONFIG.estUrl) return;
   if (estStarted !== pw) { estStarted = pw; try { await estInit(pw); } catch { return; } }
+  setSyncState(sync.dirty.size ? "unsynced" : "local");   // no se sincroniza sola: solo con el botón «Sincronizar»
+}
+async function syncNow() {
+  const b = $("#syncBtn");
+  if (!CONFIG.estUrl) { toast("No hay servicio de sincronización configurado (config.js)."); return; }
+  if (!sync.key) { toast("Espera a que carguen los datos e inténtalo de nuevo."); return; }
+  b.disabled = true; const old = b.textContent; b.textContent = "Sincronizando…";
   setSyncState("pending");
   await pullLin();
+  b.disabled = false; b.textContent = old;
+  toast(sync.state === "ok" ? "Sincronizado" : "No se pudo sincronizar");
 }
-document.addEventListener("visibilitychange", () => { if (!document.hidden && !drag) pullLin(); });
-window.addEventListener("online", () => { pullLin(); });
 
 /* ─────────────── Dibujo ─────────────── */
 const countOf = pid => lu.reduce((n, L) => n + (L.s.includes(pid) ? 1 : 0), 0);
@@ -905,6 +913,8 @@ function init() {
   buildLineups();
   $("#q").addEventListener("input", e => { state.q = e.target.value; renderPool(); });
   $("#onlyFree").addEventListener("click", e => { state.onlyFree = !state.onlyFree; e.currentTarget.setAttribute("aria-pressed", String(state.onlyFree)); renderPool(); });
+  $("#syncBtn").hidden = !CONFIG.estUrl;
+  $("#syncBtn").addEventListener("click", syncNow);
   $("#forgetPw").addEventListener("click", () => { forgetPw(); location.reload(); });
   $("#lineups").addEventListener("change", e => {
     const sp = e.target.closest("[data-sp]"); if (!sp) return;

@@ -101,7 +101,7 @@ Para actualizar esta página hay que volver a ejecutar `node fetch-team.mjs` y s
 - **Mover:** dentro de una alineación, arrastrar sobre otro puesto los intercambia; entre alineaciones, copia al jugador (los jugadores pueden repetirse entre alineaciones, pero no dentro de una). Para quitarlo: la ✕ del puesto, o soltarlo sobre la lista de jugadores. **Vaciar** limpia una alineación.
 - **Contador:** cada jugador muestra en cuántas de las 4 alineaciones está (0 a 4). **Sin alinear** muestra solo a los que están en 0. Si dos jugadores comparten apellido, se agrega la inicial del nombre.
 - **Marcas:** en la lista de jugadores aparece su posición asignada en el Plantel (GK, DEF, MID, ATT, ENT, EXT; solo lectura). Junto al apellido, en la lista y en los puestos, ✚ si está lesionado y una tarjeta roja si está suspendido.
-- **Sincronización:** igual que Progreso: se guarda en el navegador y, con `estUrl` en `config.js`, se sincroniza entre dispositivos por el mismo servicio (claves `j2…`; no hace falta cambiar `est-sync.gs`). Usa los mismos datos y la misma contraseña que el Plantel.
+- **Sincronización (manual):** los cambios se guardan al instante en el navegador, pero solo viajan a la nube cuando presionas **Sincronizar** (arriba de la lista de jugadores; aparece si `estUrl` está en `config.js`). El botón envía lo nuevo de este dispositivo y trae lo más reciente de los demás (gana el cambio más nuevo de cada alineación). Mientras haya cambios sin enviar, bajo el título aparece un aviso. Usa el mismo servicio que Progreso (claves `j2…`; no hace falta cambiar `est-sync.gs`). Usa los mismos datos y la misma contraseña que el Plantel.
 
 ## Columna «Pos.»
 
