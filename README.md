@@ -93,7 +93,7 @@ Para actualizar esta página hay que volver a ejecutar `node fetch-team.mjs` y s
 
 ## Página de alineaciones
 
-`alineaciones.html` (sección **Alineaciones** del menú) arma cuatro alineaciones de 11 puestos con los jugadores del plantel: **Copa Int** (viernes), **Liga 1** (domingo), **Copa/Amist** (lunes) y **Liga 2** (miércoles). Cada una tiene, bajo el título, el día, un campo para el **rival** y otro para la **fecha**.
+`alineaciones.html` (sección **Alineaciones** del menú) arma cuatro alineaciones de 11 puestos con los jugadores del plantel: **Copa Internacional** (viernes), **Liga 1** (domingo), **Copa/Amistoso** (lunes) y **Liga 2** (miércoles). Cada una tiene, bajo el título, el día, un campo para el **rival** y otro para la **fecha**.
 
 - **Armar:** arrastra un apellido (junto con sus marcas ✚ lesión y tarjeta roja, que siempre lo acompañan) desde la lista «Jugadores» a un puesto; la posición y el contador de la lista no se mueven. En el celular el arrastre se hace desde el asa ⠿, que está a la izquierda del apellido. También puedes tocar el espacio a la derecha del apellido para seleccionar al jugador y luego tocar el puesto (la selección se mantiene para ponerlo en otras alineaciones).
 - **Entrenamiento por posición:** sobre las alineaciones hay un cuadro con GK, DEF, MID y ATT y, a la derecha de cada una, un desplegable con el entrenamiento: RAP (celeste), TEC (violeta), PAS (rosado), DEF (naranjo), CRE (rojo) o ATT (gris). Los jugadores marcados **ENT** en el Plantel se ven con el fondo del color del entrenamiento asignado a la posición del puesto en que están (si el puesto o la posición no tienen entrenamiento, sin color). El cuadro se guarda y se carga igual que las alineaciones.

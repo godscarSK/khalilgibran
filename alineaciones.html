@@ -152,22 +152,22 @@ select.est {
   color: var(--ink); background: var(--bg); border: 1px solid var(--line);
 }
 select.est[data-v="GK"] { background: #fbefc2; border-color: #c9a227; font-weight: 700; }
-select.est[data-v="DEF"] { background: #dbe7fb; border-color: #6b8fd0; font-weight: 700; }
-select.est[data-v="MID"] { background: #d4efdc; border-color: #5b9a74; font-weight: 700; }
-select.est[data-v="ATT"] { background: #f9d9d6; border-color: #d0605a; font-weight: 700; }
+select.est[data-v="DEF"] { background: #d9b99b; border-color: #7a4a21; font-weight: 700; }
+select.est[data-v="MID"] { background: #e3b0bf; border-color: #7b1e3a; font-weight: 700; }
+select.est[data-v="ATT"] { background: #b5c3e6; border-color: #1b2a63; font-weight: 700; }
 select.est[data-v="ENT"] { background: #e6dcf5; border-color: #8a6cc0; font-weight: 700; }
 select.est[data-v="EXT"] { background: #d3eef0; border-color: #4aa3ad; font-weight: 700; }
 :root[data-theme="dark"] select.est[data-v="GK"] { background: #4a3f12; border-color: #c9a227; }
-:root[data-theme="dark"] select.est[data-v="DEF"] { background: #1d3157; border-color: #5a82c9; }
-:root[data-theme="dark"] select.est[data-v="MID"] { background: #1f4130; border-color: #4f9d73; }
-:root[data-theme="dark"] select.est[data-v="ATT"] { background: #4a1f1c; border-color: #d0605a; }
+:root[data-theme="dark"] select.est[data-v="DEF"] { background: #4a3320; border-color: #b07a45; }
+:root[data-theme="dark"] select.est[data-v="MID"] { background: #4a1626; border-color: #b03a5a; }
+:root[data-theme="dark"] select.est[data-v="ATT"] { background: #172447; border-color: #4a63b5; }
 :root[data-theme="dark"] select.est[data-v="ENT"] { background: #33224f; border-color: #8a6cc0; }
 :root[data-theme="dark"] select.est[data-v="EXT"] { background: #17383d; border-color: #4aa3ad; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) select.est[data-v="GK"] { background: #4a3f12; border-color: #c9a227; }
-  :root:not([data-theme="light"]) select.est[data-v="DEF"] { background: #1d3157; border-color: #5a82c9; }
-  :root:not([data-theme="light"]) select.est[data-v="MID"] { background: #1f4130; border-color: #4f9d73; }
-  :root:not([data-theme="light"]) select.est[data-v="ATT"] { background: #4a1f1c; border-color: #d0605a; }
+  :root:not([data-theme="light"]) select.est[data-v="DEF"] { background: #4a3320; border-color: #b07a45; }
+  :root:not([data-theme="light"]) select.est[data-v="MID"] { background: #4a1626; border-color: #b03a5a; }
+  :root:not([data-theme="light"]) select.est[data-v="ATT"] { background: #172447; border-color: #4a63b5; }
   :root:not([data-theme="light"]) select.est[data-v="ENT"] { background: #33224f; border-color: #8a6cc0; }
   :root:not([data-theme="light"]) select.est[data-v="EXT"] { background: #17383d; border-color: #4aa3ad; }
 }
@@ -271,19 +271,21 @@ select.sp { appearance: none; -webkit-appearance: none; cursor: pointer; font: i
 .cnt.full { background: var(--ink); color: var(--panel); border-color: var(--ink); }
 .ptag { flex: none; min-width: 34px; text-align: center; padding: 0 5px; border-radius: 3px; border: 1px solid transparent; font-size: .72rem; font-weight: 700; line-height: 1.5; }
 .ptag[data-v="GK"] { background: #fbefc2; border-color: #c9a227; color: #1b2a41; }
-.ptag[data-v="DEF"] { background: #dbe7fb; border-color: #6b8fd0; color: #1b2a41; }
-.ptag[data-v="MID"] { background: #d4efdc; border-color: #5b9a74; color: #1b2a41; }
-.ptag[data-v="ATT"] { background: #f9d9d6; border-color: #d0605a; color: #1b2a41; }
+.ptag[data-v="DEF"] { background: #d9b99b; border-color: #7a4a21; color: #1b2a41; }
+.ptag[data-v="MID"] { background: #e3b0bf; border-color: #7b1e3a; color: #1b2a41; }
+.ptag[data-v="ATT"] { background: #b5c3e6; border-color: #1b2a63; color: #1b2a41; }
 .ptag[data-v="ENT"] { background: #e6dcf5; border-color: #8a6cc0; color: #1b2a41; }
 .ptag[data-v="EXT"] { background: #d3eef0; border-color: #4aa3ad; color: #1b2a41; }
 :root[data-theme="dark"] .ptag[data-v] { color: #e6edf1; }
-:root[data-theme="dark"] .ptag[data-v="GK"] { background: #4a3f12; } :root[data-theme="dark"] .ptag[data-v="DEF"] { background: #1d3157; }
-:root[data-theme="dark"] .ptag[data-v="MID"] { background: #1f4130; } :root[data-theme="dark"] .ptag[data-v="ATT"] { background: #4a1f1c; }
+:root[data-theme="dark"] .ptag[data-v="GK"] { background: #4a3f12; } :root[data-theme="dark"] .ptag[data-v="DEF"] { background: #4a3320; }
+:root[data-theme="dark"] .ptag[data-v="MID"] { background: #4a1626; } :root[data-theme="dark"] .ptag[data-v="ATT"] { background: #172447; }
 :root[data-theme="dark"] .ptag[data-v="ENT"] { background: #33224f; } :root[data-theme="dark"] .ptag[data-v="EXT"] { background: #17383d; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .ptag[data-v] { color: #e6edf1; }
-  :root:not([data-theme="light"]) .ptag[data-v="GK"] { background: #4a3f12; } :root:not([data-theme="light"]) .ptag[data-v="DEF"] { background: #1d3157; }
-  :root:not([data-theme="light"]) .ptag[data-v="MID"] { background: #1f4130; } :root:not([data-theme="light"]) .ptag[data-v="ATT"] { background: #4a1f1c; }
+  :root:not([data-theme="light"]) .ptag[data-v="GK"] { background: #4a3f12; } :root:not([data-theme="light"]) .ptag[data-v="DEF"] { background: #4a3320; }
+  :root:not([data-theme="light"]) .ptag[data-v="MID"] { background: #4a1626; } :root:not([data-theme="light"]) .ptag[data-v="ATT"] { background: #172447; }
   :root:not([data-theme="light"]) .ptag[data-v="ENT"] { background: #33224f; } :root:not([data-theme="light"]) .ptag[data-v="EXT"] { background: #17383d; } }
+:root[data-theme="dark"] .ptag[data-v="DEF"] { border-color: #b07a45; } :root[data-theme="dark"] .ptag[data-v="MID"] { border-color: #b03a5a; } :root[data-theme="dark"] .ptag[data-v="ATT"] { border-color: #4a63b5; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .ptag[data-v="DEF"] { border-color: #b07a45; } :root:not([data-theme="light"]) .ptag[data-v="MID"] { border-color: #b03a5a; } :root:not([data-theme="light"]) .ptag[data-v="ATT"] { border-color: #4a63b5; } }
 .flg { flex: none; position: relative; top: -3px; }
 .inj { display: inline-flex; align-items: center; gap: 3px; font-size: .72rem; font-weight: 700; color: var(--inj); white-space: nowrap; }
 .inj svg { width: 13px; height: 13px; fill: var(--inj); }
@@ -330,7 +332,7 @@ select.trs { appearance: none; -webkit-appearance: none; cursor: pointer; font: 
 :is(.chip, select.trs)[data-t="DEF"] { background: #fbd5ae; border-color: #e08a2b; color: #1b2a41; }
 :is(.chip, select.trs)[data-t="CRE"] { background: #f5b8b4; border-color: #d0362f; color: #1b2a41; }
 :is(.chip, select.trs)[data-t="ATT"] { background: #d9dde0; border-color: #8a959d; color: #1b2a41; }
-.chip[data-t] { border: 1px solid; padding-left: 2px; }
+.chip[data-t] { border: 0; padding-left: 2px; }
 .chip[data-t]:hover { filter: brightness(.96); background: inherit; }
 :root[data-theme="dark"] [data-t] { color: #e6edf1; }
 :root[data-theme="dark"] :is(.chip, select.trs)[data-t="RAP"] { background: #17435a; } :root[data-theme="dark"] :is(.chip, select.trs)[data-t="TEC"] { background: #3b2a5c; }
@@ -425,9 +427,9 @@ const CONFIG = {
 };
 // Las cuatro alineaciones, en orden. Cada una viaja por el servicio con una clave propia («j2» + 12 dígitos) que las otras páginas ignoran.
 const LINEUPS = [
-  { name: "Copa Int",   day: "Viernes" },
+  { name: "Copa Internacional", day: "Viernes" },
   { name: "Liga 1",     day: "Domingo" },
-  { name: "Copa/Amist", day: "Lunes" },
+  { name: "Copa/Amistoso", day: "Lunes" },
   { name: "Liga 2",     day: "Miércoles" }
 ];
 const SLOTS = 11;
@@ -793,7 +795,10 @@ const chipHtml = (p, t) => `<span class="chip"${t ? ` data-t="${t}"` : ""} data-
 const spSelect = (i, j) => { const v = lu[i].p[j]; return `<select class="ptag sp"${v ? ` data-v="${v}"` : ""} data-sp="${i},${j}" aria-label="Posición del puesto ${j + 1} de ${esc(LINEUPS[i].name)}"><option value=""${v ? "" : " selected"}>—</option>${SLOT_POS_OPTS.map(o => `<option${o === v ? " selected" : ""}>${o}</option>`).join("")}</select>`; };
 const posTag = pid => estPos[pid] ? `<span class="ptag" data-v="${estPos[pid]}" title="Posición asignada en el Plantel">${estPos[pid]}</span>` : `<span class="ptag" style="visibility:hidden">—</span>`;
 
+// Con «Sin alinear» activo, un jugador seleccionado que ya quedó alineado (y por eso sale de la lista) deja de estar seleccionado.
+const dropStaleSel = () => { if (state.onlyFree && state.sel && countOf(state.sel)) state.sel = ""; };
 function renderPool() {
+  dropStaleSel();
   const q = state.q.trim().toLowerCase();
   const rows = state.players.filter(p => {
     if (state.onlyFree && countOf(p.pid)) return false;
@@ -852,6 +857,7 @@ function renderTrn() {
     `<span class="trnote">Los jugadores ENT toman el color del entrenamiento de la posición del puesto en que estén.</span>`;
 }
 function renderAll() {
+  dropStaleSel();
   const when = state.stamp ? fmtDate(state.stamp) : "";
   $("#lede").innerHTML = `${when ? esc(`Datos al ${when}${when.endsWith(".") ? "" : "."}`) : ""}<span id="syncMsg">${syncText() ? " " + esc(syncText()) : ""}</span>`;
   renderSlots(); renderPool(); syncMeta();
