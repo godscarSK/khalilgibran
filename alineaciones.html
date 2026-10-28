@@ -248,7 +248,7 @@ dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
 .pl:last-child { border-bottom: 0; }
 .pl:hover { background: var(--zebra); }
 .pl.sel, .slot.filled.sel { background: var(--hl); }
-.chip { display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; cursor: grab; padding: 2px 0 2px 8px; border-radius: 4px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; cursor: grab; padding: 2px 8px 2px 0; border-radius: 4px; }
 .chip:hover { background: var(--head-bg); }
 .chip .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
 .sp-fill { flex: 1; }
@@ -265,7 +265,7 @@ select.sp { appearance: none; -webkit-appearance: none; cursor: pointer; font: i
 .pop .selbtn { margin-top: 8px; width: 100%; }
 @media (max-width: 640px) { .pop { left: 8px !important; right: 8px; bottom: 8px; top: auto !important; width: auto; } }
 .grip { flex: none; width: 26px; text-align: center; color: var(--muted); cursor: grab; font-size: 1.25rem; line-height: 1; touch-action: none; padding: 9px 0; }
-@media (pointer: coarse) { .grip { width: 44px; font-size: 1.7rem; padding: 12px 0; margin: -4px -6px -4px 0; background: var(--head-bg); border-radius: 6px; color: var(--ink); } .slot, .pl { min-height: 48px; } }
+@media (pointer: coarse) { .grip { width: 44px; font-size: 1.7rem; padding: 12px 0; margin: -4px 0 -4px -6px; background: var(--head-bg); border-radius: 6px; color: var(--ink); } .slot, .pl { min-height: 48px; } }
 .cnt { flex: none; min-width: 26px; text-align: center; padding: 1px 6px; border-radius: 10px; font-weight: 700; font-size: .82rem; font-variant-numeric: tabular-nums; background: var(--head-bg); color: var(--ink); border: 1px solid var(--line); }
 .cnt.z { background: transparent; color: var(--muted); }
 .cnt.full { background: var(--ink); color: var(--panel); border-color: var(--ink); }
@@ -284,8 +284,12 @@ select.sp { appearance: none; -webkit-appearance: none; cursor: pointer; font: i
   :root:not([data-theme="light"]) .ptag[data-v="GK"] { background: #4a3f12; } :root:not([data-theme="light"]) .ptag[data-v="DEF"] { background: #1d3157; }
   :root:not([data-theme="light"]) .ptag[data-v="MID"] { background: #1f4130; } :root:not([data-theme="light"]) .ptag[data-v="ATT"] { background: #4a1f1c; }
   :root:not([data-theme="light"]) .ptag[data-v="ENT"] { background: #33224f; } :root:not([data-theme="light"]) .ptag[data-v="EXT"] { background: #17383d; } }
-.fl { flex: none; font-weight: 700; color: var(--inj); font-size: .8rem; }
-.fl.rc { display: inline-block; width: 9px; height: 13px; border-radius: 2px; background: #d6232a; border: 1px solid rgba(0,0,0,.35); }
+.flg { flex: none; position: relative; top: -3px; }
+.inj { display: inline-flex; align-items: center; gap: 3px; font-size: .72rem; font-weight: 700; color: var(--inj); white-space: nowrap; }
+.inj svg { width: 13px; height: 13px; fill: var(--inj); }
+.redcard { display: inline-block; width: 10px; height: 14px; border-radius: 2px; background: #d6232a; border: 1px solid rgba(0,0,0,.35); transform: rotate(8deg); }
+.mins { flex: none; padding: 1px 6px; border-radius: 10px; font-weight: 700; font-size: .8rem; font-variant-numeric: tabular-nums; border: 1px solid var(--line); color: var(--ink); background: var(--panel); }
+.mins.z { color: var(--muted); opacity: .6; }
 .lineups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .lu { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 10px 12px 12px; }
 .lu .lh { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; border-bottom: 2px solid var(--ink); padding-bottom: 6px; }
@@ -296,14 +300,23 @@ select.sp { appearance: none; -webkit-appearance: none; cursor: pointer; font: i
 .lu .meta input.rival { flex: 1 1 8rem; }
 .lu .meta input.date { flex: 0 0 auto; }
 .slots { list-style: none; margin: 0; padding: 0; }
-.slot { display: flex; align-items: center; gap: 7px; min-height: 40px; padding: 3px 4px 3px 8px; border-bottom: 1px solid var(--line); }
+.slot { border-bottom: 1px solid var(--line); padding: 0 4px 0 8px; }
 .slot:nth-child(odd) { background: var(--zebra); }
+.srow { display: flex; align-items: center; gap: 7px; min-height: 40px; }
+.srow.sub { min-height: 36px; }
+.subind { flex: none; width: calc(1.5rem + 58px + 7px); text-align: right; color: var(--muted); }
 .slot .no { flex: none; width: 1.5rem; text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; font-weight: 600; }
-.slot.empty-s .nm { flex: 1; color: var(--muted); font-weight: 400; }
-.slot.over { outline: 3px solid var(--focus); outline-offset: -3px; background: var(--hl); }
+.ent { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; border-radius: 4px; padding: 1px 2px; }
+.ent.empty .nm { flex: 1; text-align: left; color: var(--muted); font-weight: 400; }
+.ent.sel { background: var(--hl); }
+.ent.over, .plus.over, .slot.over { outline: 3px solid var(--focus); outline-offset: -3px; background: var(--hl); }
+input.min { flex: none; width: 3rem; text-align: center; font: inherit; font-size: .9rem; font-variant-numeric: tabular-nums; padding: 3px 4px; min-height: 30px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; }
+input.min.man { border-color: var(--ink); font-weight: 700; }
+.mu { flex: none; margin-left: -4px; color: var(--muted); font-size: .85rem; }
+.plus { flex: none; width: 30px; height: 30px; cursor: pointer; font: inherit; font-weight: 700; line-height: 1; border: 1px dashed var(--muted); border-radius: 4px; background: transparent; color: var(--muted); }
+.plus:hover { color: var(--ink); border-color: var(--ink); }
 .slot .x { flex: none; font: inherit; width: 28px; height: 28px; line-height: 1; cursor: pointer; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font-size: 1.1rem; }
 .slot .x:hover { background: var(--head-bg); color: var(--inj); }
-.slot.dup .chip::after { content: " (repetido)"; color: var(--inj); font-weight: 400; font-size: .8rem; }
 .ghost { position: fixed; z-index: 60; pointer-events: none; padding: 6px 12px; border-radius: 6px; background: var(--ink); color: var(--panel); font-weight: 700; box-shadow: 0 6px 18px rgba(0,0,0,.35); transform: translate(-50%, -120%); }
 body.dragging, body.dragging * { cursor: grabbing !important; }
 .trn { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 8px 12px; margin: 0 0 14px; }
@@ -366,7 +379,7 @@ select.trs { appearance: none; -webkit-appearance: none; cursor: pointer; font: 
 
   <div id="status" role="status" aria-live="polite"></div>
   <div id="notices"></div>
-  <p class="hintline">Arrastra un apellido (con su marca) a un puesto; con el dedo, desde el asa ⠿ que está a la derecha del apellido. Toca un apellido para ver sus skills. También puedes tocar el espacio a la derecha del apellido para seleccionarlo y luego tocar el puesto. La posición de cada puesto se puede cambiar. Al abrir la página se cargan los datos guardados en la nube; para guardar los cambios allí, presiona «Guardar Datos». Dentro de una alineación, arrastrar sobre otro puesto los intercambia; entre alineaciones, copia al jugador. Para quitarlo, usa la ✕ o suéltalo sobre la lista de jugadores.</p>
+  <p class="hintline">Arrastra un apellido (con su marca) a un puesto; con el dedo, desde el asa ⠿. Con «＋» agregas un sustituto en el mismo número (hasta 3 por número) y los minutos se reparten solos (90, 45 o 30), aunque puedes cambiarlos a mano. Toca un apellido para ver sus skills. También puedes tocar el espacio a la derecha del apellido para seleccionarlo y luego tocar el puesto. La posición de cada puesto se puede cambiar. Al abrir la página se cargan los datos guardados en la nube; para guardar los cambios allí, presiona «Guardar Datos». Dentro de una alineación, arrastrar sobre otro puesto los intercambia; entre alineaciones, copia al jugador. Para quitarlo, usa la ✕ o suéltalo sobre la lista de jugadores.</p>
 
   <section class="trn" id="trn" aria-label="Entrenamiento por posición"></section>
 
@@ -418,6 +431,7 @@ const LINEUPS = [
   { name: "Liga 2",     day: "Miércoles" }
 ];
 const SLOTS = 11;
+const MAXSUB = 3;            // jugadores por número: titular y hasta dos sustitutos
 const LKEY = i => "j2" + String(i + 1).padStart(12, "0");
 const TRN_KEY = "j2000000000009";           // entrenamiento asignado a cada posición (también viaja por el servicio)
 const LKEYS = [...LINEUPS.map((_, i) => LKEY(i)), TRN_KEY];
@@ -596,11 +610,13 @@ const saveLin = () => { try { localStorage.setItem(LIN_KEY, JSON.stringify(linMa
 function parseLineup(i) {
   let o = null;
   try { o = JSON.parse(linMap[LKEY(i)] && linMap[LKEY(i)].v); } catch {}
-  const s = String((o && o.s) || "").split(",").slice(0, SLOTS);
-  while (s.length < SLOTS) s.push("");
+  // Cada número guarda una lista de jugadores («pid+pid+pid»); un pid puede llevar los minutos escritos a mano («pid:30»).
+  const raw = String((o && o.s) || "").split(",").slice(0, SLOTS);
+  while (raw.length < SLOTS) raw.push("");
+  const s = raw.map(x => x.split("+").slice(0, MAXSUB).map(t => { const [pid, m] = t.trim().split(":"); return pid && pid.trim() ? { p: pid.trim(), m: /^\d{1,3}$/.test(m || "") ? String(+m) : "" } : null; }).filter(Boolean));
   let sp = o && typeof o.p === "string" ? o.p.split(",").slice(0, SLOTS).map(x => x.trim()) : null;
   if (!sp || sp.length < SLOTS || sp.some(x => x !== "" && !SLOT_POS_OPTS.includes(x))) sp = SLOT_POS_DEFAULT.slice();
-  return { s: s.map(x => x.trim()), p: sp, r: String((o && o.r) || "").slice(0, 30), d: /^\d{4}-\d{2}-\d{2}$/.test(o && o.d) ? o.d : "" };
+  return { s, p: sp, r: String((o && o.r) || "").slice(0, 30), d: /^\d{4}-\d{2}-\d{2}$/.test(o && o.d) ? o.d : "" };
 }
 let lu = LINEUPS.map((_, i) => parseLineup(i));
 const touched = new Set();   // claves cambiadas en esta visita: la carga inicial desde la nube no las pisa
@@ -621,7 +637,7 @@ function saveTrn() {
 }
 function saveLineup(i) {
   const k = LKEY(i), L = lu[i];
-  linMap[k] = { v: JSON.stringify({ s: L.s.join(","), p: L.p.join(","), r: L.r, d: L.d }), t: nextT(k) };
+  linMap[k] = { v: JSON.stringify({ s: L.s.map(es => es.map(e => e.m !== "" ? e.p + ":" + e.m : e.p).join("+")).join(","), p: L.p.join(","), r: L.r, d: L.d }), t: nextT(k) };
   sync.dirty.add(k); saveLin();
   touched.add(k);
   if (CONFIG.estUrl) setSyncState("unsynced");   // solo se sube a la nube con el botón «Guardar Datos»
@@ -764,11 +780,16 @@ async function saveNow() {
 }
 
 /* ─────────────── Dibujo ─────────────── */
-const countOf = pid => lu.reduce((n, L) => n + (L.s.includes(pid) ? 1 : 0), 0);
+const countOf = pid => lu.reduce((n, L) => n + (L.s.some(es => es.some(e => e.p === pid)) ? 1 : 0), 0);
+// Minutos de un jugador en su número: los escritos a mano o, si no, 90 repartidos entre los jugadores de ese número (90, 45 o 30).
+const entMin = (es, e) => e.m !== "" ? Number(e.m) : Math.round(90 / es.length);
+const minsOf = pid => lu.reduce((n, L) => n + L.s.reduce((a, es) => a + es.reduce((b, e) => b + (e.p === pid ? entMin(es, e) : 0), 0), 0), 0);
 function flags(p) {
-  return (p.injury ? `<span class="fl" title="Lesionado (${p.injury} días)">✚</span>` : "") + (p.red ? `<span class="fl rc" title="Tarjeta roja"></span>` : "");
+  const d = p.injury;
+  return (d ? `<span class="flg inj" title="Lesionado: ${d} ${d === 1 ? "día" : "días"}" aria-label="Lesionado, ${d} ${d === 1 ? "día" : "días"}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 2h6v7h7v6h-7v7H9v-7H2V9h7z"/></svg>${d} d</span>` : "")
+    + (p.red ? `<span class="flg redcard" title="Tarjeta roja: suspendido" role="img" aria-label="Tarjeta roja, suspendido"></span>` : "");
 }
-const chipHtml = (p, t) => `<span class="chip"${t ? ` data-t="${t}"` : ""} data-pid="${esc(p.pid)}" title="${esc(p.full)}${t ? " · entrenando " + t : ""} · toca para ver sus skills"><span class="nm">${esc(p.label)}</span>${flags(p)}<span class="grip" aria-hidden="true">⠿</span></span>`;
+const chipHtml = (p, t) => `<span class="chip"${t ? ` data-t="${t}"` : ""} data-pid="${esc(p.pid)}" title="${esc(p.full)}${t ? " · entrenando " + t : ""} · toca para ver sus skills"><span class="grip" aria-hidden="true">⠿</span><span class="nm">${esc(p.label)}</span>${flags(p)}</span>`;
 const spSelect = (i, j) => { const v = lu[i].p[j]; return `<select class="ptag sp"${v ? ` data-v="${v}"` : ""} data-sp="${i},${j}" aria-label="Posición del puesto ${j + 1} de ${esc(LINEUPS[i].name)}"><option value=""${v ? "" : " selected"}>—</option>${SLOT_POS_OPTS.map(o => `<option${o === v ? " selected" : ""}>${o}</option>`).join("")}</select>`; };
 const posTag = pid => estPos[pid] ? `<span class="ptag" data-v="${estPos[pid]}" title="Posición asignada en el Plantel">${estPos[pid]}</span>` : `<span class="ptag" style="visibility:hidden">—</span>`;
 
@@ -784,7 +805,7 @@ function renderPool() {
     const n = countOf(p.pid);
     return `<div class="pl${n ? "" : " free"}${state.sel === p.pid ? " sel" : ""}" data-pid="${esc(p.pid)}" title="${esc(p.full)} · en ${n} de ${LINEUPS.length} alineaciones">
       ${chipHtml(p)}<span class="sp-fill"></span>${posTag(p.pid)}
-      <span class="cnt${n === 0 ? " z" : n === LINEUPS.length ? " full" : ""}" aria-label="En ${n} alineaciones">${n}</span></div>`;
+      <span class="mins${minsOf(p.pid) ? "" : " z"}" title="Minutos acumulados en todas las alineaciones">${minsOf(p.pid)}′</span><span class="cnt${n === 0 ? " z" : n === LINEUPS.length ? " full" : ""}" aria-label="En ${n} alineaciones">${n}</span></div>`;
   }).join("") : `<div class="empty">${state.players.length ? "Ningún jugador coincide." : "Sin jugadores."}</div>`;
 }
 function buildLineups() {
@@ -803,19 +824,26 @@ function syncMeta() {
     if (d && d !== document.activeElement && d.value !== lu[i].d) d.value = lu[i].d;
   });
 }
+function entHtml(i, j, k) {
+  const L = lu[i], es = L.s[j], e = es[k], p = byPid.get(e.p);
+  const tr = estPos[e.p] === "ENT" && L.p[j] ? trn[L.p[j]] || "" : "";
+  const name = p ? p.label : "Jugador " + e.p;
+  const chip = p ? chipHtml(p, tr) : `<span class="chip" data-pid="${esc(e.p)}"><span class="grip" aria-hidden="true">⠿</span><span class="nm">${esc(name)}</span></span>`;
+  const mv = e.m !== "" ? e.m : String(Math.round(90 / es.length));
+  return `<span class="ent${state.sel === e.p ? " sel" : ""}" data-l="${i}" data-j="${j}" data-k="${k}" data-pid="${esc(e.p)}">${chip}`
+    + `<input class="min${e.m !== "" ? " man" : ""}" type="text" inputmode="numeric" maxlength="3" value="${mv}" data-min="${i},${j},${k}" aria-label="Minutos de ${esc(name)}" title="Minutos que jugará (si no los cambias: 90 con un jugador en el número, 45 con dos, 30 con tres)"><span class="mu" aria-hidden="true">′</span>`
+    + `<span class="sp-fill"></span><button class="x" type="button" data-x="${i},${j},${k}" aria-label="Quitar a ${esc(name)} de ${esc(LINEUPS[i].name)}" title="Quitar">✕</button></span>`;
+}
 function renderSlots() {
   LINEUPS.forEach((_, i) => {
     const L = lu[i];
-    const seen = new Set();
-    $(`[data-slots="${i}"]`).innerHTML = L.s.map((pid, j) => {
-      const p = pid ? byPid.get(pid) : null;
-      const dup = pid && seen.has(pid); if (pid) seen.add(pid);
-      if (!pid) return `<li class="slot empty-s" data-l="${i}" data-i="${j}"><span class="no">${j + 1}</span>${spSelect(i, j)}<span class="nm">Vacío</span></li>`;
-      return `<li class="slot filled${dup ? " dup" : ""}${state.sel === pid ? " sel" : ""}" data-l="${i}" data-i="${j}" data-pid="${esc(pid)}"><span class="no">${j + 1}</span>${spSelect(i, j)}
-        ${p ? chipHtml(p, estPos[pid] === "ENT" && L.p[j] ? trn[L.p[j]] : "") : `<span class="chip" data-pid="${esc(pid)}"><span class="nm">Jugador ${esc(pid)}</span><span class="grip" aria-hidden="true">⠿</span></span>`}<span class="sp-fill"></span>
-        <button class="x" type="button" data-x="${i},${j}" aria-label="Quitar a ${esc(p ? p.label : pid)} de ${esc(LINEUPS[i].name)}" title="Quitar">✕</button></li>`;
+    $(`[data-slots="${i}"]`).innerHTML = L.s.map((es, j) => {
+      const main = es.length ? entHtml(i, j, 0) : `<span class="ent empty" data-l="${i}" data-j="${j}" data-k="0"><span class="nm">Vacío</span></span>`;
+      const plus = es.length && es.length < MAXSUB ? `<button class="plus" type="button" data-plus="${i},${j}" aria-label="Agregar un sustituto en el número ${j + 1}" title="Agregar un sustituto en este número (suelta aquí a un jugador, o selecciónalo y toca)">＋</button>` : "";
+      const subs = es.slice(1).map((_, k) => `<div class="srow sub"><span class="subind" aria-hidden="true">↳</span>${entHtml(i, j, k + 1)}</div>`).join("");
+      return `<li class="slot" data-l="${i}" data-j="${j}"><div class="srow"><span class="no">${j + 1}</span>${spSelect(i, j)}${main}${plus}</div>${subs}</li>`;
     }).join("");
-    document.querySelector(`[data-n="${i}"]`).textContent = L.s.filter(Boolean).length;
+    document.querySelector(`[data-n="${i}"]`).textContent = L.s.filter(es => es.length).length;
   });
 }
 function renderTrn() {
@@ -830,28 +858,47 @@ function renderAll() {
 }
 
 /* ─────────────── Colocar, quitar y arrastrar ─────────────── */
-// Pone a pid en el puesto j de la alineación i. Si ya estaba en esa alineación, intercambia puestos (el ocupante pasa a su lugar anterior).
-function place(i, j, pid) {
-  const L = lu[i].s, old = L.indexOf(pid);
-  if (old === j) return;
-  if (old >= 0) L[old] = L[j];
-  L[j] = pid;
-  saveLineup(i);
+const findIn = (i, pid) => { const S = lu[i].s; for (let j = 0; j < S.length; j++) { const k = S[j].findIndex(e => e.p === pid); if (k >= 0) return { j, k }; } return null; };
+// Suelta a pid sobre un jugador (o sobre un número vacío) de la alineación i. Sobre un jugador: si pid ya está en la alineación, se intercambian
+// de lugar (cada uno con sus minutos); si no, pid ocupa su lugar. Sobre un número vacío: pid pasa a ser su titular (y se mueve si ya estaba en otro).
+function dropEntry(i, j, k, pid) {
+  const S = lu[i].s, tgt = S[j][k], ex = findIn(i, pid);
+  if (!tgt) { S[j].push(ex ? S[ex.j].splice(ex.k, 1)[0] : { p: pid, m: "" }); }
+  else if (ex && ex.j === j && ex.k === k) return false;
+  else if (ex) { const a = S[ex.j][ex.k]; S[ex.j][ex.k] = tgt; S[j][k] = a; }
+  else S[j][k] = { p: pid, m: "" };
+  saveLineup(i); return true;
 }
-function removeAt(i, j) { if (!lu[i].s[j]) return; lu[i].s[j] = ""; saveLineup(i); }
+// Suelta a pid como sustituto del número j (hasta MAXSUB jugadores por número). Si ya estaba en otro número de la alineación, se mueve.
+function dropPlus(i, j, pid) {
+  const S = lu[i].s, ex = findIn(i, pid);
+  if (!S[j].length) return dropEntry(i, j, 0, pid);
+  if (ex && ex.j === j) return false;
+  if (S[j].length >= MAXSUB) { toast("Máximo 3 jugadores por número"); return false; }
+  S[j].push(ex ? S[ex.j].splice(ex.k, 1)[0] : { p: pid, m: "" });
+  saveLineup(i); return true;
+}
+function dropAt(el, pid) {
+  const plus = el.closest(".plus"), ent = el.closest(".ent"), slot = el.closest(".slot");
+  if (plus) { const [i, j] = plus.dataset.plus.split(",").map(Number); return dropPlus(i, j, pid); }
+  if (ent) return dropEntry(+ent.dataset.l, +ent.dataset.j, +ent.dataset.k, pid);
+  if (slot) return dropPlus(+slot.dataset.l, +slot.dataset.j, pid);
+  return false;
+}
+function removeEntry(i, j, k) { if (!lu[i].s[j][k]) return; lu[i].s[j].splice(k, 1); saveLineup(i); }
 
 let drag = null, suppressClick = false;
 function startDrag(e, el) {
-  const slot = el.closest(".slot");
+  const ent = el.closest(".ent");
   const pid = el.dataset.pid;
-  drag = { pid, from: slot ? { l: +slot.dataset.l, i: +slot.dataset.i } : null, x: e.clientX, y: e.clientY, id: e.pointerId, on: false, touch: e.pointerType !== "mouse" };
+  drag = { pid, from: ent ? { l: +ent.dataset.l, j: +ent.dataset.j, k: +ent.dataset.k } : null, x: e.clientX, y: e.clientY, id: e.pointerId, on: false, touch: e.pointerType !== "mouse" };
   window.addEventListener("pointermove", onMove);
   window.addEventListener("pointerup", onUp);
   window.addEventListener("pointercancel", onCancel);
 }
 function dropTarget(x, y) {
   const el = document.elementFromPoint(x, y);
-  return { slot: el && el.closest(".slot"), pool: el && el.closest("#pool") };
+  return { el, mark: el && (el.closest(".plus") || el.closest(".ent") || el.closest(".slot")), pool: el && el.closest("#pool") };
 }
 let ghost = null, scrollTm = null;
 function onMove(e) {
@@ -877,9 +924,9 @@ function onMove(e) {
 }
 function markOver() {
   if (!drag || drag.cx == null) return;
-  document.querySelectorAll(".slot.over, .pool.over").forEach(n => n.classList.remove("over"));
+  document.querySelectorAll(".slot.over, .ent.over, .plus.over, .pool.over").forEach(n => n.classList.remove("over"));
   const t = dropTarget(drag.cx, drag.cy);
-  if (t.slot) t.slot.classList.add("over"); else if (t.pool && drag.from) t.pool.classList.add("over");
+  if (t.mark) t.mark.classList.add("over"); else if (t.pool && drag.from) t.pool.classList.add("over");
 }
 function endDrag() {
   window.removeEventListener("pointermove", onMove);
@@ -888,7 +935,7 @@ function endDrag() {
   clearInterval(scrollTm); scrollTm = null;
   if (ghost) ghost.remove(); ghost = null;
   document.body.classList.remove("dragging");
-  document.querySelectorAll(".slot.over, .pool.over").forEach(n => n.classList.remove("over"));
+  document.querySelectorAll(".slot.over, .ent.over, .plus.over, .pool.over").forEach(n => n.classList.remove("over"));
 }
 function onUp(e) {
   if (!drag || e.pointerId !== drag.id) return;
@@ -898,10 +945,8 @@ function onUp(e) {
   if (!was) return;
   suppressClick = true; setTimeout(() => { suppressClick = false; }, 0);
   const t = dropTarget(e.clientX, e.clientY);
-  if (t.slot) {
-    place(+t.slot.dataset.l, +t.slot.dataset.i, d.pid);
-    renderAll();
-  } else if (t.pool && d.from) { removeAt(d.from.l, d.from.i); renderAll(); }
+  if (t.mark) { dropAt(t.el, d.pid); renderAll(); }
+  else if (t.pool && d.from) { removeEntry(d.from.l, d.from.j, d.from.k); renderAll(); }
 }
 function onCancel() { drag = null; endDrag(); }
 
@@ -974,13 +1019,23 @@ function init() {
     trn[t.dataset.trn] = t.value; saveTrn(); renderTrn(); renderAll();
   });
   $("#lineups").addEventListener("change", e => {
+    if (e.target.closest("[data-min]")) { renderAll(); return; }
     const sp = e.target.closest("[data-sp]"); if (!sp) return;
     const [i, j] = sp.dataset.sp.split(",").map(Number);
     lu[i].p[j] = sp.value; saveLineup(i); renderAll();
   });
   $("#lineups").addEventListener("input", e => {
     const r = e.target.closest("[data-r]"), d = e.target.closest("[data-d]");
-    if (r) { lu[+r.dataset.r].r = r.value.slice(0, 30); saveLineup(+r.dataset.r); }
+    const m = e.target.closest("[data-min]");
+    if (m) {                                         // minutos escritos a mano (vacío = vuelve al automático)
+      const [i, j, k] = m.dataset.min.split(",").map(Number), ent = lu[i].s[j][k]; if (!ent) return;
+      const v = m.value.replace(/\D/g, "").slice(0, 3);
+      ent.m = v === "" ? "" : String(Math.min(120, Number(v)));
+      if (v !== "" && m.value !== ent.m) m.value = ent.m;
+      m.classList.toggle("man", ent.m !== "");
+      saveLineup(i); renderPool();
+    }
+    else if (r) { lu[+r.dataset.r].r = r.value.slice(0, 30); saveLineup(+r.dataset.r); }
     else if (d) { lu[+d.dataset.d].d = d.value; saveLineup(+d.dataset.d); }
   });
   document.addEventListener("click", e => {
@@ -992,19 +1047,20 @@ function init() {
     if (chip && !e.target.closest(".grip")) { if (popPid === chip.dataset.pid) closeSkills(); else showSkills(chip.dataset.pid, chip); return; }
     closeSkills();
     const x = e.target.closest("[data-x]");
-    if (x) { const [i, j] = x.dataset.x.split(",").map(Number); removeAt(i, j); renderAll(); return; }
+    if (x) { const [i, j, k] = x.dataset.x.split(",").map(Number); removeEntry(i, j, k); renderAll(); return; }
     const c = e.target.closest("[data-clear]");
     if (c) {
       const i = +c.dataset.clear;
-      if (lu[i].s.some(Boolean) && confirm(`¿Vaciar la alineación «${LINEUPS[i].name}»?`)) { lu[i].s = Array(SLOTS).fill(""); saveLineup(i); renderAll(); }
+      if (lu[i].s.some(es => es.length) && confirm(`¿Vaciar la alineación «${LINEUPS[i].name}»?`)) { lu[i].s = Array.from({ length: SLOTS }, () => []); saveLineup(i); renderAll(); }
       return;
     }
-    if (e.target.closest("select")) return;
-    const slot = e.target.closest(".slot");
-    if (slot && state.sel && !e.target.closest(".grip")) {                  // toque: colocar al jugador seleccionado en este puesto
-      place(+slot.dataset.l, +slot.dataset.i, state.sel); renderAll(); return;
+    if (e.target.closest("select, input")) return;
+    const pb = e.target.closest(".plus");
+    if (pb && !state.sel) { toast("Primero selecciona un jugador: toca el espacio a la derecha de su apellido."); return; }
+    if (state.sel && e.target.closest(".slot") && !e.target.closest(".grip")) {   // toque: colocar al jugador seleccionado
+      dropAt(e.target, state.sel); renderAll(); return;
     }
-    const pl = e.target.closest(".pl, .slot.filled");
+    const pl = e.target.closest(".pl, .ent[data-pid]");
     if (pl && pl.dataset.pid) { state.sel = state.sel === pl.dataset.pid ? "" : pl.dataset.pid; renderAll(); }
   });
   $("#pwForm").addEventListener("submit", ev => {
