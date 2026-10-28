@@ -232,7 +232,7 @@ dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
 @media (max-width: 640px) { th.c-n, td.c-n { width: 2.6rem; min-width: 2.6rem; padding-left: 6px; padding-right: 6px; } }
 
 /* ─────────────── Alineaciones ─────────────── */
-.board { display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 16px; align-items: start; margin-bottom: 40px; }
+.board { display: grid; grid-template-columns: 350px minmax(0, 1fr); gap: 16px; align-items: start; margin-bottom: 40px; }
 .pool { position: sticky; top: 8px; max-height: calc(100vh - 16px); display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; }
 .pool h2, .lu h2 { margin: 0; font-family: "Barlow Condensed", "Arial Narrow", sans-serif; font-weight: 700; font-size: 1.5rem; line-height: 1.1; }
 .pool .ph { padding: 10px 12px 8px; border-bottom: 2px solid var(--ink); display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 10px; }
@@ -241,6 +241,9 @@ dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
 .pool .pt { padding: 8px 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; border-bottom: 1px solid var(--line); }
 .pool .pt input { flex: 1 1 100%; min-width: 0; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 6px 9px; min-height: 36px; }
 .pool .pt button.btn { min-height: 36px; padding: 5px 10px; }
+.pool .pf { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+.pool .pf button { font: inherit; font-weight: 700; font-size: .85rem; cursor: pointer; min-height: 32px; min-width: 46px; padding: 0 8px; border-radius: 4px; border: 1px solid var(--ink); background: var(--ink); color: var(--panel); }
+.pool .pf button[aria-pressed="false"] { background: transparent; color: var(--muted); border-color: var(--line); }
 #poolList { overflow-y: auto; padding: 4px 0; flex: 1; }
 .pool.over { outline: 3px dashed var(--accent); outline-offset: -3px; }
 .pl, .slot { user-select: none; -webkit-user-select: none; }
@@ -363,6 +366,7 @@ html.cust-ATT :is(.chip, select.trs)[data-t="ATT"] { background: var(--trc-ATT) 
   .pool .ph { padding: 6px 12px 4px; }
   .pool .ph h2 { font-size: 1.25rem; }
   .pool .pt { flex-wrap: nowrap; padding: 6px 12px; gap: 6px; }
+  .pool .pf { padding: 6px 12px; }
   .pool .pt input { flex: 1 1 0; width: 0; }
   .pool .pt button.btn { white-space: nowrap; padding: 5px 8px; font-size: .9rem; }
   .lrow { flex-direction: column; }
@@ -406,8 +410,9 @@ html.cust-ATT :is(.chip, select.trs)[data-t="ATT"] { background: var(--trc-ATT) 
       <div class="pt">
         <input type="search" id="q" placeholder="Buscar" autocomplete="off" aria-label="Buscar jugador">
         <button class="btn" id="onlyFree" type="button" aria-pressed="false" title="Mostrar solo a los jugadores que no están en ninguna alineación">Sin alinear</button>
-        <button class="btn" id="forgetPw" type="button" hidden title="Olvidar la contraseña en este navegador">Bloquear</button>
+        
       </div>
+      <div class="pf" id="posf" role="group" aria-label="Filtrar por posición del Plantel"></div>
       <div id="poolList"></div>
     </aside>
     <section class="lineups" id="lineups" aria-label="Alineaciones"></section>
@@ -475,7 +480,7 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": 
 const num = v => (typeof v === "number" && Number.isFinite(v)) ? v : (typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v))) ? Number(v) : null;
 const fmtDate = t => new Date(t).toLocaleString("es-CL", { dateStyle: "medium", timeStyle: "short" });
 
-const state = { players: [], q: "", onlyFree: false, sel: "", stamp: null };
+const state = { players: [], q: "", onlyFree: false, pos: new Set(), sel: "", stamp: null };
 const byPid = new Map();
 
 /* ─────────────── Carga de datos ─────────────── */
@@ -593,7 +598,6 @@ async function load() {
   const env = await fetchEnvelope(CONFIG.encData, false);
   if (env) { const u = await unlock(env); st = u.data; estStart(u.pw); }
   else st = await tryStatic(CONFIG.staticData);
-  $("#forgetPw").hidden = !env;
   if (!st) {
     setStatus("");
     setNotices([{ error: true, html: `<p><strong>No encontré los datos de tu equipo.</strong> Falta el archivo <code>data/team.enc.json</code> (lo genera <code>fetch-team.mjs</code>).</p>` }]);
@@ -879,6 +883,7 @@ function renderPool() {
   const q = state.q.trim().toLowerCase();
   const rows = state.players.filter(p => {
     if (state.onlyFree && countOf(p.pid)) return false;
+    if (state.pos.size && !state.pos.has(estPos[p.pid])) return false;
     return !q || p.full.toLowerCase().includes(q) || p.pid.includes(q);
   }).sort((a, b) => ((POS_ORDER[estPos[a.pid]] ?? 99) - (POS_ORDER[estPos[b.pid]] ?? 99)) || a.label.localeCompare(b.label, "es"));
   const free = state.players.filter(p => !countOf(p.pid)).length;
@@ -1109,7 +1114,12 @@ function init() {
   $("#onlyFree").addEventListener("click", e => { state.onlyFree = !state.onlyFree; e.currentTarget.setAttribute("aria-pressed", String(state.onlyFree)); renderPool(); });
   $("#syncBtn").hidden = !CONFIG.estUrl;
   $("#syncBtn").addEventListener("click", saveNow);
-  $("#forgetPw").addEventListener("click", () => { forgetPw(); location.reload(); });
+  $("#posf").innerHTML = EST_OPTS.map(o => `<button type="button" data-pos="${o}" aria-pressed="false" title="Mostrar solo a los jugadores marcados ${o} en el Plantel (puedes combinar varias)">${o}</button>`).join("");
+  $("#posf").addEventListener("click", e => {
+    const b = e.target.closest("button[data-pos]"); if (!b) return;
+    const o = b.dataset.pos; if (state.pos.has(o)) state.pos.delete(o); else state.pos.add(o);
+    b.setAttribute("aria-pressed", String(state.pos.has(o))); renderPool();
+  });
   $("#trn").addEventListener("change", e => {
     const c = e.target.closest("[data-tcol]");
     if (c) { trn.c[c.dataset.tcol] = c.value.toLowerCase(); applyTrnColors(); saveTrn(); renderAll(); return; }
