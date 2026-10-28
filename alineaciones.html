@@ -264,7 +264,8 @@ select.sp { appearance: none; -webkit-appearance: none; cursor: pointer; font: i
 .pop tr:last-child td { border-bottom: 0; }
 .pop .selbtn { margin-top: 8px; width: 100%; }
 @media (max-width: 640px) { .pop { left: 8px !important; right: 8px; bottom: 8px; top: auto !important; width: auto; } }
-.grip { flex: none; width: 22px; text-align: center; color: var(--muted); cursor: grab; font-size: 1.05rem; line-height: 1; touch-action: none; padding: 6px 0; }
+.grip { flex: none; width: 26px; text-align: center; color: var(--muted); cursor: grab; font-size: 1.25rem; line-height: 1; touch-action: none; padding: 9px 0; }
+@media (pointer: coarse) { .grip { width: 44px; font-size: 1.7rem; padding: 12px 0; margin: -4px 0 -4px -6px; background: var(--head-bg); border-radius: 6px; color: var(--ink); } .slot, .pl { min-height: 48px; } }
 .cnt { flex: none; min-width: 26px; text-align: center; padding: 1px 6px; border-radius: 10px; font-weight: 700; font-size: .82rem; font-variant-numeric: tabular-nums; background: var(--head-bg); color: var(--ink); border: 1px solid var(--line); }
 .cnt.z { background: transparent; color: var(--muted); }
 .cnt.full { background: var(--ink); color: var(--panel); border-color: var(--ink); }
@@ -314,18 +315,18 @@ select.trs { appearance: none; -webkit-appearance: none; cursor: pointer; font: 
 :is(.chip, select.trs)[data-t="TEC"] { background: #dccbf5; border-color: #8a62c9; color: #1b2a41; }
 :is(.chip, select.trs)[data-t="PAS"] { background: #f8cfe1; border-color: #d65a95; color: #1b2a41; }
 :is(.chip, select.trs)[data-t="DEF"] { background: #fbd5ae; border-color: #e08a2b; color: #1b2a41; }
-:is(.chip, select.trs)[data-t="MID"] { background: #f5b8b4; border-color: #d0362f; color: #1b2a41; }
-:is(.chip, select.trs)[data-t="ANO"] { background: #d9dde0; border-color: #8a959d; color: #1b2a41; }
+:is(.chip, select.trs)[data-t="CRE"] { background: #f5b8b4; border-color: #d0362f; color: #1b2a41; }
+:is(.chip, select.trs)[data-t="ATT"] { background: #d9dde0; border-color: #8a959d; color: #1b2a41; }
 .chip[data-t] { border: 1px solid; padding-left: 2px; }
 .chip[data-t]:hover { filter: brightness(.96); background: inherit; }
 :root[data-theme="dark"] [data-t] { color: #e6edf1; }
 :root[data-theme="dark"] :is(.chip, select.trs)[data-t="RAP"] { background: #17435a; } :root[data-theme="dark"] :is(.chip, select.trs)[data-t="TEC"] { background: #3b2a5c; }
 :root[data-theme="dark"] :is(.chip, select.trs)[data-t="PAS"] { background: #5a2440; } :root[data-theme="dark"] :is(.chip, select.trs)[data-t="DEF"] { background: #5a3a12; }
-:root[data-theme="dark"] :is(.chip, select.trs)[data-t="MID"] { background: #5a1a17; } :root[data-theme="dark"] :is(.chip, select.trs)[data-t="ANO"] { background: #3a4248; }
+:root[data-theme="dark"] :is(.chip, select.trs)[data-t="CRE"] { background: #5a1a17; } :root[data-theme="dark"] :is(.chip, select.trs)[data-t="ATT"] { background: #3a4248; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) [data-t] { color: #e6edf1; }
   :root:not([data-theme="light"]) :is(.chip, select.trs)[data-t="RAP"] { background: #17435a; } :root:not([data-theme="light"]) :is(.chip, select.trs)[data-t="TEC"] { background: #3b2a5c; }
   :root:not([data-theme="light"]) :is(.chip, select.trs)[data-t="PAS"] { background: #5a2440; } :root:not([data-theme="light"]) :is(.chip, select.trs)[data-t="DEF"] { background: #5a3a12; }
-  :root:not([data-theme="light"]) :is(.chip, select.trs)[data-t="MID"] { background: #5a1a17; } :root:not([data-theme="light"]) :is(.chip, select.trs)[data-t="ANO"] { background: #3a4248; } }
+  :root:not([data-theme="light"]) :is(.chip, select.trs)[data-t="CRE"] { background: #5a1a17; } :root:not([data-theme="light"]) :is(.chip, select.trs)[data-t="ATT"] { background: #3a4248; } }
 .hintline { color: var(--muted); margin: 0 0 10px; max-width: 80ch; }
 @media (max-width: 960px) {
   .board { grid-template-columns: minmax(0, 1fr); }
@@ -365,13 +366,13 @@ select.trs { appearance: none; -webkit-appearance: none; cursor: pointer; font: 
 
   <div id="status" role="status" aria-live="polite"></div>
   <div id="notices"></div>
-  <p class="hintline">Arrastra un apellido (con su marca) a un puesto; con el dedo, desde el asa ⠿. Toca un apellido para ver sus skills. También puedes tocar el espacio a la derecha del apellido para seleccionarlo y luego tocar el puesto. La posición de cada puesto se puede cambiar. Los cambios se guardan en este dispositivo; para llevarlos a la nube y traer los de otros dispositivos, presiona «Sincronizar». Dentro de una alineación, arrastrar sobre otro puesto los intercambia; entre alineaciones, copia al jugador. Para quitarlo, usa la ✕ o suéltalo sobre la lista de jugadores.</p>
+  <p class="hintline">Arrastra un apellido (con su marca) a un puesto; con el dedo, desde el asa ⠿. Toca un apellido para ver sus skills. También puedes tocar el espacio a la derecha del apellido para seleccionarlo y luego tocar el puesto. La posición de cada puesto se puede cambiar. Al abrir la página se cargan los datos guardados en la nube; para guardar los cambios allí, presiona «Guardar Datos». Dentro de una alineación, arrastrar sobre otro puesto los intercambia; entre alineaciones, copia al jugador. Para quitarlo, usa la ✕ o suéltalo sobre la lista de jugadores.</p>
 
   <section class="trn" id="trn" aria-label="Entrenamiento por posición"></section>
 
   <div class="board">
     <aside class="pool" id="pool" aria-label="Jugadores del plantel">
-      <div class="ph"><h2>Jugadores</h2><button class="btn primary" id="syncBtn" type="button" hidden title="Envía tus cambios a la nube y trae los de otros dispositivos">Sincronizar</button><small id="poolInfo"></small></div>
+      <div class="ph"><h2>Jugadores</h2><button class="btn primary" id="syncBtn" type="button" hidden title="Sube los datos actuales a la nube y reemplaza los anteriores">Guardar Datos</button><small id="poolInfo"></small></div>
       <div class="pt">
         <input type="search" id="q" placeholder="Buscar" autocomplete="off" aria-label="Buscar jugador">
         <button class="btn" id="onlyFree" type="button" aria-pressed="false" title="Mostrar solo a los jugadores que no están en ninguna alineación">Sin alinear</button>
@@ -420,7 +421,7 @@ const SLOTS = 11;
 const LKEY = i => "j2" + String(i + 1).padStart(12, "0");
 const TRN_KEY = "j2000000000009";           // entrenamiento asignado a cada posición (también viaja por el servicio)
 const LKEYS = [...LINEUPS.map((_, i) => LKEY(i)), TRN_KEY];
-const TRN_OPTS = ["RAP", "TEC", "PAS", "DEF", "MID", "ANO"];   // celeste, violeta, rosado, naranjo, rojo, gris
+const TRN_OPTS = ["RAP", "TEC", "PAS", "DEF", "CRE", "ATT"];   // celeste, violeta, rosado, naranjo, rojo, gris
 const EST_OPTS = ["GK", "DEF", "MID", "ATT", "ENT", "EXT"];
 const SKILL_KEYS = ["stamina", "pace", "technique", "passing", "keeper", "defender", "playmaker", "striker"];
 const SKILL_ALIASES = {
@@ -602,29 +603,33 @@ function parseLineup(i) {
   return { s: s.map(x => x.trim()), p: sp, r: String((o && o.r) || "").slice(0, 30), d: /^\d{4}-\d{2}-\d{2}$/.test(o && o.d) ? o.d : "" };
 }
 let lu = LINEUPS.map((_, i) => parseLineup(i));
+const touched = new Set();   // claves cambiadas en esta visita: la carga inicial desde la nube no las pisa
 function parseTrn() {
   let o = null;
   try { o = JSON.parse(linMap[TRN_KEY] && linMap[TRN_KEY].v); } catch {}
   const t = {};
-  for (const pos of SLOT_POS_OPTS) t[pos] = o && TRN_OPTS.includes(o[pos]) ? o[pos] : "";
+  const OLD = { MID: "CRE", ANO: "ATT" };   // nombres antiguos de dos entrenamientos
+  for (const pos of SLOT_POS_OPTS) { const v = o && (OLD[o[pos]] || o[pos]); t[pos] = TRN_OPTS.includes(v) ? v : ""; }
   return t;
 }
 let trn = parseTrn();
 function saveTrn() {
   linMap[TRN_KEY] = { v: JSON.stringify(trn), t: nextT(TRN_KEY) };
   sync.dirty.add(TRN_KEY); saveLin();
+  touched.add(TRN_KEY);
   if (CONFIG.estUrl) setSyncState("unsynced");
 }
 function saveLineup(i) {
   const k = LKEY(i), L = lu[i];
   linMap[k] = { v: JSON.stringify({ s: L.s.join(","), p: L.p.join(","), r: L.r, d: L.d }), t: nextT(k) };
   sync.dirty.add(k); saveLin();
-  if (CONFIG.estUrl) setSyncState("unsynced");   // la sincronización es manual: botón «Sincronizar»
+  touched.add(k);
+  if (CONFIG.estUrl) setSyncState("unsynced");   // solo se sube a la nube con el botón «Guardar Datos»
 }
 
-const SYNC_TEXT = { local: "", unsynced: "Hay cambios sin sincronizar: presiona «Sincronizar».", ok: "Alineaciones sincronizadas.", pending: "Sincronizando alineaciones…",
-  offline: "Alineaciones pendientes de sincronizar (sin conexión con el servicio).",
-  token: "No se pudo sincronizar: el servicio rechazó la clave. Usa la misma contraseña que en la página del plantel." };
+const SYNC_TEXT = { local: "", loaded: "Datos cargados desde la nube.", unsynced: "Hay cambios sin guardar en la nube: presiona «Guardar Datos».", ok: "Datos guardados en la nube.", pending: "Conectando con la nube…",
+  offline: "Sin conexión con la nube: se muestran los datos de este dispositivo.",
+  token: "No se pudo usar la nube: el servicio rechazó la clave. Usa la misma contraseña que en la página del plantel." };
 const syncText = () => (SYNC_TEXT[sync.state] || "") + (sync.detail && (sync.state === "offline" || sync.state === "token") ? " Motivo: " + sync.detail : "");
 function setSyncState(st, detail = "") { sync.state = st; sync.detail = detail; const el = document.getElementById("syncMsg"); if (el) el.textContent = syncText() ? " " + syncText() : ""; }
 function explainSync(err) {
@@ -726,31 +731,36 @@ async function pullLin() {
       let v;
       try { v = await decV(it.v); }
       catch { if (linMap[k]) { linMap[k] = { v: linMap[k].v, t: nextT(k) }; sync.dirty.add(k); } continue; }
+      if (touched.has(k)) continue;                 // lo que cambiaste mientras cargaba se conserva
       const loc = linMap[k];
-      if (!loc || t > loc.t) { linMap[k] = { v, t }; sync.dirty.delete(k); changed = true; }
-      else if (loc.t > t) sync.dirty.add(k);
+      if (!loc || loc.v !== v) changed = true;
+      linMap[k] = { v, t }; sync.dirty.delete(k);   // al abrir la página, lo guardado en la nube reemplaza lo de este dispositivo
     }
     for (const k of Object.keys(linMap)) if (LKEYS.includes(k) && !remote.has(k)) sync.dirty.add(k);
     saveLin();
     if (changed) { lu = LINEUPS.map((_, i) => parseLineup(i)); trn = parseTrn(); renderTrn(); renderAll(); }
-    if (sync.dirty.size) await pushDirty(); else setSyncState("ok");
+    setSyncState(sync.dirty.size ? "unsynced" : "loaded");
   } catch (err) { setSyncState("offline", explainSync(err)); }
 }
 let estStarted = "";
 async function estStart(pw) {
   if (!CONFIG.estUrl) return;
   if (estStarted !== pw) { estStarted = pw; try { await estInit(pw); } catch { return; } }
-  setSyncState(sync.dirty.size ? "unsynced" : "local");   // no se sincroniza sola: solo con el botón «Sincronizar»
-}
-async function syncNow() {
-  const b = $("#syncBtn");
-  if (!CONFIG.estUrl) { toast("No hay servicio de sincronización configurado (config.js)."); return; }
-  if (!sync.key) { toast("Espera a que carguen los datos e inténtalo de nuevo."); return; }
-  b.disabled = true; const old = b.textContent; b.textContent = "Sincronizando…";
   setSyncState("pending");
-  await pullLin();
+  await pullLin();                                          // al abrir la página se cargan los datos de la nube
+}
+// «Guardar Datos»: sube lo que hay ahora en este dispositivo y reemplaza lo anterior en la nube.
+async function saveNow() {
+  const b = $("#syncBtn");
+  if (!CONFIG.estUrl) { toast("No hay servicio configurado (config.js)."); return; }
+  if (!sync.key) { toast("Espera a que carguen los datos e inténtalo de nuevo."); return; }
+  b.disabled = true; const old = b.textContent; b.textContent = "Guardando…";
+  for (const k of LKEYS) if (linMap[k]) { linMap[k] = { v: linMap[k].v, t: nextT(k) }; sync.dirty.add(k); }   // todo se sube, con hora nueva
+  saveLin();
+  while (sync.busy) await new Promise(r => setTimeout(r, 100));
+  await pushDirty();
   b.disabled = false; b.textContent = old;
-  toast(sync.state === "ok" ? "Sincronizado" : "No se pudo sincronizar");
+  toast(sync.state === "ok" ? "Datos guardados" : "No se pudo guardar");
 }
 
 /* ─────────────── Dibujo ─────────────── */
@@ -957,7 +967,7 @@ function init() {
   $("#q").addEventListener("input", e => { state.q = e.target.value; renderPool(); });
   $("#onlyFree").addEventListener("click", e => { state.onlyFree = !state.onlyFree; e.currentTarget.setAttribute("aria-pressed", String(state.onlyFree)); renderPool(); });
   $("#syncBtn").hidden = !CONFIG.estUrl;
-  $("#syncBtn").addEventListener("click", syncNow);
+  $("#syncBtn").addEventListener("click", saveNow);
   $("#forgetPw").addEventListener("click", () => { forgetPw(); location.reload(); });
   $("#trn").addEventListener("change", e => {
     const t = e.target.closest("[data-trn]"); if (!t) return;
