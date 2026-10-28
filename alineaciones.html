@@ -305,6 +305,27 @@ select.sp { appearance: none; -webkit-appearance: none; cursor: pointer; font: i
 .slot.dup .chip::after { content: " (repetido)"; color: var(--inj); font-weight: 400; font-size: .8rem; }
 .ghost { position: fixed; z-index: 60; pointer-events: none; padding: 6px 12px; border-radius: 6px; background: var(--ink); color: var(--panel); font-weight: 700; box-shadow: 0 6px 18px rgba(0,0,0,.35); transform: translate(-50%, -120%); }
 body.dragging, body.dragging * { cursor: grabbing !important; }
+.trn { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 8px 12px; margin: 0 0 14px; }
+.trn .trh { font-family: "Barlow Condensed", "Arial Narrow", sans-serif; font-size: 1.25rem; font-weight: 700; }
+.trn .tri { display: inline-flex; align-items: center; gap: 8px; }
+.trn .trnote { flex: 1 1 100%; color: var(--muted); font-size: .85rem; }
+select.trs { appearance: none; -webkit-appearance: none; cursor: pointer; font: inherit; font-size: .85rem; font-weight: 700; min-height: 30px; min-width: 64px; padding: 0 8px; text-align: center; text-align-last: center; background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; }
+:is(.chip, select.trs)[data-t="RAP"] { background: #bfe6fa; border-color: #4aa8d8; color: #1b2a41; }
+:is(.chip, select.trs)[data-t="TEC"] { background: #dccbf5; border-color: #8a62c9; color: #1b2a41; }
+:is(.chip, select.trs)[data-t="PAS"] { background: #f8cfe1; border-color: #d65a95; color: #1b2a41; }
+:is(.chip, select.trs)[data-t="DEF"] { background: #fbd5ae; border-color: #e08a2b; color: #1b2a41; }
+:is(.chip, select.trs)[data-t="MID"] { background: #f5b8b4; border-color: #d0362f; color: #1b2a41; }
+:is(.chip, select.trs)[data-t="ANO"] { background: #d9dde0; border-color: #8a959d; color: #1b2a41; }
+.chip[data-t] { border: 1px solid; padding-left: 2px; }
+.chip[data-t]:hover { filter: brightness(.96); background: inherit; }
+:root[data-theme="dark"] [data-t] { color: #e6edf1; }
+:root[data-theme="dark"] :is(.chip, select.trs)[data-t="RAP"] { background: #17435a; } :root[data-theme="dark"] :is(.chip, select.trs)[data-t="TEC"] { background: #3b2a5c; }
+:root[data-theme="dark"] :is(.chip, select.trs)[data-t="PAS"] { background: #5a2440; } :root[data-theme="dark"] :is(.chip, select.trs)[data-t="DEF"] { background: #5a3a12; }
+:root[data-theme="dark"] :is(.chip, select.trs)[data-t="MID"] { background: #5a1a17; } :root[data-theme="dark"] :is(.chip, select.trs)[data-t="ANO"] { background: #3a4248; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) [data-t] { color: #e6edf1; }
+  :root:not([data-theme="light"]) :is(.chip, select.trs)[data-t="RAP"] { background: #17435a; } :root:not([data-theme="light"]) :is(.chip, select.trs)[data-t="TEC"] { background: #3b2a5c; }
+  :root:not([data-theme="light"]) :is(.chip, select.trs)[data-t="PAS"] { background: #5a2440; } :root:not([data-theme="light"]) :is(.chip, select.trs)[data-t="DEF"] { background: #5a3a12; }
+  :root:not([data-theme="light"]) :is(.chip, select.trs)[data-t="MID"] { background: #5a1a17; } :root:not([data-theme="light"]) :is(.chip, select.trs)[data-t="ANO"] { background: #3a4248; } }
 .hintline { color: var(--muted); margin: 0 0 10px; max-width: 80ch; }
 @media (max-width: 960px) {
   .board { grid-template-columns: minmax(0, 1fr); }
@@ -345,6 +366,8 @@ body.dragging, body.dragging * { cursor: grabbing !important; }
   <div id="status" role="status" aria-live="polite"></div>
   <div id="notices"></div>
   <p class="hintline">Arrastra un apellido (con su marca) a un puesto; con el dedo, desde el asa ⠿. Toca un apellido para ver sus skills. También puedes tocar el espacio a la derecha del apellido para seleccionarlo y luego tocar el puesto. La posición de cada puesto se puede cambiar. Los cambios se guardan en este dispositivo; para llevarlos a la nube y traer los de otros dispositivos, presiona «Sincronizar». Dentro de una alineación, arrastrar sobre otro puesto los intercambia; entre alineaciones, copia al jugador. Para quitarlo, usa la ✕ o suéltalo sobre la lista de jugadores.</p>
+
+  <section class="trn" id="trn" aria-label="Entrenamiento por posición"></section>
 
   <div class="board">
     <aside class="pool" id="pool" aria-label="Jugadores del plantel">
@@ -395,7 +418,9 @@ const LINEUPS = [
 ];
 const SLOTS = 11;
 const LKEY = i => "j2" + String(i + 1).padStart(12, "0");
-const LKEYS = LINEUPS.map((_, i) => LKEY(i));
+const TRN_KEY = "j2000000000009";           // entrenamiento asignado a cada posición (también viaja por el servicio)
+const LKEYS = [...LINEUPS.map((_, i) => LKEY(i)), TRN_KEY];
+const TRN_OPTS = ["RAP", "TEC", "PAS", "DEF", "MID", "ANO"];   // celeste, violeta, rosado, naranjo, rojo, gris
 const EST_OPTS = ["GK", "DEF", "MID", "ATT", "ENT", "EXT"];
 const SKILL_KEYS = ["stamina", "pace", "technique", "passing", "keeper", "defender", "playmaker", "striker"];
 const SKILL_ALIASES = {
@@ -577,6 +602,19 @@ function parseLineup(i) {
   return { s: s.map(x => x.trim()), p: sp, r: String((o && o.r) || "").slice(0, 30), d: /^\d{4}-\d{2}-\d{2}$/.test(o && o.d) ? o.d : "" };
 }
 let lu = LINEUPS.map((_, i) => parseLineup(i));
+function parseTrn() {
+  let o = null;
+  try { o = JSON.parse(linMap[TRN_KEY] && linMap[TRN_KEY].v); } catch {}
+  const t = {};
+  for (const pos of SLOT_POS_OPTS) t[pos] = o && TRN_OPTS.includes(o[pos]) ? o[pos] : "";
+  return t;
+}
+let trn = parseTrn();
+function saveTrn() {
+  linMap[TRN_KEY] = { v: JSON.stringify(trn), t: nextT(TRN_KEY) };
+  sync.dirty.add(TRN_KEY); saveLin();
+  if (CONFIG.estUrl) setSyncState("unsynced");
+}
 function saveLineup(i) {
   const k = LKEY(i), L = lu[i];
   linMap[k] = { v: JSON.stringify({ s: L.s.join(","), p: L.p.join(","), r: L.r, d: L.d }), t: nextT(k) };
@@ -694,7 +732,7 @@ async function pullLin() {
     }
     for (const k of Object.keys(linMap)) if (LKEYS.includes(k) && !remote.has(k)) sync.dirty.add(k);
     saveLin();
-    if (changed) { lu = LINEUPS.map((_, i) => parseLineup(i)); renderAll(); }
+    if (changed) { lu = LINEUPS.map((_, i) => parseLineup(i)); trn = parseTrn(); renderTrn(); renderAll(); }
     if (sync.dirty.size) await pushDirty(); else setSyncState("ok");
   } catch (err) { setSyncState("offline", explainSync(err)); }
 }
@@ -720,7 +758,7 @@ const countOf = pid => lu.reduce((n, L) => n + (L.s.includes(pid) ? 1 : 0), 0);
 function flags(p) {
   return (p.injury ? `<span class="fl" title="Lesionado (${p.injury} días)">✚</span>` : "") + (p.red ? `<span class="fl rc" title="Tarjeta roja"></span>` : "");
 }
-const chipHtml = p => `<span class="chip" data-pid="${esc(p.pid)}" title="${esc(p.full)} · toca para ver sus skills"><span class="grip" aria-hidden="true">⠿</span><span class="nm">${esc(p.label)}</span>${flags(p)}</span>`;
+const chipHtml = (p, t) => `<span class="chip"${t ? ` data-t="${t}"` : ""} data-pid="${esc(p.pid)}" title="${esc(p.full)}${t ? " · entrenando " + t : ""} · toca para ver sus skills"><span class="grip" aria-hidden="true">⠿</span><span class="nm">${esc(p.label)}</span>${flags(p)}</span>`;
 const spSelect = (i, j) => { const v = lu[i].p[j]; return `<select class="ptag sp"${v ? ` data-v="${v}"` : ""} data-sp="${i},${j}" aria-label="Posición del puesto ${j + 1} de ${esc(LINEUPS[i].name)}"><option value=""${v ? "" : " selected"}>—</option>${SLOT_POS_OPTS.map(o => `<option${o === v ? " selected" : ""}>${o}</option>`).join("")}</select>`; };
 const posTag = pid => estPos[pid] ? `<span class="ptag" data-v="${estPos[pid]}" title="Posición asignada en el Plantel">${estPos[pid]}</span>` : `<span class="ptag" style="visibility:hidden">—</span>`;
 
@@ -764,11 +802,16 @@ function renderSlots() {
       const dup = pid && seen.has(pid); if (pid) seen.add(pid);
       if (!pid) return `<li class="slot empty-s" data-l="${i}" data-i="${j}"><span class="no">${j + 1}</span>${spSelect(i, j)}<span class="nm">Vacío</span></li>`;
       return `<li class="slot filled${dup ? " dup" : ""}${state.sel === pid ? " sel" : ""}" data-l="${i}" data-i="${j}" data-pid="${esc(pid)}"><span class="no">${j + 1}</span>${spSelect(i, j)}
-        ${p ? chipHtml(p) : `<span class="chip" data-pid="${esc(pid)}"><span class="grip" aria-hidden="true">⠿</span><span class="nm">Jugador ${esc(pid)}</span></span>`}<span class="sp-fill"></span>
+        ${p ? chipHtml(p, estPos[pid] === "ENT" && L.p[j] ? trn[L.p[j]] : "") : `<span class="chip" data-pid="${esc(pid)}"><span class="grip" aria-hidden="true">⠿</span><span class="nm">Jugador ${esc(pid)}</span></span>`}<span class="sp-fill"></span>
         <button class="x" type="button" data-x="${i},${j}" aria-label="Quitar a ${esc(p ? p.label : pid)} de ${esc(LINEUPS[i].name)}" title="Quitar">✕</button></li>`;
     }).join("");
     document.querySelector(`[data-n="${i}"]`).textContent = L.s.filter(Boolean).length;
   });
+}
+function renderTrn() {
+  $("#trn").innerHTML = `<strong class="trh">Entrenamiento por posición</strong>` + SLOT_POS_OPTS.map(pos => `<label class="tri"><span class="ptag" data-v="${pos}">${pos}</span>
+    <select class="trs" data-trn="${pos}"${trn[pos] ? ` data-t="${trn[pos]}"` : ""} aria-label="Entrenamiento de ${pos}"><option value=""${trn[pos] ? "" : " selected"}>—</option>${TRN_OPTS.map(o => `<option${o === trn[pos] ? " selected" : ""}>${o}</option>`).join("")}</select></label>`).join("") +
+    `<span class="trnote">Los jugadores ENT toman el color del entrenamiento de la posición del puesto en que estén.</span>`;
 }
 function renderAll() {
   const when = state.stamp ? fmtDate(state.stamp) : "";
@@ -910,12 +953,16 @@ function init() {
   initTheme();
   $("#nav").addEventListener("change", e => { location.href = e.target.value; });
   window.addEventListener("pageshow", () => { $("#nav").value = "alineaciones.html"; });
-  buildLineups();
+  buildLineups(); renderTrn();
   $("#q").addEventListener("input", e => { state.q = e.target.value; renderPool(); });
   $("#onlyFree").addEventListener("click", e => { state.onlyFree = !state.onlyFree; e.currentTarget.setAttribute("aria-pressed", String(state.onlyFree)); renderPool(); });
   $("#syncBtn").hidden = !CONFIG.estUrl;
   $("#syncBtn").addEventListener("click", syncNow);
   $("#forgetPw").addEventListener("click", () => { forgetPw(); location.reload(); });
+  $("#trn").addEventListener("change", e => {
+    const t = e.target.closest("[data-trn]"); if (!t) return;
+    trn[t.dataset.trn] = t.value; saveTrn(); renderTrn(); renderAll();
+  });
   $("#lineups").addEventListener("change", e => {
     const sp = e.target.closest("[data-sp]"); if (!sp) return;
     const [i, j] = sp.dataset.sp.split(",").map(Number);
