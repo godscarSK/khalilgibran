@@ -288,6 +288,7 @@ dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
       <button class="btn" id="hideVal" type="button" aria-pressed="false" title="Ocultar o mostrar las columnas Valor y Salario">Ocultar Val/Sal</button>
       <button class="btn" id="onlyInjured" type="button" aria-pressed="false" title="Mostrar solo los jugadores lesionados">Lesionados</button>
       <button class="btn" id="onlySusp" type="button" aria-pressed="false" title="Mostrar solo los jugadores con tarjeta roja">Suspendidos</button>
+      <button class="btn" id="onlyChg" type="button" aria-pressed="false" title="Mostrar solo los jugadores con alguna skill que subió o bajó respecto a la semana anterior">Cambios</button>
       <button class="btn" id="onlySel" type="button" aria-pressed="false" title="Mostrar solo los jugadores citados a la selección">Selección</button>
       <button class="btn primary" id="copy" type="button" title="Copiar la tabla visible para pegarla en una planilla">CSV</button>
     </div>
@@ -515,7 +516,7 @@ function normalize(row, api) {
 
 /* ─────────────── Estado ─────────────── */
 const state = {
-  players: [], pos: new Set(), hideVal: false, onlyInjured: false, onlySusp: false, onlySel: false, q: "",
+  players: [], pos: new Set(), hideVal: false, onlyInjured: false, onlyChg: false, onlySusp: false, onlySel: false, q: "",
   ageMin: null, ageMax: null, sort: { key: "value", dir: -1 }, stamp: null, prevStamp: null, teamName: ""
 };
 
@@ -936,6 +937,7 @@ function visibleRows() {
     if (state.ageMax != null && (p.age == null || p.age > state.ageMax)) return false;
     if (state.pos.size && !state.pos.has(estOf(p))) return false;
     if (state.onlyInjured && !p.injury) return false;
+    if (state.onlyChg && !SKILL_COLUMNS.some(c => c.skill && Number.isFinite(p.skills?.[c.skill]) && Number.isFinite(p.prev?.[c.skill]) && p.skills[c.skill] !== p.prev[c.skill])) return false;
     if (state.onlySusp && !p.red) return false;
     if (state.onlySel && !p.callUp) return false;
     return true;
@@ -995,7 +997,7 @@ function savePrefs() {
   if (!prefsReady) return;
   try {
     localStorage.setItem(PREFS_KEY, JSON.stringify({
-      ageMin: state.ageMin, ageMax: state.ageMax, pos: [...state.pos], onlyInjured: state.onlyInjured,
+      ageMin: state.ageMin, ageMax: state.ageMax, pos: [...state.pos], onlyInjured: state.onlyInjured, onlyChg: state.onlyChg,
       onlySel: state.onlySel, onlySusp: state.onlySusp, hideVal: state.hideVal, sort: state.sort
     }));
   } catch {}
@@ -1010,11 +1012,13 @@ function loadPrefs() {
   $("#ageMin").value = state.ageMin ?? ""; $("#ageMax").value = state.ageMax ?? "";
   if (Array.isArray(p.pos)) state.pos = new Set(p.pos.filter(x => EST_OPTS.includes(x)));
   state.onlyInjured = p.onlyInjured === true;
+  state.onlyChg = p.onlyChg === true;
   state.onlySusp = p.onlySusp === true;
   state.onlySel = p.onlySel === true;
   if (p.sort && p.sort.key !== "n" && COLS.some(c => c.key === p.sort.key) && (p.sort.dir === 1 || p.sort.dir === -1)) state.sort = { key: p.sort.key, dir: p.sort.dir };
   if (p.hideVal === true) setHideVal(true);
   $("#onlyInjured").setAttribute("aria-pressed", String(state.onlyInjured));
+  $("#onlyChg").setAttribute("aria-pressed", String(state.onlyChg));
   $("#onlySusp").setAttribute("aria-pressed", String(state.onlySusp));
   $("#onlySel").setAttribute("aria-pressed", String(state.onlySel));
   document.querySelectorAll("#poss button[data-pos]").forEach(b => b.setAttribute("aria-pressed", String(state.pos.has(b.dataset.pos))));
@@ -1232,7 +1236,7 @@ function init() {
     e.currentTarget.setAttribute("aria-pressed", String(state[field]));
     render();
   });
-  toggle("#onlyInjured", "onlyInjured"); toggle("#onlySusp", "onlySusp"); toggle("#onlySel", "onlySel");
+  toggle("#onlyInjured", "onlyInjured"); toggle("#onlySusp", "onlySusp"); toggle("#onlyChg", "onlyChg"); toggle("#onlySel", "onlySel");
   $("#poscol").addEventListener("input", e => { const c = e.target.closest("[data-pcol]"); if (c) { posCol[c.dataset.pcol] = c.value.toLowerCase(); applyPosColors(); } });
   $("#poscol").addEventListener("change", e => { const c = e.target.closest("[data-pcol]"); if (c) { posCol[c.dataset.pcol] = c.value.toLowerCase(); applyPosColors(); setPosColor(); } });
   $("#hideVal").addEventListener("click", () => { setHideVal(!state.hideVal); render(); });

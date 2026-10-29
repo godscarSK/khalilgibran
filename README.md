@@ -41,7 +41,7 @@ Arriba a la derecha, junto al botón de tema, hay un menú desplegable con tres 
 
 ### Filtros y botones
 
-- Búsqueda por nombre o PID, rango de edad (mín. y máx.), botones por posición asignada, **Lesionados**, **Suspendidos** y **Selección**.
+- Búsqueda por nombre o PID, rango de edad (mín. y máx.), botones por posición asignada, **Lesionados**, **Suspendidos**, **Cambios** (solo los jugadores con alguna skill que subió o bajó respecto a la semana anterior) y **Selección**.
 - **Ocultar Val/Sal** oculta las columnas Valor y Salario (queda recordado en cada dispositivo).
 - **CSV** copia la tabla visible como texto separado por tabulaciones, para pegar en una planilla; incluye una columna **PID** a la derecha de Jugador.
 - El botón redondo de la esquina cambia entre modo claro y oscuro.
