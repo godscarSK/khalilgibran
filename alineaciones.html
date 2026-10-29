@@ -274,7 +274,7 @@ select.sp { appearance: none; -webkit-appearance: none; cursor: pointer; font: i
 .cnt { flex: none; min-width: 26px; text-align: center; padding: 1px 6px; border-radius: 10px; font-weight: 700; font-size: .82rem; font-variant-numeric: tabular-nums; background: var(--head-bg); color: var(--ink); border: 1px solid var(--line); }
 .cnt.z { background: transparent; color: var(--muted); }
 .cnt.full { background: var(--ink); color: var(--panel); border-color: var(--ink); }
-.ptag { flex: none; min-width: 34px; text-align: center; padding: 0 5px; border-radius: 3px; border: 1px solid transparent; font-size: .72rem; font-weight: 700; line-height: 1.5; }
+.ptag { flex: none; min-width: 34px; text-align: center; padding: 0 8px; border-radius: 999px; border: 1px solid transparent; font-size: .72rem; font-weight: 700; line-height: 1.5; }
 .ptag[data-v="GK"] { background: #fbefc2; border-color: #c9a227; color: #1b2a41; }
 .ptag[data-v="DEF"] { background: #bfe3c4; border-color: #2f7d3b; color: #1b2a41; }
 .ptag[data-v="MID"] { background: #e3b0bf; border-color: #7b1e3a; color: #1b2a41; }
@@ -360,7 +360,8 @@ html.cust-PAS :is(.chip, select.trs)[data-t="PAS"] { background: var(--trc-PAS) 
 html.cust-DEF :is(.chip, select.trs)[data-t="DEF"] { background: var(--trc-DEF) !important; color: var(--trt-DEF) !important; }
 html.cust-CRE :is(.chip, select.trs)[data-t="CRE"] { background: var(--trc-CRE) !important; color: var(--trt-CRE) !important; }
 html.cust-ATT :is(.chip, select.trs)[data-t="ATT"] { background: var(--trc-ATT) !important; color: var(--trt-ATT) !important; }
-.trcol { flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.trcol { flex: 1 1 100%; display: flex; flex-direction: column; gap: 6px; }
+.trcol .tcrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
 .tcw { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; font-size: .85rem; }
 .tcw input[type="color"] { width: 34px; height: 28px; padding: 0; border: 1px solid var(--line); border-radius: 4px; background: none; cursor: pointer; }
 @media (max-width: 960px) {
@@ -978,7 +979,7 @@ function renderSlots() {
 function renderTrn() {
   $("#trn").innerHTML = `<strong class="trh">Entrenamiento por posición</strong>` + SLOT_POS_OPTS.map(pos => `<label class="tri"><span class="ptag" data-v="${pos}">${pos}</span>
     <select class="trs" data-trn="${pos}"${trn[pos] ? ` data-t="${trn[pos]}"` : ""} aria-label="Entrenamiento de ${pos}"><option value=""${trn[pos] ? "" : " selected"}>—</option>${TRN_OPTS.map(o => `<option${o === trn[pos] ? " selected" : ""}>${o}</option>`).join("")}</select></label>`).join("") +
-    `<span class="trcol"><strong>Colores</strong>${TRN_OPTS.map(o => `<label class="tcw"><input type="color" data-tcol="${o}" value="${(trn.c && trn.c[o]) || TRN_DEF[currentTheme() === "dark" ? "dark" : "light"][o]}" aria-label="Color de ${o}">${o}</label>`).join("")}</span>
+    `<span class="trcol"><strong>Colores</strong><span class="tcrow">${TRN_OPTS.map(o => `<label class="tcw"><input type="color" data-tcol="${o}" value="${(trn.c && trn.c[o]) || TRN_DEF[currentTheme() === "dark" ? "dark" : "light"][o]}" aria-label="Color de ${o}">${o}</label>`).join("")}</span></span>
     <span class="trnote">Los jugadores ENT toman el color del entrenamiento de la posición del puesto en que estén. Puedes elegir el color de cada entrenamiento.</span>`;
 }
 function renderAll() {
