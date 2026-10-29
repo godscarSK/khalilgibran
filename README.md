@@ -117,7 +117,7 @@ Cada jugador tiene una lista con las opciones **GK**, **DEF**, **MID**, **ATT**,
 
 Las marcas son ovaladas. En la fila **Colores de las marcas** (bajo los filtros) puedes elegir el color de cada una (GK, DEF, MID, ATT, ENT, EXT); el cambio se guarda en la nube junto a las asignaciones y también lo usan Juveniles y Alineaciones.
 
-Debajo, en **Colores del resaltado**, puedes elegir tres colores del Plantel: la **columna resaltada** (amarillo), las skills que **subieron** y las que **bajaron**. Si una celda que cambió cae en una columna resaltada, gana el color de la columna. Se guardan en la nube junto con los colores de las marcas.
+Debajo, en **Colores del resaltado**, puedes elegir tres colores del Plantel: la **columna resaltada** (amarillo), las skills que **subieron** y las que **bajaron**. Si una celda que cambió cae en una columna resaltada, gana el color de la columna. Cada modo (claro y oscuro) tiene su propia paleta: la que ves es la del modo activo, y al cambiar de modo se muestra la otra. Se guardan en la nube junto con los colores de las marcas.
 
 ## Cambios semanales (flechas ▲▼)
 

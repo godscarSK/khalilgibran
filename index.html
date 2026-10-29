@@ -711,28 +711,31 @@ const POSCOL_SEL = k => `select.est[data-v="${k}"]`;
 const saveEst = () => { try { localStorage.setItem(EST_KEY, JSON.stringify(estMap)); localStorage.setItem(EST_DIRTY_KEY, JSON.stringify([...sync.dirty])); } catch {} };
 const estOf = p => { const e = estMap[p.pid]; return e && EST_OPTS.includes(e.v) ? e.v : ""; };
 /* Colores del resaltado (columna resaltada, skill que subió, skill que bajó): viajan dentro del mismo valor de la nube, en el campo H. */
-let hlCol = {};
+let hlCol = { l: {}, d: {} };   // l = modo claro, d = modo oscuro
+const hlCur = () => hlCol[currentTheme() === "dark" ? "d" : "l"];
 const HL_LIST = [["hl", "Columna resaltada"], ["up", "Subió"], ["dn", "Bajó"]];
 const HL_DEF = { light: { hl: "#ffe9a8", up: "#c3e4cf", dn: "#f1c7c4" }, dark: { hl: "#6b5a16", up: "#1f4a30", dn: "#5a2422" } };
 function parseHl(txt) {
   let o = null; try { o = JSON.parse(txt); } catch {}
-  const m = {}; if (o && o.H && typeof o.H === "object") for (const [k] of HL_LIST) if (/^#[0-9a-f]{6}$/i.test(o.H[k] || "")) m[k] = o.H[k].toLowerCase();
-  return m;
+  const get = h => { const m = {}; if (h && typeof h === "object") for (const [k] of HL_LIST) if (/^#[0-9a-f]{6}$/i.test(h[k] || "")) m[k] = h[k].toLowerCase(); return m; };
+  const H = o && o.H;
+  if (H && (H.l || H.d)) return { l: get(H.l), d: get(H.d) };
+  return { l: get(H), d: get(H) };      // formato anterior: un solo juego de colores para ambos modos
 }
 function applyHlColors() {
   let st = document.getElementById("hlCss");
   if (!st) { st = document.createElement("style"); st.id = "hlCss"; document.head.appendChild(st); }
   const ink = c => { const n = parseInt(c.slice(1), 16); return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) > 150 ? "#1b2a41" : "#ffffff"; };
-  let css = "";
-  if (hlCol.hl) css += `:root:root, :root[data-theme] { --hl: ${hlCol.hl}; }\ntbody tr td.hl { color: ${ink(hlCol.hl)} !important; }\n`;
-  if (hlCol.up) css += `td.chgup { background: ${hlCol.up} !important; color: ${ink(hlCol.up)}; }\n`;
-  if (hlCol.dn) css += `td.chgdn { background: ${hlCol.dn} !important; color: ${ink(hlCol.dn)}; }\n`;
+  let css = ""; const hc = hlCur();
+  if (hc.hl) css += `:root:root, :root[data-theme] { --hl: ${hc.hl}; }\ntbody tr td.hl { color: ${ink(hc.hl)} !important; }\n`;
+  if (hc.up) css += `td.chgup { background: ${hc.up} !important; color: ${ink(hc.up)}; }\n`;
+  if (hc.dn) css += `td.chgdn { background: ${hc.dn} !important; color: ${ink(hc.dn)}; }\n`;
   st.textContent = css;
 }
 function renderPosCol() {
   const dm = document.documentElement.dataset.theme; const th = (dm === "dark" || (dm !== "light" && matchMedia("(prefers-color-scheme: dark)").matches)) ? "dark" : "light";
   $("#poscol").innerHTML = `<strong>Colores de las marcas</strong><span class="pcrow">` + POS_LIST.map(k => `<label class="pcw"><input type="color" data-pcol="${k}" value="${posCol[k] || POS_DEF[th][k]}" aria-label="Color de ${k}">${k}</label>`).join("") + `</span>`
-    + `<strong class="pcsub">Colores del resaltado</strong><span class="pcrow">` + HL_LIST.map(([k, n]) => `<label class="pcw"><input type="color" data-hcol="${k}" value="${hlCol[k] || HL_DEF[th][k]}" aria-label="Color: ${n}">${n}</label>`).join("") + `</span>`;
+    + `<strong class="pcsub">Colores del resaltado (${th === "dark" ? "modo oscuro" : "modo claro"})</strong><span class="pcrow">` + HL_LIST.map(([k, n]) => `<label class="pcw"><input type="color" data-hcol="${k}" value="${hlCur()[k] || HL_DEF[th][k]}" aria-label="Color: ${n}">${n}</label>`).join("") + `</span>`;
 }
 function setPosColor() {
   const k = POSCOL_KEY;
@@ -1216,7 +1219,7 @@ function initTheme() {
     const next = currentTheme() === "dark" ? "light" : "dark";
     document.documentElement.dataset.theme = next;
     try { localStorage.setItem("cantera:theme", next); } catch {}
-    paintThemeButton();
+    paintThemeButton(); applyHlColors(); renderPosCol();
   });
 }
 
@@ -1258,8 +1261,8 @@ function init() {
     render();
   });
   toggle("#onlyInjured", "onlyInjured"); toggle("#onlySusp", "onlySusp"); toggle("#onlyChg", "onlyChg"); toggle("#onlySel", "onlySel");
-  $("#poscol").addEventListener("input", e => { const c = e.target.closest("[data-hcol]"); if (c) { hlCol[c.dataset.hcol] = c.value.toLowerCase(); applyHlColors(); } });
-  $("#poscol").addEventListener("change", e => { const c = e.target.closest("[data-hcol]"); if (c) { hlCol[c.dataset.hcol] = c.value.toLowerCase(); applyHlColors(); setPosColor(); } });
+  $("#poscol").addEventListener("input", e => { const c = e.target.closest("[data-hcol]"); if (c) { hlCur()[c.dataset.hcol] = c.value.toLowerCase(); applyHlColors(); } });
+  $("#poscol").addEventListener("change", e => { const c = e.target.closest("[data-hcol]"); if (c) { hlCur()[c.dataset.hcol] = c.value.toLowerCase(); applyHlColors(); setPosColor(); } });
   $("#poscol").addEventListener("input", e => { const c = e.target.closest("[data-pcol]"); if (c) { posCol[c.dataset.pcol] = c.value.toLowerCase(); applyPosColors(); } });
   $("#poscol").addEventListener("change", e => { const c = e.target.closest("[data-pcol]"); if (c) { posCol[c.dataset.pcol] = c.value.toLowerCase(); applyPosColors(); setPosColor(); } });
   $("#hideVal").addEventListener("click", () => { setHideVal(!state.hideVal); render(); });
