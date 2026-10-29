@@ -232,8 +232,8 @@ dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
 @media (max-width: 640px) { th.c-n, td.c-n { width: 2.6rem; min-width: 2.6rem; padding-left: 6px; padding-right: 6px; } }
 
 /* ─────────────── Alineaciones ─────────────── */
-.board { display: grid; grid-template-columns: 350px minmax(0, 1fr); gap: 16px; align-items: start; margin-bottom: 40px; }
-.pool { position: sticky; top: 8px; max-height: calc(100vh - 16px); display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; }
+.board { display: grid; grid-template-columns: minmax(0, 1fr) 350px; gap: 16px; align-items: start; margin-bottom: 40px; }
+.pool { grid-column: 2; grid-row: 1; position: sticky; top: 8px; max-height: calc(100vh - 16px); display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; }
 .pool h2, .lu h2 { margin: 0; font-family: "Barlow Condensed", "Arial Narrow", sans-serif; font-weight: 700; font-size: 1.5rem; line-height: 1.1; }
 .pool .ph { padding: 10px 12px 8px; border-bottom: 2px solid var(--ink); display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 10px; }
 .pool .ph small { color: var(--muted); font-weight: 600; flex: 1 1 100%; }
@@ -294,7 +294,7 @@ select.sp { appearance: none; -webkit-appearance: none; cursor: pointer; font: i
 .redcard { display: inline-block; width: 10px; height: 14px; border-radius: 2px; background: #d6232a; border: 1px solid rgba(0,0,0,.35); transform: rotate(8deg); }
 .mins { flex: none; padding: 1px 6px; border-radius: 10px; font-weight: 700; font-size: .8rem; font-variant-numeric: tabular-nums; border: 1px solid var(--line); color: var(--ink); background: var(--panel); }
 .mins.z { color: var(--muted); opacity: .6; }
-.lineups { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.lineups { grid-column: 1; grid-row: 1; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .lrow { display: flex; gap: 16px; align-items: flex-start; }
 .lrow > .lu { flex: 1 1 0; min-width: 0; }
 .lu.off, .lrow.off { display: none; }
@@ -362,13 +362,14 @@ html.cust-ATT :is(.chip, select.trs)[data-t="ATT"] { background: var(--trc-ATT) 
 .tcw input[type="color"] { width: 34px; height: 28px; padding: 0; border: 1px solid var(--line); border-radius: 4px; background: none; cursor: pointer; }
 @media (max-width: 960px) {
   .board { grid-template-columns: minmax(0, 1fr); }
-  .pool { max-height: 42vh; z-index: 5; box-shadow: 0 4px 14px rgba(0,0,0,.18); }
+  .pool { grid-column: 1; max-height: 42vh; z-index: 5; box-shadow: 0 4px 14px rgba(0,0,0,.18); }
   .pool .ph { padding: 6px 12px 4px; }
   .pool .ph h2 { font-size: 1.25rem; }
   .pool .pt { flex-wrap: nowrap; padding: 6px 12px; gap: 6px; }
   .pool .pf { padding: 6px 12px; }
   .pool .pt input { flex: 1 1 0; width: 0; }
   .pool .pt button.btn { white-space: nowrap; padding: 5px 8px; font-size: .9rem; }
+  .lineups { grid-row: 2; }
   .lrow { flex-direction: column; }
   .lrow > .lu { width: 100%; flex: none; }
 }
@@ -622,12 +623,36 @@ let linMap = {};                 // clave → { v: texto JSON, t }
 const remoteT = {};
 const nextT = k => Math.max(Date.now(), (remoteT[k] || 0) + 1);
 const sync = { detail: "", key: null, token: "", dirty: new Set(), busy: false, state: "local", jsonp: false, fetchErr: "" };
+/* ─────────────── Colores de las marcas de posición ───────────────
+   Se eligen en la página Plantel y viajan por el servicio con la clave j2000000000006 (las otras páginas solo los leen). */
+const POSCOL_KEY = "j2000000000006";
+const POS_LIST = ["GK", "DEF", "MID", "ATT", "ENT", "EXT"];
+const POS_DEF = { light: { GK: "#fbefc2", DEF: "#bfe3c4", MID: "#e3b0bf", ATT: "#b5c3e6", ENT: "#e6dcf5", EXT: "#d3eef0" },
+                  dark:  { GK: "#4a3f12", DEF: "#1b4a28", MID: "#4a1626", ATT: "#172447", ENT: "#33224f", EXT: "#17383d" } };
+let posCol = {};
+function parsePosCol(txt) {
+  let o = null; try { o = JSON.parse(txt); } catch {}
+  const m = {}; if (o && typeof o === "object") for (const k of POS_LIST) if (/^#[0-9a-f]{6}$/i.test(o[k] || "")) m[k] = o[k].toLowerCase();
+  return m;
+}
+function applyPosColors() {
+  let st = document.getElementById("poscolCss");
+  if (!st) { st = document.createElement("style"); st.id = "poscolCss"; document.head.appendChild(st); }
+  st.textContent = POS_LIST.filter(k => posCol[k]).map(k => {
+    const n = parseInt(posCol[k].slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255, lum = 0.299 * r + 0.587 * g + 0.114 * b;
+    const dk = [r, g, b].map(x => Math.round(x * 0.6).toString(16).padStart(2, "0")).join("");
+    return `${POSCOL_SEL(k)} { background: ${posCol[k]} !important; border-color: #${dk} !important; color: ${lum > 150 ? "#1b2a41" : "#ffffff"} !important; }`;
+  }).join("\n");
+}
+const POSCOL_SEL = k => `.ptag[data-v="${k}"], select.est[data-v="${k}"]`;
 const estPos = {};               // pid → GK/DEF/MID/ATT/ENT/EXT (solo lectura: se asigna en la página Plantel)
 try {
   const o = JSON.parse(localStorage.getItem(LIN_KEY)); if (o && typeof o === "object") linMap = o;
   const d = JSON.parse(localStorage.getItem(LIN_DIRTY_KEY)); if (Array.isArray(d)) d.forEach(k => sync.dirty.add(String(k)));
   const e = JSON.parse(localStorage.getItem(EST_KEY));
   if (e && typeof e === "object") for (const [pid, x] of Object.entries(e)) { const v = x && x.v === "EXTRA" ? "EXT" : x && x.v; if (EST_OPTS.includes(v)) estPos[pid] = v; }
+  if (e && e[POSCOL_KEY]) posCol = parsePosCol(e[POSCOL_KEY].v);
+  applyPosColors();
 } catch {}
 const saveLin = () => { try { localStorage.setItem(LIN_KEY, JSON.stringify(linMap)); localStorage.setItem(LIN_DIRTY_KEY, JSON.stringify([...sync.dirty])); } catch {} };
 
@@ -784,6 +809,7 @@ async function pullLin() {
     let changed = false;
     for (const it of j.items || []) {
       const k = String(it.pid), t = Number(it.t) || 0;
+      if (k === POSCOL_KEY) { try { const m = parsePosCol(await decV(it.v)); if (JSON.stringify(m) !== JSON.stringify(posCol)) { posCol = m; applyPosColors(); } } catch {} continue; }
       if (/^\d+$/.test(k)) {                       // asignaciones de la página Plantel: solo se leen, para mostrar la posición
         try { const v = await decV(it.v); const w = v === "EXTRA" ? "EXT" : v; if (EST_OPTS.includes(w)) { if (estPos[k] !== w) { estPos[k] = w; changed = true; } } else if (estPos[k]) { delete estPos[k]; changed = true; } } catch {}
         continue;

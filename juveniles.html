@@ -373,6 +373,28 @@ const CONFIG = {
 const PROG_KEY = "juveniles:prog", PROG_DIRTY_KEY = "juveniles:progdirty";
 const remoteT = {};
 const nextT = k => Math.max(Date.now(), (remoteT[k] || 0) + 1);
+/* ─────────────── Colores de las marcas de posición ───────────────
+   Se eligen en la página Plantel y viajan por el servicio con la clave j2000000000006 (las otras páginas solo los leen). */
+const POSCOL_KEY = "j2000000000006";
+const POS_LIST = ["GK", "DEF", "MID", "ATT", "ENT", "EXT"];
+const POS_DEF = { light: { GK: "#fbefc2", DEF: "#bfe3c4", MID: "#e3b0bf", ATT: "#b5c3e6", ENT: "#e6dcf5", EXT: "#d3eef0" },
+                  dark:  { GK: "#4a3f12", DEF: "#1b4a28", MID: "#4a1626", ATT: "#172447", ENT: "#33224f", EXT: "#17383d" } };
+let posCol = {};
+function parsePosCol(txt) {
+  let o = null; try { o = JSON.parse(txt); } catch {}
+  const m = {}; if (o && typeof o === "object") for (const k of POS_LIST) if (/^#[0-9a-f]{6}$/i.test(o[k] || "")) m[k] = o[k].toLowerCase();
+  return m;
+}
+function applyPosColors() {
+  let st = document.getElementById("poscolCss");
+  if (!st) { st = document.createElement("style"); st.id = "poscolCss"; document.head.appendChild(st); }
+  st.textContent = POS_LIST.filter(k => posCol[k]).map(k => {
+    const n = parseInt(posCol[k].slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255, lum = 0.299 * r + 0.587 * g + 0.114 * b;
+    const dk = [r, g, b].map(x => Math.round(x * 0.6).toString(16).padStart(2, "0")).join("");
+    return `${POSCOL_SEL(k)} { background: ${posCol[k]} !important; border-color: #${dk} !important; color: ${lum > 150 ? "#1b2a41" : "#ffffff"} !important; }`;
+  }).join("\n");
+}
+const POSCOL_SEL = k => `select.chk[data-v="${k}"]`;
 let progMap = {};   // "j<id>" → { v, t }
 const sync = { detail: "", key: null, token: "", dirty: new Set(), busy: false, state: "local", jsonp: false, fetchErr: "" };
 try {
@@ -605,6 +627,8 @@ async function pushDirty() {
   if (sync.dirty.size) { pushDirty(); return; }
   setSyncState("ok");
 }
+try { const e = JSON.parse(localStorage.getItem("equipo:est")); if (e && e[POSCOL_KEY]) posCol = parsePosCol(e[POSCOL_KEY].v); } catch {}
+applyPosColors();
 async function pullProg() {
   if (!CONFIG.estUrl || !sync.key) return;
   try {
@@ -613,6 +637,7 @@ async function pullProg() {
     let changed = false;
     for (const it of j.items || []) {
       const k = String(it.pid), t = Number(it.t) || 0;
+      if (k === POSCOL_KEY) { try { const m = parsePosCol(await decV(it.v)); if (JSON.stringify(m) !== JSON.stringify(posCol)) { posCol = m; applyPosColors(); } } catch {} continue; }
       if (!/^j\d+$/.test(k) || /^j2\d{12}$/.test(k)) continue;           // las claves numéricas son de la página del plantel; «j2…» son las Alineaciones
       remote.add(k); remoteT[k] = Math.max(remoteT[k] || 0, t);
       let v;

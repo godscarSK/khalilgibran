@@ -93,6 +93,8 @@ Para actualizar esta página hay que volver a ejecutar `node fetch-team.mjs` y s
 
 ## Página de alineaciones
 
+En pantallas anchas, la lista **Jugadores** queda a la derecha; en pantallas angostas (teléfono vertical) sigue arriba.
+
 `alineaciones.html` (sección **Alineaciones** del menú) arma cuatro alineaciones de 11 puestos con los jugadores del plantel: **Copa Internacional** (viernes), **Liga 1** (domingo), **Copa/Amistoso** (lunes) y **Liga 2** (miércoles). Cada una tiene, bajo el título, el día, un campo para el **rival** y otro para la **fecha**.
 
 - **Armar:** arrastra un apellido (junto con sus marcas ✚ lesión y tarjeta roja, que siempre lo acompañan) desde la lista «Jugadores» a un puesto; la posición y el contador de la lista no se mueven. En el celular el arrastre se hace desde el asa ⠿, que está a la izquierda del apellido. También puedes tocar el espacio a la derecha del apellido para seleccionar al jugador y luego tocar el puesto (la selección se mantiene para ponerlo en otras alineaciones).
@@ -111,6 +113,8 @@ Para actualizar esta página hay que volver a ejecutar `node fetch-team.mjs` y s
 ## Columna «Pos.»
 
 Cada jugador tiene una lista con las opciones **GK**, **DEF**, **MID**, **ATT**, **ENT** (entrenables) y **EXT**, cada una con su botón de filtro. La asignación se guarda en el navegador y, si configuraste el servicio de sincronización, también se comparte entre tus dispositivos.
+
+Las marcas son ovaladas. En la fila **Colores de las marcas** (bajo los filtros) puedes elegir el color de cada una (GK, DEF, MID, ATT, ENT, EXT); el cambio se guarda en la nube junto a las asignaciones y también lo usan Juveniles y Alineaciones.
 
 ## Cambios semanales (flechas ▲▼)
 

@@ -140,7 +140,7 @@ tbody tr:nth-child(even) td { background-color: var(--zebra); }
 tbody tr:hover td { background-color: color-mix(in srgb, var(--accent) 7%, var(--panel)); }
 
 th.c-n, td.c-n { width: 3.2rem; min-width: 3.2rem; color: var(--muted); }
-th.c-est, td.c-est { width: 5.6rem; min-width: 5.6rem; padding-left: 4px; padding-right: 4px; }
+th.c-est, td.c-est { width: 5rem; min-width: 5rem; padding-left: 4px; padding-right: 4px; }
 td.frz { position: sticky; z-index: 1; background-color: var(--panel); }
 th.frz { z-index: 3; background: var(--head-bg); }
 .frz-last { box-shadow: 3px 0 4px -2px rgba(0,0,0,.25); }
@@ -148,9 +148,14 @@ th.frz { z-index: 3; background: var(--head-bg); }
 td.c-name a { color: var(--ink); font-weight: 600; text-decoration-color: var(--line); text-underline-offset: 3px; }
 td.c-name a:hover { text-decoration-color: var(--accent); }
 select.est {
-  font: inherit; font-size: .85rem; width: 100%; min-height: 30px; padding: 2px 2px; border-radius: 4px; cursor: pointer;
+  appearance: none; -webkit-appearance: none; display: block; margin: 0 auto;
+  font: inherit; font-size: .78rem; width: 3.9rem; min-height: 24px; padding: 0 6px; border-radius: 999px; cursor: pointer;
+  text-align: center; text-align-last: center;
   color: var(--ink); background: var(--bg); border: 1px solid var(--line);
 }
+.poscol { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 0 0 12px; }
+.pcw { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; font-size: .85rem; }
+.pcw input[type="color"] { width: 34px; height: 28px; padding: 0; border: 1px solid var(--line); border-radius: 4px; background: none; cursor: pointer; }
 select.est[data-v="GK"] { background: #fbefc2; border-color: #c9a227; font-weight: 700; }
 select.est[data-v="DEF"] { background: #bfe3c4; border-color: #2f7d3b; font-weight: 700; }
 select.est[data-v="MID"] { background: #e3b0bf; border-color: #7b1e3a; font-weight: 700; }
@@ -284,6 +289,7 @@ dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
       <button class="btn primary" id="copy" type="button" title="Copiar la tabla visible para pegarla en una planilla">CSV</button>
     </div>
   </section>
+  <section class="poscol" id="poscol" aria-label="Colores de las marcas de posición"></section>
 
   <div id="status" role="status" aria-live="polite"></div>
   <div id="notices"></div>
@@ -675,8 +681,40 @@ try {
   const d = JSON.parse(localStorage.getItem(EST_DIRTY_KEY));
   if (Array.isArray(d)) d.forEach(k => sync.dirty.add(String(k)));
 } catch {}
+/* ─────────────── Colores de las marcas de posición ───────────────
+   Se eligen en la página Plantel y viajan por el servicio con la clave j2000000000006 (las otras páginas solo los leen). */
+const POSCOL_KEY = "j2000000000006";
+const POS_LIST = ["GK", "DEF", "MID", "ATT", "ENT", "EXT"];
+const POS_DEF = { light: { GK: "#fbefc2", DEF: "#bfe3c4", MID: "#e3b0bf", ATT: "#b5c3e6", ENT: "#e6dcf5", EXT: "#d3eef0" },
+                  dark:  { GK: "#4a3f12", DEF: "#1b4a28", MID: "#4a1626", ATT: "#172447", ENT: "#33224f", EXT: "#17383d" } };
+let posCol = {};
+function parsePosCol(txt) {
+  let o = null; try { o = JSON.parse(txt); } catch {}
+  const m = {}; if (o && typeof o === "object") for (const k of POS_LIST) if (/^#[0-9a-f]{6}$/i.test(o[k] || "")) m[k] = o[k].toLowerCase();
+  return m;
+}
+function applyPosColors() {
+  let st = document.getElementById("poscolCss");
+  if (!st) { st = document.createElement("style"); st.id = "poscolCss"; document.head.appendChild(st); }
+  st.textContent = POS_LIST.filter(k => posCol[k]).map(k => {
+    const n = parseInt(posCol[k].slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255, lum = 0.299 * r + 0.587 * g + 0.114 * b;
+    const dk = [r, g, b].map(x => Math.round(x * 0.6).toString(16).padStart(2, "0")).join("");
+    return `${POSCOL_SEL(k)} { background: ${posCol[k]} !important; border-color: #${dk} !important; color: ${lum > 150 ? "#1b2a41" : "#ffffff"} !important; }`;
+  }).join("\n");
+}
+const POSCOL_SEL = k => `select.est[data-v="${k}"]`;
 const saveEst = () => { try { localStorage.setItem(EST_KEY, JSON.stringify(estMap)); localStorage.setItem(EST_DIRTY_KEY, JSON.stringify([...sync.dirty])); } catch {} };
 const estOf = p => { const e = estMap[p.pid]; return e && EST_OPTS.includes(e.v) ? e.v : ""; };
+function renderPosCol() {
+  const dm = document.documentElement.dataset.theme; const th = (dm === "dark" || (dm !== "light" && matchMedia("(prefers-color-scheme: dark)").matches)) ? "dark" : "light";
+  $("#poscol").innerHTML = `<strong>Colores de las marcas</strong>` + POS_LIST.map(k => `<label class="pcw"><input type="color" data-pcol="${k}" value="${posCol[k] || POS_DEF[th][k]}" aria-label="Color de ${k}">${k}</label>`).join("");
+}
+function setPosColor() {
+  const k = POSCOL_KEY;
+  estMap[k] = { v: JSON.stringify(posCol), t: nextT(k) };
+  sync.dirty.add(k); saveEst();
+  clearTimeout(setPosColor.tm); setPosColor.tm = setTimeout(pushDirty, 800);
+}
 function setEst(pid, v) {
   estMap[pid] = { v: EST_OPTS.includes(v) ? v : "", t: nextT(pid) };
   sync.dirty.add(pid); saveEst();
@@ -799,6 +837,14 @@ async function pullEst() {
     let changed = false;
     for (const it of j.items || []) {
       const pid = String(it.pid), t = Number(it.t) || 0;
+      if (pid === POSCOL_KEY) {          // colores de las marcas de posición (se guardan igual que las asignaciones: gana el cambio más reciente)
+        remote.add(pid); remoteT[pid] = Math.max(remoteT[pid] || 0, t);
+        let v; try { v = await decV(it.v); } catch { continue; }
+        const loc = estMap[pid];
+        if (!loc || t > loc.t) { estMap[pid] = { v, t }; sync.dirty.delete(pid); posCol = parsePosCol(v); applyPosColors(); renderPosCol(); }
+        else if (loc.t > t) sync.dirty.add(pid);
+        continue;
+      }
       if (!/^\d+$/.test(pid)) continue;   // claves «j…»: son los Progresos de la página de juveniles
       remote.add(pid); remoteT[pid] = Math.max(remoteT[pid] || 0, t);
       let v;
@@ -1182,6 +1228,8 @@ function init() {
     render();
   });
   toggle("#onlyInjured", "onlyInjured"); toggle("#onlySusp", "onlySusp"); toggle("#onlySel", "onlySel");
+  $("#poscol").addEventListener("input", e => { const c = e.target.closest("[data-pcol]"); if (c) { posCol[c.dataset.pcol] = c.value.toLowerCase(); applyPosColors(); } });
+  $("#poscol").addEventListener("change", e => { const c = e.target.closest("[data-pcol]"); if (c) { posCol[c.dataset.pcol] = c.value.toLowerCase(); applyPosColors(); setPosColor(); } });
   $("#hideVal").addEventListener("click", () => { setHideVal(!state.hideVal); render(); });
   $("#body").addEventListener("change", e => {
     const sel = e.target.closest("select.est"); if (!sel) return;
@@ -1208,6 +1256,7 @@ function init() {
     $("#diagBtn").addEventListener("click", runDiag);
     $("#diagCopy").addEventListener("click", async () => { await copyText($("#diagText").textContent); toast("Diagnóstico copiado"); });
   }
+  posCol = parsePosCol(estMap[POSCOL_KEY] && estMap[POSCOL_KEY].v); applyPosColors(); renderPosCol();
   loadPrefs();
   render();
   load(false);
