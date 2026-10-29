@@ -199,7 +199,9 @@ td.sk, td.pos { padding-left: 4px; padding-right: 4px; }
 table.no-val .c-val { display: none; }
 th.sepl, td.sepl { border-left: 1px solid var(--muted); }
 th.sepr, td.sepr { border-right: 1px solid var(--muted); }
-.chg { font-size: .7em; vertical-align: 1px; }
+.chg { font-size: .7em; vertical-align: 4px; }
+td.chgup { background: rgba(31,143,74,.24) !important; font-weight: 700; }
+td.chgdn { background: rgba(200,53,47,.22) !important; font-weight: 700; }
 .chg.up { color: #1f8f4a; }
 .chg.down { color: #c8352f; }
 :root[data-theme="dark"] .chg.up { color: #5fd58b; }
@@ -1043,7 +1045,8 @@ function render() {
         const mark = Number.isFinite(before) && before !== v
           ? (v > before ? ` <span class="chg up" title="Subió: antes ${before}" aria-label="subió, antes ${before}">▲</span>` : ` <span class="chg down" title="Bajó: antes ${before}" aria-label="bajó, antes ${before}">▼</span>`)
           : "";
-        return `<td class="${tdCls(c, "sk")}">${v}${mark}</td>`;
+        const hl = mark ? (v > before ? " chgup" : " chgdn") : "";
+        return `<td class="${tdCls(c, "sk")}${hl}">${v}${mark}</td>`;
       }
       if (c.comp) {
         const v = compositeValue(p, c.comp);

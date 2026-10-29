@@ -837,20 +837,8 @@ async function pullLin() {
     maybeAdvance();
   } catch (err) { setSyncState("offline", explainSync(err)); }
 }
-// Rival de un día: el equipo contrario del partido de ese día en los datos de la API («—» si no hay partido o no tiene rival asignado).
-function rivalFor(dateStr) {
-  if (!dateStr || !state.matches) return "—";
-  for (const m of state.matches) {
-    if (!m || !m.date || ymd(new Date(m.date)) !== dateStr) continue;
-    const mine = id => id != null && state.teamId != null && String(id) === String(state.teamId);
-    const same = n => n && state.teamName && String(n).trim().toLowerCase() === state.teamName.trim().toLowerCase();
-    const opp = mine(m.homeId) || same(m.home) ? m.away : mine(m.awayId) || same(m.away) ? m.home : m.opponent;
-    if (opp && String(opp).trim()) return String(opp).trim().slice(0, 30);
-  }
-  return "—";
-}
 // Cuando llegan los datos de una semana nueva (jueves), la fecha de cada alineación avanza 7 días por cada semana transcurrida
-// y el rival se rellena con el del partido de ese día. Se hace una sola vez y queda como cambio sin guardar.
+// (el rival no se toca). Se hace una sola vez y queda como cambio sin guardar.
 let advancedOnce = false;
 function maybeAdvance() {
   if (advancedOnce || !state.dataReady || !state.stamp) return;
@@ -863,13 +851,13 @@ function maybeAdvance() {
     if (L.w >= wk) return;
     const weeks = Math.max(1, Math.round((Date.parse(wk) - Date.parse(L.w)) / 604800000));
     if (L.d) L.d = addDays(L.d, 7 * weeks);
-    L.r = rivalFor(L.d); L.w = wk; saveLineup(i); done.push(`${LINEUPS[i].name}: ${L.d ? L.d.split("-").reverse().join("-") : "sin fecha"}, rival ${L.r}`);
+    L.w = wk; saveLineup(i); done.push(`${LINEUPS[i].name}: ${L.d ? L.d.split("-").reverse().join("-") : "sin fecha"}`);
   });
   if (!done.length) return;
   renderAll();
   const box = document.createElement("div");
   box.className = "notice";
-  box.innerHTML = `<p><strong>Llegaron datos de una semana nueva:</strong> las fechas avanzaron 7 días y se rellenaron los rivales (${esc(done.join("; "))}).${state.matches ? "" : " No encontré partidos en los datos, por eso los rivales quedaron con una raya."} Presiona «Guardar Datos» para guardarlo en la nube.</p>`;
+  box.innerHTML = `<p><strong>Llegaron datos de una semana nueva:</strong> las fechas avanzaron 7 días (${esc(done.join("; "))}). Presiona «Guardar Datos» para guardarlo en la nube.</p>`;
   $("#notices").appendChild(box);
 }
 let estStarted = "";
