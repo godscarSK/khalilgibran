@@ -32,14 +32,14 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #0f1a22; --panel: #16232d; --ink: #e6edf1; --muted: #93a4b0; --line: #2a3b47;
-    --accent: #ef6a62; --accent-ink: #1a0b0a; --hl: #5a4a12; --inj: #ff6b63; --call: #6aaeff; --call-ink: #0b1a2b;
+    --accent: #ef6a62; --accent-ink: #1a0b0a; --hl: #7d6819; --inj: #ff6b63; --call: #6aaeff; --call-ink: #0b1a2b;
     --zebra: #1b2b36; --notice-bg: #3a3118; --notice-line: #8a7326; --error-bg: #3b1d1b; --error-line: #ef6a62;
     --head-bg: #1d2e3a; --focus: #6aaeff;
   }
 }
 :root[data-theme="dark"] {
   --bg: #0f1a22; --panel: #16232d; --ink: #e6edf1; --muted: #93a4b0; --line: #2a3b47;
-  --accent: #ef6a62; --accent-ink: #1a0b0a; --hl: #5a4a12; --inj: #ff6b63; --call: #6aaeff; --call-ink: #0b1a2b;
+  --accent: #ef6a62; --accent-ink: #1a0b0a; --hl: #7d6819; --inj: #ff6b63; --call: #6aaeff; --call-ink: #0b1a2b;
   --zebra: #1b2b36; --notice-bg: #3a3118; --notice-line: #8a7326; --error-bg: #3b1d1b; --error-line: #ef6a62;
   --head-bg: #1d2e3a; --focus: #6aaeff;
 }
@@ -209,7 +209,7 @@ td.chgdn { background: rgba(200,53,47,.22) !important; font-weight: 700; }
 :root[data-theme="dark"] .chg.down { color: #ff8a82; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .chg.up { color: #5fd58b; } :root:not([data-theme="light"]) .chg.down { color: #ff8a82; } }
 th.hl { background: var(--hl); }
-tbody tr td.hl { background-color: var(--hl); font-weight: 600; }
+tbody tr td.hl { background-color: var(--hl) !important; font-weight: 600; }   /* el amarillo gana sobre el verde/rojo de las skills que cambiaron */
 .dim { color: var(--muted); }
 .empty { padding: 36px 16px; text-align: center; color: var(--muted); }
 .theme {
