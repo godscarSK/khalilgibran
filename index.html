@@ -32,14 +32,14 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #0f1a22; --panel: #16232d; --ink: #e6edf1; --muted: #93a4b0; --line: #2a3b47;
-    --accent: #ef6a62; --accent-ink: #1a0b0a; --hl: #7d6819; --inj: #ff6b63; --call: #6aaeff; --call-ink: #0b1a2b;
+    --accent: #ef6a62; --accent-ink: #1a0b0a; --hl: #6b5a16; --inj: #ff6b63; --call: #6aaeff; --call-ink: #0b1a2b;
     --zebra: #1b2b36; --notice-bg: #3a3118; --notice-line: #8a7326; --error-bg: #3b1d1b; --error-line: #ef6a62;
     --head-bg: #1d2e3a; --focus: #6aaeff;
   }
 }
 :root[data-theme="dark"] {
   --bg: #0f1a22; --panel: #16232d; --ink: #e6edf1; --muted: #93a4b0; --line: #2a3b47;
-  --accent: #ef6a62; --accent-ink: #1a0b0a; --hl: #7d6819; --inj: #ff6b63; --call: #6aaeff; --call-ink: #0b1a2b;
+  --accent: #ef6a62; --accent-ink: #1a0b0a; --hl: #6b5a16; --inj: #ff6b63; --call: #6aaeff; --call-ink: #0b1a2b;
   --zebra: #1b2b36; --notice-bg: #3a3118; --notice-line: #8a7326; --error-bg: #3b1d1b; --error-line: #ef6a62;
   --head-bg: #1d2e3a; --focus: #6aaeff;
 }
@@ -154,6 +154,7 @@ select.est {
   color: var(--ink); background: var(--bg); border: 1px solid var(--line);
 }
 .poscol { display: flex; flex-direction: column; gap: 6px; padding: 0 0 12px; }
+.poscol .pcsub { margin-top: 6px; }
 .poscol .pcrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
 .pcw { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; font-size: .85rem; }
 .pcw input[type="color"] { width: 34px; height: 28px; padding: 0; border: 1px solid var(--line); border-radius: 4px; background: none; cursor: pointer; }
@@ -709,13 +710,33 @@ function applyPosColors() {
 const POSCOL_SEL = k => `select.est[data-v="${k}"]`;
 const saveEst = () => { try { localStorage.setItem(EST_KEY, JSON.stringify(estMap)); localStorage.setItem(EST_DIRTY_KEY, JSON.stringify([...sync.dirty])); } catch {} };
 const estOf = p => { const e = estMap[p.pid]; return e && EST_OPTS.includes(e.v) ? e.v : ""; };
+/* Colores del resaltado (columna resaltada, skill que subió, skill que bajó): viajan dentro del mismo valor de la nube, en el campo H. */
+let hlCol = {};
+const HL_LIST = [["hl", "Columna resaltada"], ["up", "Subió"], ["dn", "Bajó"]];
+const HL_DEF = { light: { hl: "#ffe9a8", up: "#c3e4cf", dn: "#f1c7c4" }, dark: { hl: "#6b5a16", up: "#1f4a30", dn: "#5a2422" } };
+function parseHl(txt) {
+  let o = null; try { o = JSON.parse(txt); } catch {}
+  const m = {}; if (o && o.H && typeof o.H === "object") for (const [k] of HL_LIST) if (/^#[0-9a-f]{6}$/i.test(o.H[k] || "")) m[k] = o.H[k].toLowerCase();
+  return m;
+}
+function applyHlColors() {
+  let st = document.getElementById("hlCss");
+  if (!st) { st = document.createElement("style"); st.id = "hlCss"; document.head.appendChild(st); }
+  const ink = c => { const n = parseInt(c.slice(1), 16); return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) > 150 ? "#1b2a41" : "#ffffff"; };
+  let css = "";
+  if (hlCol.hl) css += `:root:root, :root[data-theme] { --hl: ${hlCol.hl}; }\ntbody tr td.hl { color: ${ink(hlCol.hl)} !important; }\n`;
+  if (hlCol.up) css += `td.chgup { background: ${hlCol.up} !important; color: ${ink(hlCol.up)}; }\n`;
+  if (hlCol.dn) css += `td.chgdn { background: ${hlCol.dn} !important; color: ${ink(hlCol.dn)}; }\n`;
+  st.textContent = css;
+}
 function renderPosCol() {
   const dm = document.documentElement.dataset.theme; const th = (dm === "dark" || (dm !== "light" && matchMedia("(prefers-color-scheme: dark)").matches)) ? "dark" : "light";
-  $("#poscol").innerHTML = `<strong>Colores de las marcas</strong><span class="pcrow">` + POS_LIST.map(k => `<label class="pcw"><input type="color" data-pcol="${k}" value="${posCol[k] || POS_DEF[th][k]}" aria-label="Color de ${k}">${k}</label>`).join("") + `</span>`;
+  $("#poscol").innerHTML = `<strong>Colores de las marcas</strong><span class="pcrow">` + POS_LIST.map(k => `<label class="pcw"><input type="color" data-pcol="${k}" value="${posCol[k] || POS_DEF[th][k]}" aria-label="Color de ${k}">${k}</label>`).join("") + `</span>`
+    + `<strong class="pcsub">Colores del resaltado</strong><span class="pcrow">` + HL_LIST.map(([k, n]) => `<label class="pcw"><input type="color" data-hcol="${k}" value="${hlCol[k] || HL_DEF[th][k]}" aria-label="Color: ${n}">${n}</label>`).join("") + `</span>`;
 }
 function setPosColor() {
   const k = POSCOL_KEY;
-  estMap[k] = { v: JSON.stringify(posCol), t: nextT(k) };
+  estMap[k] = { v: JSON.stringify({ ...posCol, H: hlCol }), t: nextT(k) };
   sync.dirty.add(k); saveEst();
   clearTimeout(setPosColor.tm); setPosColor.tm = setTimeout(pushDirty, 800);
 }
@@ -845,7 +866,7 @@ async function pullEst() {
         remote.add(pid); remoteT[pid] = Math.max(remoteT[pid] || 0, t);
         let v; try { v = await decV(it.v); } catch { continue; }
         const loc = estMap[pid];
-        if (!loc || t > loc.t) { estMap[pid] = { v, t }; sync.dirty.delete(pid); posCol = parsePosCol(v); applyPosColors(); renderPosCol(); }
+        if (!loc || t > loc.t) { estMap[pid] = { v, t }; sync.dirty.delete(pid); posCol = parsePosCol(v); hlCol = parseHl(v); applyPosColors(); applyHlColors(); renderPosCol(); }
         else if (loc.t > t) sync.dirty.add(pid);
         continue;
       }
@@ -1237,6 +1258,8 @@ function init() {
     render();
   });
   toggle("#onlyInjured", "onlyInjured"); toggle("#onlySusp", "onlySusp"); toggle("#onlyChg", "onlyChg"); toggle("#onlySel", "onlySel");
+  $("#poscol").addEventListener("input", e => { const c = e.target.closest("[data-hcol]"); if (c) { hlCol[c.dataset.hcol] = c.value.toLowerCase(); applyHlColors(); } });
+  $("#poscol").addEventListener("change", e => { const c = e.target.closest("[data-hcol]"); if (c) { hlCol[c.dataset.hcol] = c.value.toLowerCase(); applyHlColors(); setPosColor(); } });
   $("#poscol").addEventListener("input", e => { const c = e.target.closest("[data-pcol]"); if (c) { posCol[c.dataset.pcol] = c.value.toLowerCase(); applyPosColors(); } });
   $("#poscol").addEventListener("change", e => { const c = e.target.closest("[data-pcol]"); if (c) { posCol[c.dataset.pcol] = c.value.toLowerCase(); applyPosColors(); setPosColor(); } });
   $("#hideVal").addEventListener("click", () => { setHideVal(!state.hideVal); render(); });
@@ -1265,7 +1288,7 @@ function init() {
     $("#diagBtn").addEventListener("click", runDiag);
     $("#diagCopy").addEventListener("click", async () => { await copyText($("#diagText").textContent); toast("Diagnóstico copiado"); });
   }
-  posCol = parsePosCol(estMap[POSCOL_KEY] && estMap[POSCOL_KEY].v); applyPosColors(); renderPosCol();
+  posCol = parsePosCol(estMap[POSCOL_KEY] && estMap[POSCOL_KEY].v); hlCol = parseHl(estMap[POSCOL_KEY] && estMap[POSCOL_KEY].v); applyPosColors(); applyHlColors(); renderPosCol();
   loadPrefs();
   render();
   load(false);
