@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CYMRU U21</title>
+<title>MI EQUIPO</title>
 <script>try { var t = localStorage.getItem("cantera:theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch (e) {}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,7 +17,6 @@
   --line: #cfd8d2;
   --accent: #c8352f;
   --accent-ink: #ffffff;
-  --bar: #5b9a74;
   --hl: #ffe9a8;
   --inj: #d6232a;
   --call: #1a5fd0;
@@ -32,67 +31,56 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0f1a22;
-    --panel: #16232d;
-    --ink: #e6edf1;
-    --muted: #93a4b0;
-    --line: #2a3b47;
-    --accent: #ef6a62;
-    --accent-ink: #1a0b0a;
-    --bar: #4f9d73;
-    --hl: #5a4a12;
-    --inj: #ff6b63;
-    --call: #6aaeff;
-    --call-ink: #0b1a2b;
-    --zebra: #1b2b36;
-    --notice-bg: #3a3118;
-    --notice-line: #8a7326;
-    --error-bg: #3b1d1b;
-    --error-line: #ef6a62;
-    --head-bg: #1d2e3a;
-    --focus: #6aaeff;
+    --bg: #0f1a22; --panel: #16232d; --ink: #e6edf1; --muted: #93a4b0; --line: #2a3b47;
+    --accent: #ef6a62; --accent-ink: #1a0b0a; --hl: #5a4a12; --inj: #ff6b63; --call: #6aaeff; --call-ink: #0b1a2b;
+    --zebra: #1b2b36; --notice-bg: #3a3118; --notice-line: #8a7326; --error-bg: #3b1d1b; --error-line: #ef6a62;
+    --head-bg: #1d2e3a; --focus: #6aaeff;
   }
 }
 :root[data-theme="dark"] {
   --bg: #0f1a22; --panel: #16232d; --ink: #e6edf1; --muted: #93a4b0; --line: #2a3b47;
-  --accent: #ef6a62; --accent-ink: #1a0b0a; --bar: #4f9d73; --hl: #5a4a12; --inj: #ff6b63; --call: #6aaeff; --call-ink: #0b1a2b; --zebra: #1b2b36; --notice-bg: #3a3118;
-  --notice-line: #8a7326; --error-bg: #3b1d1b; --error-line: #ef6a62; --head-bg: #1d2e3a; --focus: #6aaeff;
+  --accent: #ef6a62; --accent-ink: #1a0b0a; --hl: #5a4a12; --inj: #ff6b63; --call: #6aaeff; --call-ink: #0b1a2b;
+  --zebra: #1b2b36; --notice-bg: #3a3118; --notice-line: #8a7326; --error-bg: #3b1d1b; --error-line: #ef6a62;
+  --head-bg: #1d2e3a; --focus: #6aaeff;
 }
 
 * { box-sizing: border-box; }
 html { color-scheme: light dark; }
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
 body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--ink);
-  font-family: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
-  font-size: 16px;
-  line-height: 1.45;
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 16px; line-height: 1.45;
 }
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+[hidden] { display: none !important; }
 
 .wrap { max-width: 1680px; margin: 0 auto; padding: 0 16px; position: relative; }
-
-header.top { padding: 28px 0 16px; }
-h1 {
-  margin: 0;
-  font-family: "Barlow Condensed", "Arial Narrow", sans-serif;
-  font-weight: 700;
-  font-size: clamp(3rem, 9vw, 5.5rem);
-  line-height: 0.9;
-  letter-spacing: -0.01em;
+header.top { padding: 10px 0 16px; }
+.topbar { display: flex; justify-content: flex-end; align-items: center; gap: 10px; padding-top: 14px; }
+.navwrap { position: relative; display: inline-block; }
+.navwrap::after { content: "▾"; position: absolute; right: 13px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--ink); }
+select.nav {
+  appearance: none; -webkit-appearance: none; font: inherit; font-weight: 600; cursor: pointer; color: var(--ink);
+  min-height: 42px; padding: 0 36px 0 14px; border: 1px solid var(--ink); border-radius: 4px; background: var(--panel);
 }
-.headrow { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px 24px; }
-.headleft { min-width: 0; }
-.summary { margin-right: 58px; margin-top: 2px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel); font-size: .82rem; }
-.summary dl { margin: 0; display: grid; grid-template-columns: auto auto; gap: 3px 18px; }
-.summary dt { color: var(--muted); }
-.summary dd { margin: 0; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
-@media (max-width: 760px) { .summary { margin-right: 0; width: 100%; } .summary dl { grid-template-columns: auto auto auto auto; } }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+h1 {
+  margin: 0; font-family: "Barlow Condensed", "Arial Narrow", sans-serif; font-weight: 700;
+  font-size: clamp(2.2rem, 9vw, 5.5rem); line-height: 0.9; letter-spacing: -0.01em;
+}
+.headrow { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 16px 24px; }
+.headtext { flex: 1 1 360px; min-width: 0; }
 .brand { display: flex; align-items: center; gap: clamp(10px, 2vw, 20px); }
-.brand .logo { height: clamp(3rem, 9vw, 5.5rem); width: auto; flex: none; }
-h1 .mark { color: var(--accent); }
-.lede { margin: 10px 0 0; color: var(--muted); max-width: 60ch; }
+.brand .logo { flex: none; width: clamp(64px, 11vw, 104px); height: auto; filter: drop-shadow(0 2px 4px rgba(0,0,0,.25)); }
+.brand h1 { min-width: 0; overflow-wrap: anywhere; }
+.season { margin: 4px 0 0; font-weight: 700; color: var(--muted, inherit); letter-spacing: .04em; }
+.summary { flex: 0 0 auto; min-width: 250px; padding: 10px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; font-variant-numeric: tabular-nums; }
+.summary dl { margin: 0; display: grid; grid-template-columns: auto auto; gap: 3px 22px; }
+.summary dt { color: var(--muted); font-size: .875rem; }
+.summary dd { margin: 0; text-align: right; font-weight: 600; white-space: nowrap; }
+@media (max-width: 640px) { .summary { margin-right: 0; width: 100%; } }
+.lede { margin: 10px 0 0; color: var(--muted); max-width: 70ch; }
 .lede strong { color: var(--ink); font-weight: 600; }
 
 .toolbar {
@@ -100,25 +88,20 @@ h1 .mark { color: var(--accent); }
   padding: 14px 0 12px; border-top: 2px solid var(--ink);
 }
 .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; justify-content: flex-end; align-items: center; }
-.actions .btn { min-width: 3.6rem; text-align: center; }
 .field { display: flex; flex-direction: column; gap: 3px; font-size: 0.875rem; color: var(--muted); }
-.field input[type="search"], .field input[type="number"], .field select {
+.field input[type="search"], .field input[type="number"], .field input[type="password"] {
   font: inherit; color: var(--ink); background: var(--panel);
   border: 1px solid var(--line); border-radius: 4px; padding: 7px 9px; min-height: 38px;
 }
 .field input[type="search"] { width: min(260px, 100%); }
+.field input[type="number"] { width: 5rem; }
+.range { display: flex; gap: 6px; align-items: center; }
 .ages { display: flex; gap: 6px; flex-wrap: wrap; }
 .ages button {
-  font: inherit; min-width: 2.6rem; min-height: 40px; padding: 0 10px; cursor: pointer; border-radius: 4px;
+  font: inherit; min-width: 3rem; min-height: 40px; padding: 0 10px; cursor: pointer; border-radius: 4px;
   border: 1px solid var(--ink); background: var(--ink); color: var(--panel); font-weight: 600;
 }
-.ages button[aria-pressed="false"] { background: transparent; color: var(--muted); border-color: var(--line); font-weight: 400; text-decoration: line-through; }
-.poss button[aria-pressed="false"] { text-decoration: none; font-weight: 600; }
-.ages button:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
-.range { display: flex; gap: 6px; align-items: center; }
-.check { display: flex; gap: 8px; align-items: center; min-height: 38px; color: var(--ink); font-size: 0.95rem; }
-.check input { width: 18px; height: 18px; accent-color: var(--accent); }
-.spacer { flex: 1 1 auto; }
+.ages button[aria-pressed="false"] { background: transparent; color: var(--muted); border-color: var(--line); }
 button.btn {
   font: inherit; font-weight: 600; cursor: pointer; min-height: 38px; padding: 7px 14px;
   border-radius: 4px; border: 1px solid var(--ink); background: var(--panel); color: var(--ink);
@@ -128,9 +111,6 @@ button.btn:hover { filter: brightness(0.96); }
 button.btn[aria-pressed="true"] { background: var(--ink); color: var(--panel); border-color: var(--ink); }
 
 #status { min-height: 1.4em; margin: 4px 0 10px; color: var(--muted); font-size: 0.95rem; }
-.progress { height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; margin-top: 6px; max-width: 360px; }
-.progress > i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .2s; }
-
 .notice {
   border: 1px solid var(--notice-line); background: var(--notice-bg);
   border-left-width: 5px; border-radius: 4px; padding: 10px 14px; margin: 0 0 12px; max-width: 80ch;
@@ -138,12 +118,8 @@ button.btn[aria-pressed="true"] { background: var(--ink); color: var(--panel); b
 .notice.error { border-color: var(--error-line); background: var(--error-bg); }
 .notice p { margin: 0 0 6px; }
 .notice p:last-child { margin: 0; }
-.notice code { font-size: 0.9em; }
 
-.tablewrap {
-  overflow: auto; max-height: 78vh; background: var(--panel);
-  border: 1px solid var(--line); border-radius: 4px;
-}
+.tablewrap { overflow: auto; max-height: 78vh; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; }
 table { border-collapse: separate; border-spacing: 0; width: 100%; font-variant-numeric: tabular-nums; }
 th, td { padding: 7px 8px; white-space: nowrap; text-align: center; border-bottom: 1px solid var(--line); }
 th {
@@ -156,8 +132,7 @@ th button {
 }
 th button:hover { background: rgba(0,0,0,.06); }
 th button:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
-td.c-name { justify-content: flex-start; text-align: left; }
-th.c-name button { justify-content: center; text-align: center; }
+th.c-name button { justify-content: center; }
 th[aria-sort="ascending"] button::after { content: "▲"; font-size: .65em; color: var(--accent); }
 th[aria-sort="descending"] button::after { content: "▼"; font-size: .65em; color: var(--accent); }
 td.c-name { text-align: left; }
@@ -165,8 +140,7 @@ tbody tr:nth-child(even) td { background-color: var(--zebra); }
 tbody tr:hover td { background-color: color-mix(in srgb, var(--accent) 7%, var(--panel)); }
 
 th.c-n, td.c-n { width: 3.2rem; min-width: 3.2rem; color: var(--muted); }
-th.c-est, td.c-est { width: 5.6rem; min-width: 5.6rem; padding-left: 4px; padding-right: 4px; }
-/* Columnas inmovilizadas (# … Forma): la posición la calcula applyFreeze() según el ancho real de cada columna. */
+th.c-est, td.c-est { width: 5rem; min-width: 5rem; padding-left: 4px; padding-right: 4px; }
 td.frz { position: sticky; z-index: 1; background-color: var(--panel); }
 th.frz { z-index: 3; background: var(--head-bg); }
 .frz-last { box-shadow: 3px 0 4px -2px rgba(0,0,0,.25); }
@@ -174,38 +148,44 @@ th.frz { z-index: 3; background: var(--head-bg); }
 td.c-name a { color: var(--ink); font-weight: 600; text-decoration-color: var(--line); text-underline-offset: 3px; }
 td.c-name a:hover { text-decoration-color: var(--accent); }
 select.est {
-  font: inherit; font-size: .85rem; width: 100%; min-height: 30px; padding: 2px 2px; border-radius: 4px; cursor: pointer;
+  appearance: none; -webkit-appearance: none; display: block; margin: 0 auto;
+  font: inherit; font-size: .78rem; width: 3.9rem; min-height: 24px; padding: 0 6px; border-radius: 999px; cursor: pointer;
+  text-align: center; text-align-last: center;
   color: var(--ink); background: var(--bg); border: 1px solid var(--line);
 }
-select.est:focus-visible { outline: 3px solid var(--focus); outline-offset: 1px; }
+.poscol { display: flex; flex-direction: column; gap: 6px; padding: 0 0 12px; }
+.poscol .pcrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.pcw { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; font-size: .85rem; }
+.pcw input[type="color"] { width: 34px; height: 28px; padding: 0; border: 1px solid var(--line); border-radius: 4px; background: none; cursor: pointer; }
 select.est[data-v="GK"] { background: #fbefc2; border-color: #c9a227; font-weight: 700; }
-select.est[data-v="DEF"] { background: #d4efdc; border-color: #4f9a6c; font-weight: 700; }
-select.est[data-v="MID"] { background: #f3d9df; border-color: #8a2038; font-weight: 700; }
-select.est[data-v="ATT"] { background: #d6dcec; border-color: #1f2d5c; font-weight: 700; }
+select.est[data-v="DEF"] { background: #bfe3c4; border-color: #2f7d3b; font-weight: 700; }
+select.est[data-v="MID"] { background: #e3b0bf; border-color: #7b1e3a; font-weight: 700; }
+select.est[data-v="ATT"] { background: #b5c3e6; border-color: #1b2a63; font-weight: 700; }
+select.est[data-v="ENT"] { background: #e6dcf5; border-color: #8a6cc0; font-weight: 700; }
+select.est[data-v="EXT"] { background: #d3eef0; border-color: #4aa3ad; font-weight: 700; }
 :root[data-theme="dark"] select.est[data-v="GK"] { background: #4a3f12; border-color: #c9a227; }
-:root[data-theme="dark"] select.est[data-v="DEF"] { background: #1f4130; border-color: #4f9d73; }
-:root[data-theme="dark"] select.est[data-v="MID"] { background: #4a1a26; border-color: #c0485f; }
-:root[data-theme="dark"] select.est[data-v="ATT"] { background: #1b2447; border-color: #6f84d1; }
+:root[data-theme="dark"] select.est[data-v="DEF"] { background: #1b4a28; border-color: #4fa862; }
+:root[data-theme="dark"] select.est[data-v="MID"] { background: #4a1626; border-color: #b03a5a; }
+:root[data-theme="dark"] select.est[data-v="ATT"] { background: #172447; border-color: #4a63b5; }
+:root[data-theme="dark"] select.est[data-v="ENT"] { background: #33224f; border-color: #8a6cc0; }
+:root[data-theme="dark"] select.est[data-v="EXT"] { background: #17383d; border-color: #4aa3ad; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) select.est[data-v="GK"] { background: #4a3f12; border-color: #c9a227; }
-  :root:not([data-theme="light"]) select.est[data-v="DEF"] { background: #1f4130; border-color: #4f9d73; }
-  :root:not([data-theme="light"]) select.est[data-v="MID"] { background: #4a1a26; border-color: #c0485f; }
-  :root:not([data-theme="light"]) select.est[data-v="ATT"] { background: #1b2447; border-color: #6f84d1; }
+  :root:not([data-theme="light"]) select.est[data-v="DEF"] { background: #1b4a28; border-color: #4fa862; }
+  :root:not([data-theme="light"]) select.est[data-v="MID"] { background: #4a1626; border-color: #b03a5a; }
+  :root:not([data-theme="light"]) select.est[data-v="ATT"] { background: #172447; border-color: #4a63b5; }
+  :root:not([data-theme="light"]) select.est[data-v="ENT"] { background: #33224f; border-color: #8a6cc0; }
+  :root:not([data-theme="light"]) select.est[data-v="EXT"] { background: #17383d; border-color: #4aa3ad; }
 }
-td.c-name .bot { margin-left: 8px; padding: 1px 5px; border-radius: 3px; font-size: .62rem; font-weight: 700; background: #f5c400; color: #2b2300; text-transform: uppercase; letter-spacing: .03em; }
-td.c-name .u21 { margin-left: 8px; padding: 1px 5px; border-radius: 3px; font-size: .62rem; font-weight: 700; background: var(--call); color: var(--call-ink); letter-spacing: .03em; }
+td.c-name .sel { margin-left: 8px; padding: 1px 5px; border-radius: 3px; font-size: .62rem; font-weight: 700; background: var(--call); color: var(--call-ink); letter-spacing: .03em; }
 td.c-name .inj { margin-left: 8px; display: inline-flex; align-items: center; gap: 3px; font-size: .68rem; font-weight: 700; color: var(--inj); white-space: nowrap; vertical-align: middle; }
 td.c-name .inj svg { width: 13px; height: 13px; fill: var(--inj); }
-td.c-name .red { margin-left: 8px; display: inline-flex; align-items: center; gap: 3px; font-size: .68rem; font-weight: 700; color: #d6232a; vertical-align: middle; }
-td.c-name .red i { display: inline-block; width: 9px; height: 13px; border-radius: 1.5px; background: #d6232a; box-shadow: 0 0 0 1px rgba(0,0,0,.25); }
-:root[data-theme="dark"] td.c-name .red { color: #ff6b63; }
-:root[data-theme="dark"] td.c-name .red i { background: #ff4a41; }
+td.c-name .redcard { display: inline-block; margin-left: 8px; width: 11px; height: 15px; border-radius: 2px; background: #d6232a; border: 1px solid rgba(0,0,0,.35); vertical-align: middle; transform: rotate(8deg); }
 td.c-name .copypid {
   all: unset; box-sizing: border-box; margin-left: 8px; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center;
   vertical-align: middle; cursor: pointer; color: var(--muted); border: 1px solid var(--line); border-radius: 4px;
 }
 td.c-name .copypid:hover { color: var(--ink); border-color: var(--ink); }
-td.c-name .copypid:focus-visible { outline: 3px solid var(--focus); outline-offset: 1px; }
 td.c-name .copypid svg { width: 14px; height: 14px; }
 #toast {
   position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 50;
@@ -216,30 +196,13 @@ td.c-name .copypid svg { width: 14px; height: 14px; }
 
 td.pos { min-width: 3rem; }
 td.sk { min-width: 2.4rem; }
-table.no-team .c-team { display: none; }
+td.sk, td.pos { padding-left: 4px; padding-right: 4px; }
 table.no-val .c-val { display: none; }
-.ctbl { width: auto; min-width: 22rem; }
-.ctbl td.l, .ctbl th.l button { justify-content: flex-start; text-align: left; }
-.ctbl td:first-child { color: var(--muted); }
-body.view-countries #mainwrap, body.view-countries #sums { display: none; }
-#cwrap { display: block; width: fit-content; max-width: 100%; }
-#cwrap[hidden] { display: none; }
-td.c-team { white-space: nowrap; }
-td.c-team .ctry { display: block; font-size: .62rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #0d9488; line-height: 1.1; }
-:root[data-theme="dark"] td.c-team .ctry { color: #2dd4bf; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) td.c-team .ctry { color: #2dd4bf; } }
-td.c-team a { color: var(--ink); text-decoration-color: var(--line); text-underline-offset: 3px; }
-td.c-team a:hover { text-decoration-color: var(--accent); }
 th.sepl, td.sepl { border-left: 1px solid var(--muted); }
 th.sepr, td.sepr { border-right: 1px solid var(--muted); }
-.chg { font-size: .7em; vertical-align: .4em; }
-tbody tr td.sk.hl.cu, tbody tr td.sk.hl.cd { background-color: var(--hl); }   /* el amarillo de la suma ordenada tiene prioridad sobre el verde/rojo */
-tbody tr td.sk.cu { background-color: #d3f0dd; }
-tbody tr td.sk.cd { background-color: #f8d7d4; }
-:root[data-theme="dark"] tbody tr td.sk.cu { background-color: #1d4a31; }
-:root[data-theme="dark"] tbody tr td.sk.cd { background-color: #55231f; }
-tbody tr td.sk.hl.cu, tbody tr td.sk.hl.cd { background-color: var(--hl) !important; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) tbody tr td.sk.cu { background-color: #1d4a31; } :root:not([data-theme="light"]) tbody tr td.sk.cd { background-color: #55231f; } }
+.chg { font-size: .7em; vertical-align: 4px; }
+td.chgup { background: rgba(31,143,74,.24) !important; font-weight: 700; }
+td.chgdn { background: rgba(200,53,47,.22) !important; font-weight: 700; }
 .chg.up { color: #1f8f4a; }
 .chg.down { color: #c8352f; }
 :root[data-theme="dark"] .chg.up { color: #5fd58b; }
@@ -247,123 +210,99 @@ tbody tr td.sk.hl.cu, tbody tr td.sk.hl.cd { background-color: var(--hl) !import
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .chg.up { color: #5fd58b; } :root:not([data-theme="light"]) .chg.down { color: #ff8a82; } }
 th.hl { background: var(--hl); }
 tbody tr td.hl { background-color: var(--hl); font-weight: 600; }
-td.sk, td.pos { padding-left: 4px; padding-right: 4px; }
-th.ctr button { padding-left: 4px; padding-right: 4px; }
-td.sk, td.pos, th.ctr { text-align: center; }
-th.ctr button { justify-content: center; }
-[hidden] { display: none !important; }
-:root[data-theme="light"] { color-scheme: light; }
-:root[data-theme="dark"] { color-scheme: dark; }
+.dim { color: var(--muted); }
+.empty { padding: 36px 16px; text-align: center; color: var(--muted); }
 .theme {
-  position: absolute; top: 14px; right: 16px; width: 42px; height: 42px; padding: 0;
+  flex: none; width: 42px; height: 42px; padding: 0;
   display: grid; place-items: center; border-radius: 50%; cursor: pointer;
   border: 1px solid var(--ink); background: var(--panel); color: var(--ink);
 }
 .theme svg { width: 22px; height: 22px; }
-.theme:hover { filter: brightness(0.95); }
-.dim { color: var(--muted); }
-.tag {
-  display: inline-block; padding: 1px 7px; border-radius: 3px; font-size: .8rem;
-  border: 1px solid var(--accent); color: var(--accent); font-weight: 600;
-}
-.empty { padding: 36px 16px; text-align: center; color: var(--muted); }
 
 details.formulas { margin: 22px 0 40px; max-width: 900px; }
 details.formulas summary { cursor: pointer; font-weight: 600; padding: 6px 0; }
 details.formulas table { margin-top: 10px; background: var(--panel); border: 1px solid var(--line); }
 details.formulas td, details.formulas th { text-align: left; position: static; padding: 7px 10px; white-space: normal; }
-details.formulas th { font-size: .9rem; }
 details.formulas p { max-width: 70ch; color: var(--muted); }
-
-.who { align-self: center; font-size: .9rem; font-weight: 600; padding: 3px 9px; border-radius: 3px; border: 1px solid var(--line); background: var(--panel); }
 
 dialog.dlg {
   width: min(420px, calc(100vw - 32px)); padding: 22px; border: 2px solid var(--ink); border-radius: 6px;
   background: var(--panel); color: var(--ink);
 }
 dialog.dlg::backdrop { background: rgba(10, 20, 30, .55); }
-dialog.dlg h2 {
-  margin: 0 0 6px; font-family: "Barlow Condensed", "Arial Narrow", sans-serif; font-size: 2rem; line-height: 1; font-weight: 700;
-}
+dialog.dlg h2 { margin: 0 0 6px; font-family: "Barlow Condensed", "Arial Narrow", sans-serif; font-size: 2rem; line-height: 1; font-weight: 700; }
 dialog.dlg .hint { margin: 0 0 14px; color: var(--muted); font-size: .92rem; }
 dialog.dlg .field { margin-bottom: 12px; }
-dialog.dlg .field input { width: 100%; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; min-height: 40px; }
+dialog.dlg .field input { width: 100%; background: var(--bg); min-height: 40px; }
 dialog.dlg .msg { min-height: 1.3em; margin: 0 0 10px; color: var(--accent); font-weight: 600; font-size: .92rem; }
 dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
 
-@media (max-width: 640px) {
-  th.c-n, td.c-n { width: 2.6rem; min-width: 2.6rem; padding-left: 6px; padding-right: 6px; }
-}
-@media (prefers-reduced-motion: reduce) { .progress > i { transition: none; } }
+@media (max-width: 640px) { th.c-n, td.c-n { width: 2.6rem; min-width: 2.6rem; padding-left: 6px; padding-right: 6px; } }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <button class="theme" id="theme" type="button" aria-label="Cambiar a modo oscuro" title="Cambiar a modo oscuro"></button>
+  <div class="topbar">
+    <label class="navwrap"><span class="sr">Cambiar de sección</span>
+      <select class="nav" id="nav">
+        <option value="./" selected>Plantel</option>
+        <option value="juveniles.html">Juveniles</option>
+        <option value="alineaciones.html">Alineaciones</option>
+      </select>
+    </label>
+    <button class="theme" id="theme" type="button" aria-label="Cambiar a modo oscuro" title="Cambiar a modo oscuro"></button>
+  </div>
   <header class="top">
     <div class="headrow">
-    <div class="headleft">
-    <div class="brand">
-      <img class="logo" src="logo.png" alt="" width="227" height="260">
-      <h1 id="title">CYMRU U21</h1>
-    </div>
-    <p class="lede" id="lede">Cargando jugadores…</p>
-    </div>
-    <aside class="summary" id="summary" aria-label="Resumen" hidden>
-      <dl>
-        <dt>Jugadores</dt><dd id="sumPlayers">—</dd>
-        <dt>Jugadores U21</dt><dd id="sumU21">—</dd>
-        <dt>Lesionados</dt><dd id="sumInj">—</dd>
-        <dt>Suspendidos</dt><dd id="sumSusp">—</dd>
-        <dt>Bots</dt><dd id="sumBot">—</dd>
-        <dt>Subidas</dt><dd id="sumUp" title="Subidas de skills en la última actualización semanal">—</dd>
-      </dl>
-    </aside>
+      <div class="headtext">
+        <div class="brand">
+          <img class="logo" src="logo.png" alt="Escudo del equipo" width="300" height="300" onerror="this.hidden=true">
+          <h1 id="title">MI EQUIPO</h1>
+        </div>
+        <p class="season" id="season" hidden></p>
+        <p class="lede" id="lede">Cargando jugadores…</p>
+      </div>
+      <aside class="summary" id="summary" aria-label="Resumen del equipo" hidden></aside>
     </div>
   </header>
 
   <section class="toolbar" aria-label="Filtros">
     <label class="field">Buscar
-      <input type="search" id="q" placeholder="Nombre, equipo o PID" autocomplete="off">
+      <input type="search" id="q" placeholder="Nombre o PID" autocomplete="off">
     </label>
     <div class="field" role="group" aria-label="Edad">
       Edad
-      <span class="ages" id="ages"></span>
+      <span class="range">
+        <input type="number" id="ageMin" min="15" max="45" inputmode="numeric" placeholder="mín." aria-label="Edad mínima">
+        <span aria-hidden="true">–</span>
+        <input type="number" id="ageMax" min="15" max="45" inputmode="numeric" placeholder="máx." aria-label="Edad máxima">
+      </span>
     </div>
     <div class="field" role="group" aria-label="Posición asignada">
       Pos.
-      <span class="ages poss" id="poss"></span>
+      <span class="ages" id="poss"></span>
     </div>
-    <label class="check" id="formToggle"><input type="checkbox" id="withForm"> Con forma</label>
     <div class="actions" role="group" aria-label="Acciones y filtros">
-      <span class="who" id="who" hidden></span>
-      <button class="btn" id="login" type="button">Conectar a Sokker</button>
-      <button class="btn" id="logout" type="button" hidden>Cerrar sesión</button>
+      <button class="btn" id="diagBtn" type="button" hidden title="Compara las asignaciones de este dispositivo con las del servicio">Diagnóstico</button>
       <button class="btn" id="forgetPw" type="button" hidden title="Olvidar la contraseña en este navegador">Bloquear</button>
-      <button class="btn" id="hideVal" type="button" aria-pressed="false" title="Ocultar o mostrar la columna Valor">Ocultar Valor</button>
-      <button class="btn" id="showClubs" type="button" aria-pressed="false" title="Mostrar u ocultar la columna del club">Clubes</button>
-      <button class="btn" id="showCountries" type="button" aria-pressed="false" title="Ver cuántos equipos hay de cada país">Países</button>
-      <button class="btn" id="onlyBot" type="button" aria-pressed="false" title="Mostrar solo los jugadores de equipos sin dueño">BOT</button>
+      <button class="btn" id="hideVal" type="button" aria-pressed="false" title="Ocultar o mostrar las columnas Valor y Salario">Ocultar Val/Sal</button>
       <button class="btn" id="onlyInjured" type="button" aria-pressed="false" title="Mostrar solo los jugadores lesionados">Lesionados</button>
-      <button class="btn" id="onlySusp" type="button" aria-pressed="false" title="Mostrar solo los jugadores con tarjeta roja en la selección">Suspendidos</button>
-      <button class="btn" id="onlyU21" type="button" aria-pressed="false" title="Mostrar solo los jugadores citados a la selección (marca U21)">U21</button>
-      <button class="btn" id="onlyChanges" type="button" aria-pressed="false" title="Mostrar solo los jugadores con cambios en sus skills respecto a la semana anterior (subidas o bajadas)">Cambios</button>
-      <button class="btn" id="onlyHidden" type="button" aria-pressed="false" title="Mostrar solo los jugadores cuyas skills no se pueden ver">Ocultos</button>
+      <button class="btn" id="onlySusp" type="button" aria-pressed="false" title="Mostrar solo los jugadores con tarjeta roja">Suspendidos</button>
+      <button class="btn" id="onlyChg" type="button" aria-pressed="false" title="Mostrar solo los jugadores con alguna skill que subió o bajó respecto a la semana anterior">Cambios</button>
+      <button class="btn" id="onlySel" type="button" aria-pressed="false" title="Mostrar solo los jugadores citados a la selección">Selección</button>
       <button class="btn primary" id="copy" type="button" title="Copiar la tabla visible para pegarla en una planilla">CSV</button>
     </div>
   </section>
+  <section class="poscol" id="poscol" aria-label="Colores de las marcas de posición"></section>
 
   <div id="status" role="status" aria-live="polite"></div>
   <div id="notices"></div>
-
-  <div class="tablewrap" id="cwrap" hidden>
-    <table id="ctbl" class="ctbl">
-      <thead><tr id="chead"></tr></thead>
-      <tbody id="cbody"></tbody>
-    </table>
+  <div id="diagOut" class="notice" hidden>
+    <p><strong>Diagnóstico de sincronización.</strong> <button class="btn" id="diagCopy" type="button">Copiar</button></p>
+    <pre id="diagText" style="white-space:pre-wrap;word-break:break-word;margin:6px 0 0;font-size:.85rem"></pre>
   </div>
 
-  <div class="tablewrap" id="mainwrap">
+  <div class="tablewrap">
     <table id="tbl">
       <thead><tr id="head"></tr></thead>
       <tbody id="body"></tbody>
@@ -371,10 +310,11 @@ dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
   </div>
 
   <details class="formulas" id="sums">
-    <summary>Cómo se calculan DEF, DEFside, MID, ATT y ATTside</summary>
+    <summary>Cómo se calculan Suma, DEF, DEFside, MID, ATT y ATTside</summary>
     <table>
       <thead><tr><th>Columna</th><th>Suma de</th></tr></thead>
       <tbody>
+        <tr><td>Suma</td><td>Las 8 skills (Cond., Rap., Téc., Pas., Por., Def., Cre., Ano.)</td></tr>
         <tr><td>DEF</td><td>Defensa + Rapidez</td></tr>
         <tr><td>DEFside</td><td>Creación + Técnica + Pase</td></tr>
         <tr><td>MID</td><td>Creación + Rapidez + Técnica + Pase</td></tr>
@@ -382,25 +322,7 @@ dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
         <tr><td>ATTside</td><td>Defensa + Creación + Pase</td></tr>
       </tbody>
     </table>
-    <p>Son sumas simples de los niveles de cada skill, sin ajustar por forma. Si a un jugador le falta alguna de las skills de la suma, la celda muestra «—». La barra de cada celda compara solo dentro de su columna.</p>
-  </details>
-
-  <details class="formulas" id="formulas">
-    <summary>Cómo se calcula cada posición</summary>
-    <table>
-      <thead><tr><th>Posición</th><th>Fórmula</th><th>Peso</th></tr></thead>
-      <tbody>
-        <tr><td>F</td><td><strong>F = 0</strong> con «Con forma» apagado. <strong>F = Forma / 10 − 1</strong> con «Con forma» encendido.</td><td>—</td></tr>
-        <tr><td>Portero</td><td>3·(Por+F) + 2·(Rap+F) + (Pas+F)/3</td><td>5,3</td></tr>
-        <tr><td>Defensa</td><td>4·(Def+F) + 3·(Rap+F) + (Téc+F)</td><td>8</td></tr>
-        <tr><td>Lateral</td><td>(Defensa + M.Def) / 2</td><td>12</td></tr>
-        <tr><td>M.Def</td><td>4·(Rap+F) + 4·(Pas+F) + 3·(Téc+F) + 3·(Def+F) + 2·(Cre+F)</td><td>16</td></tr>
-        <tr><td>M.Of</td><td>4·(Rap+F) + 4·(Pas+F) + 3·(Téc+F) + 3·(Cre+F) + 2·(Def+F)</td><td>16</td></tr>
-        <tr><td>M.Prom</td><td>(M.Def + M.Of) / 2</td><td>16</td></tr>
-        <tr><td>Delantero</td><td>(Ano+F) + (Rap+F) + (Téc+F)</td><td>3</td></tr>
-      </tbody>
-    </table>
-    <p>El peso es la suma de los coeficientes. Por eso un M.Def llega a ~200 y un Delantero a ~41: no tiene sentido comparar posiciones entre sí. La barra de cada celda compara solo dentro de su columna.</p>
+    <p>Son sumas simples de los niveles de cada skill, sin ajustar por forma. Si a un jugador le falta alguna de las skills de la suma, la celda muestra «—».</p>
   </details>
 </div>
 
@@ -418,66 +340,25 @@ dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
   </form>
 </dialog>
 
-<dialog id="dlg" class="dlg" aria-labelledby="dlgTitle">
-  <form id="lgForm">
-    <h2 id="dlgTitle">Conectar a Sokker</h2>
-    <p class="hint">Tu usuario y tu contraseña se envían directo a sokker.org. Esta página no los guarda. Con la sesión iniciada se ven las skills de tus propios jugadores y de los que están en venta.</p>
-    <label class="field">Usuario
-      <input id="lgUser" name="username" autocomplete="username" required>
-    </label>
-    <label class="field">Contraseña
-      <input id="lgPass" name="password" type="password" autocomplete="current-password" required>
-    </label>
-    <p class="msg" id="lgMsg" role="alert"></p>
-    <div class="actions">
-      <button class="btn" id="lgCancel" type="button">Cancelar</button>
-      <button class="btn primary" id="lgOk" type="submit">Conectar</button>
-    </div>
-  </form>
-</dialog>
-
 <noscript>Esta página necesita JavaScript para mostrar la tabla.</noscript>
 
 <script src="config.js" onerror="void 0"></script>
 <script>
 "use strict";
 
-/* ─────────────── Configuración: lo único que normalmente hay que tocar ─────────────── */
+/* ─────────────── Configuración ─────────────── */
 const CONFIG = {
-  title: "CYMRU U21",
-  sheetId: "1kBi5kAlC7dlmQ3jPi5D1SbtIkNME8KI5SxIG0XRIMWE",
-  sheetTab: "",                       // nombre de la pestaña; vacío = la primera
-  apiBase: "https://sokker.org/api",
-  staticData: "data/players.json",
-  prevData: "data/players.prev.json",
-  estUrl: (window.CANTERA_CONFIG && window.CANTERA_CONFIG.estUrl) || "",   // se define en config.js (ver README); así no se borra al reemplazar index.html
-  encData: "data/players.enc.json",            // datos cifrados con la contraseña de la página
-  encPrevData: "data/players.prev.enc.json",   // respaldo de la semana anterior (opcional)
-  cacheHours: 6,
-  concurrency: 4,
-  timeoutMs: 15000,
-  // Nombres de los campos del login (POST /auth/login). Deben coincidir con
-  // «LoginRequest» en https://sokker.org/apidoc.html (sección Schemas).
-  loginFields: { username: "login", password: "password" },
-  // Otros campos de LoginRequest que se envían tal cual. remember: false = no recordar la sesión.
-  loginExtra: { remember: false },
-  // Columnas opcionales. También se pueden activar al vuelo con ?equipo=1 y ?posiciones=1 en la dirección.
-  showTeam: new URLSearchParams(location.search).get("equipo") === "1",
-  showPositions: new URLSearchParams(location.search).get("posiciones") === "1"
+  title: "MI EQUIPO",
+  encData: "data/team.enc.json",              // datos cifrados con la contraseña de la página (los genera fetch-team.mjs)
+  encPrevData: "data/team.prev.enc.json",     // respaldo de la semana anterior
+  staticData: "data/team.json",               // alternativa sin cifrar (opcional)
+  prevData: "data/team.prev.json",
+  estUrl: (window.CANTERA_CONFIG && window.CANTERA_CONFIG.estUrl) || "",   // el mismo config.js de la otra página; vacío = asignaciones solo en este navegador
+  timeoutMs: 15000
 };
 
-/* ─────────────── Columnas y posiciones ─────────────── */
-const POSITIONS = [
-  { key: "gk",    label: "Portero",   weight: 16 / 3 },
-  { key: "def",   label: "Defensa",   weight: 8 },
-  { key: "lat",   label: "Lateral",   weight: 12 },
-  { key: "mdef",  label: "M.Def",     weight: 16 },
-  { key: "mof",   label: "M.Of",      weight: 16 },
-  { key: "mprom", label: "M.Prom",    weight: 16 },
-  { key: "att",   label: "Delantero", weight: 3 }
-];
-// Skills de cada jugador, en el orden en que se muestran. «skill» es la clave interna (ver SKILL_ALIASES).
-const MAX_SKILL = 17;   // nivel máximo de una skill, para el largo de la barra
+/* ─────────────── Columnas ─────────────── */
+const MAX_SKILL = 17;
 const SKILL_COLUMNS = [
   { skill: "stamina",   label: "Cond.", title: "Stamina (Condición)" },
   { skill: "pace",      label: "Rap.", title: "Pace" },
@@ -488,7 +369,6 @@ const SKILL_COLUMNS = [
   { skill: "playmaker", label: "Cre.", title: "Playmaking" },
   { skill: "striker",   label: "Ano.", title: "Striker" }
 ];
-// Columnas calculadas: suma simple de niveles de skills, sin ajustar por forma.
 const SKILL_LABEL = { defender: "Defensa", pace: "Rapidez", playmaker: "Creación", technique: "Técnica", passing: "Pase", striker: "Anotación" };
 const COMPOSITES = [
   { key: "c_def",     label: "DEF",     parts: ["defender", "pace"] },
@@ -499,7 +379,6 @@ const COMPOSITES = [
 ].map(c => ({ ...c, title: c.parts.map(k => SKILL_LABEL[k]).join(" + ") }));
 const SUM_COMP = { key: "c_sum", label: "Suma", parts: ["stamina", "pace", "technique", "passing", "keeper", "playmaker", "defender", "striker"] };
 const compOf = key => key === "c_sum" ? SUM_COMP : COMPOSITES.find(c => c.key === key);
-// Líneas verticales: a la izquierda de Cond. y de Por., y a ambos lados de Suma.
 const SEP = { sk_stamina: "sepl", sk_keeper: "sepl", c_sum: "sepl sepr" };
 function compositeValue(p, c) {
   const s = p.skills;
@@ -507,24 +386,19 @@ function compositeValue(p, c) {
 }
 
 const COLS = [
-  { key: "n",        label: "#",                 cls: "c-n", left: true, title: "Número de fila. Al pulsarlo vuelves al orden de la hoja." },
-  { key: "est",      label: "Pos.",              cls: "c-est", title: "Tu asignación para cada jugador: GK, DEF, MID o ATT" },
-  { key: "name",     label: "Jugador",           cls: "c-name", left: true },
-  { key: "team",     label: "Club", cls: "c-team" },
+  { key: "n",        label: "#",     cls: "c-n", left: true, title: "Número de fila. Al pulsarlo vuelves al orden por Valor, de mayor a menor." },
+  { key: "est",      label: "Pos.",  cls: "c-est", title: "Tu asignación para cada jugador: GK, DEF, MID o ATT" },
+  { key: "name",     label: "Jugador", cls: "c-name", left: true },
   { key: "age",      label: "Edad" },
   { key: "value",    label: "Valor", cls: "c-val" },
+  { key: "wage",     label: "Salario", cls: "c-val", title: "Salario" },
   { key: "form",     label: "Forma" },
   ...SKILL_COLUMNS.map(s => ({ key: "sk_" + s.skill, label: s.label, title: s.title, skill: s.skill })),
   { key: "c_sum", label: "Suma", title: "Suma de las 8 skills", comp: SUM_COMP },
-  ...COMPOSITES.map(c => ({ key: c.key, label: c.label, title: c.title, comp: c })),
-  ...(CONFIG.showPositions ? POSITIONS.map(p => ({ key: p.key, label: p.label, pos: true })) : [])
+  ...COMPOSITES.map(c => ({ key: c.key, label: c.label, title: c.title, comp: c }))
 ];
-const TEAM_IDX = COLS.findIndex(c => c.key === "team");
-const VAL_IDX = COLS.findIndex(c => c.key === "value");
 
 const SKILL_KEYS = ["stamina", "pace", "technique", "passing", "keeper", "defender", "playmaker", "striker"];
-const REQUIRED_SKILLS = ["keeper", "pace", "passing", "defender", "technique", "playmaker", "striker"];
-// Nombres con que puede venir cada skill en la API o en columnas extra de la hoja.
 const SKILL_ALIASES = {
   stamina:   ["stamina", "stam", "res", "resistencia"],
   pace:      ["pace", "rap", "rapidez"],
@@ -552,79 +426,18 @@ const num = v => {
 const nf = new Intl.NumberFormat("es-CL");
 const fmtDate = t => new Date(t).toLocaleString("es-CL", { dateStyle: "medium", timeStyle: "short" });
 
-function parseCSV(text) {
-  const rows = []; let row = [], cell = "", q = false;
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (q) {
-      if (c === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; }
-      else cell += c;
-    } else if (c === '"') q = true;
-    else if (c === ",") { row.push(cell); cell = ""; }
-    else if (c === "\n" || c === "\r") {
-      if (c === "\r" && text[i + 1] === "\n") i++;
-      row.push(cell); rows.push(row); row = []; cell = "";
-    } else cell += c;
-  }
-  if (cell !== "" || row.length) { row.push(cell); rows.push(row); }
-  return rows;
-}
-
-// Encuentra la fila de encabezados (la que tiene una celda «PID») y arma la lista de jugadores.
-function rowsToPlayers(rows) {
-  const h = rows.findIndex(r => r.some(c => c.trim().toUpperCase() === "PID"));
-  if (h < 0) throw new Error("No encontré la columna PID en la hoja.");
-  const head = rows[h].map(c => c.trim().toLowerCase());
-  const iPid = head.indexOf("pid");
-  const iName = ["player", "jugador", "nombre"].map(k => head.indexOf(k)).find(i => i >= 0) ?? -1;
-  const iN = head.indexOf("#");
-  const skillCols = {};
-  for (const key of SKILL_KEYS) {
-    const i = head.findIndex(c => SKILL_ALIASES[key].includes(c));
-    if (i >= 0) skillCols[key] = i;
-  }
-  const seen = new Set(), out = [];
-  for (const r of rows.slice(h + 1)) {
-    const pid = (r[iPid] || "").trim();
-    if (!/^\d+$/.test(pid) || seen.has(pid)) continue;
-    seen.add(pid);
-    const skills = {};
-    for (const [k, i] of Object.entries(skillCols)) {
-      const v = (r[i] || "").trim().replace(",", ".");
-      if (v !== "" && Number.isFinite(Number(v))) skills[k] = Number(v);
-    }
-    out.push({ n: Number(r[iN]) || out.length + 1, name: iName >= 0 ? (r[iName] || "").trim() : "", pid, skills });
-  }
-  if (!out.length) throw new Error("La hoja no tiene ningún PID numérico.");
-  return out;
-}
-
-function pickSkills(apiSkills, sheetSkills) {
+function pickSkills(apiSkills) {
   const lower = {};
   for (const [k, v] of Object.entries(apiSkills || {})) lower[k.toLowerCase()] = v;
   const sk = {};
   for (const key of SKILL_KEYS) {
     let v = null;
     for (const a of SKILL_ALIASES[key]) { if (a in lower) { v = num(lower[a]); if (v !== null) break; } }
-    if (v === null && sheetSkills && key in sheetSkills) v = sheetSkills[key];
     sk[key] = v;
   }
-  sk.form = num(apiSkills?.form);
   return sk;
 }
-const hasSkills = sk => !!sk && REQUIRED_SKILLS.every(k => Number.isFinite(sk[k]));
-
-function scores(sk, F) {
-  const g = k => sk[k] + F;
-  const gk = 3 * g("keeper") + 2 * g("pace") + g("passing") / 3;
-  const def = 4 * g("defender") + 3 * g("pace") + g("technique");
-  const mdef = 4 * g("pace") + 4 * g("passing") + 3 * g("technique") + 3 * g("defender") + 2 * g("playmaker");
-  const mof = 4 * g("pace") + 4 * g("passing") + 3 * g("technique") + 3 * g("playmaker") + 2 * g("defender");
-  return { gk, def, lat: (def + mdef) / 2, mdef, mof, mprom: (mdef + mof) / 2, att: g("striker") + g("pace") + g("technique") };
-}
-
-// Busca el objeto que contiene los niveles de skills. Normalmente es info.skills, pero si la API
-// los entrega en otro lugar, se elige el objeto que más nombres de skills reconocidos tenga.
+// Busca el objeto que contiene los niveles de skills: normalmente info.skills, pero si están en otro lugar se elige el que más nombres reconocidos tenga.
 function findSkillsSource(info) {
   const known = new Set(Object.values(SKILL_ALIASES).flat());
   const score = o => (o && typeof o === "object" && !Array.isArray(o))
@@ -644,73 +457,68 @@ function findSkillsSource(info) {
   return bestScore >= 3 ? best : (info.skills || {});
 }
 
+// Tarjetas rojas del jugador en tu equipo: stats.cards.red (no se usa nationalStats, que son las de la selección).
+function findRed(info) {
+  const n = num(info.stats?.cards?.red);
+  return n > 0 ? n : 0;
+}
+// Busca el salario del jugador en cualquier parte de sus datos (wage, salary…), hasta 4 niveles de profundidad.
+function findWage(info) {
+  const re = /^(wage|wages|salary|weeklywage|weeklysalary|sueldo)$/i;
+  const queue = [[info, 0]];
+  for (let guard = 0; queue.length && guard < 300; guard++) {
+    const [o, d] = queue.shift();
+    for (const [k, v] of Object.entries(o)) {
+      if (re.test(k)) {
+        const n = num(v);
+        if (n !== null) return { value: n, currency: (v && typeof v === "object" && v.currency) || o.currency || "" };
+      }
+      if (v && typeof v === "object" && !Array.isArray(v) && d < 3) queue.push([v, d + 1]);
+    }
+  }
+  return null;
+}
+// Lista las rutas de campos de los datos de un jugador (para diagnosticar si algún campo no se reconoce).
+function keyPaths(o, prefix = "", depth = 0, out = []) {
+  for (const [k, v] of Object.entries(o || {})) {
+    if (v && typeof v === "object" && !Array.isArray(v) && depth < 2) keyPaths(v, prefix + k + ".", depth + 1, out);
+    else out.push(prefix + k);
+  }
+  return out;
+}
+
 function normalize(row, api) {
   const p = {
-    n: row.n, name: row.name, pid: row.pid,
-    link: "https://sokker.org/player/PID/" + row.pid,
-    loaded: false, failed: false, age: null, team: "", teamId: null, teamBot: null, callUp: false, red: 0, value: null, currency: "",
-    form: null, disc: null, teamwork: null, exp: null, injury: 0, nt: "", skills: null
+    n: row.n, name: row.name, pid: row.pid, link: "https://sokker.org/player/PID/" + row.pid,
+    loaded: false, age: null, callUp: false, value: null, currency: "",
+    form: null, wage: null, wageCurrency: "", injury: 0, red: 0, skills: null, skillKeys: []
   };
   const i = api && api.info;
   if (i) {
     p.loaded = true;
     p.name = i.name?.full || row.name;
     p.age = num(i.characteristics?.age);
-    p.team = i.team?.name || "";
-    p.teamId = i.team?.id ?? null;
     p.callUp = i.nationalCallUp === true;
-    p.red = num(i.nationalStats?.cards?.red) || 0;
-    for (const k of ["bot", "isBot"]) if (typeof i.team?.[k] === "boolean") p.teamBot = i.team[k];
     p.value = num(i.value?.value);
     p.currency = i.value?.currency || "";
     const s = i.skills || {};
-    p.form = num(s.form); p.disc = num(s.tacticalDiscipline); p.teamwork = num(s.teamwork); p.exp = num(s.experience);
+    p.form = num(s.form);
+    const w = findWage(i);
+    if (w) { p.wage = w.value; p.wageCurrency = w.currency || p.currency; }
     p.injury = num(i.injury?.daysRemaining) > 0 ? i.injury.daysRemaining : 0;
-    p.nt = i.nationalType || "";
+    p.red = findRed(i);
     const src = findSkillsSource(i);
     p.skillKeys = Object.keys(src);
-    p.skills = pickSkills(src, row.skills);
-  } else if (Object.keys(row.skills || {}).length) {
-    p.skills = pickSkills({}, row.skills);
+    p.skills = pickSkills(src);
   }
   return p;
 }
 
 /* ─────────────── Estado ─────────────── */
-const TEAM_COUNTRY = new Map();   // teamId → nombre del país
-const TEAM_BOT = new Map();   // teamId → true (sin dueño) / false
-const isBot = p => p.teamBot === true || (p.teamId != null && TEAM_BOT.get(String(p.teamId)) === true);
-async function checkOwners(ids, fetchOwner, shouldStop) {
-  // GET /team/{id}/owner responde 404 («User not found») cuando el equipo no tiene dueño.
-  let next = 0;
-  const run = async () => {
-    while (next < ids.length && !shouldStop()) {
-      const id = ids[next++];
-      try { const st = await fetchOwner(id); if (st === 404) TEAM_BOT.set(String(id), true); else if (st >= 200 && st < 300) TEAM_BOT.set(String(id), false); } catch {}
-    }
-  };
-  await Promise.all(Array.from({ length: 4 }, run));
-}
-const AGES = [16, 17, 18, 19, 20, 21];
 const state = {
-  players: [], pos: new Set(), showTeam: false, hideVal: false, countries: false, onlyBot: false, onlyInjured: false, onlySusp: false, onlyU21: false, onlyChanges: false, q: "", ages: new Set(AGES), skills: "all", withForm: false,
-  sort: { key: "n", dir: 1 }, stamp: null, source: "",
-  session: null            // { user } mientras haya sesión iniciada; la contraseña nunca se guarda
+  players: [], pos: new Set(), hideVal: false, onlyInjured: false, onlyChg: false, onlySusp: false, onlySel: false, q: "",
+  ageMin: null, ageMax: null, sort: { key: "value", dir: -1 }, stamp: null, prevStamp: null, teamName: ""
 };
-
-/* ─────────────── Caché local (solo modo en vivo) ─────────────── */
-const cacheKey = pid => "cantera:v1:" + pid;
-function readCache(pid) {
-  try {
-    const raw = localStorage.getItem(cacheKey(pid));
-    if (!raw) return null;
-    const { t, d } = JSON.parse(raw);
-    if (Date.now() - t > CONFIG.cacheHours * 3600e3) return null;
-    return { t, d };
-  } catch { return null; }
-}
-function writeCache(pid, d) { try { localStorage.setItem(cacheKey(pid), JSON.stringify({ t: Date.now(), d })); } catch {} }
-function clearCache() { try { Object.keys(localStorage).filter(k => k.startsWith("cantera:v1:")).forEach(k => localStorage.removeItem(k)); } catch {} }
 
 /* ─────────────── Carga de datos ─────────────── */
 async function fetchWithTimeout(url, opts = {}) {
@@ -719,25 +527,17 @@ async function fetchWithTimeout(url, opts = {}) {
   try { return await fetch(url, { ...opts, signal: ctl.signal }); }
   finally { clearTimeout(timer); }
 }
-
-function sheetUrl() {
-  let u = `https://docs.google.com/spreadsheets/d/${CONFIG.sheetId}/gviz/tq?tqx=out:csv`;
-  if (CONFIG.sheetTab) u += "&sheet=" + encodeURIComponent(CONFIG.sheetTab);
-  return u;
-}
-
-async function tryStatic(bust, url = CONFIG.staticData) {
+async function tryStatic(bust, url) {
   try {
     const r = await fetchWithTimeout(url + (bust ? "?t=" + Date.now() : ""), { cache: "no-store" });
     if (!r.ok) return null;
     const j = await r.json();
-    if (!j || !Array.isArray(j.rows)) return null;
-    return j;
+    return j && Array.isArray(j.rows) ? j : null;
   } catch { return null; }
 }
 
-/* ─────────────── Datos cifrados ─────────────── */
-const PW_KEY = "cantera:pw";
+/* Datos cifrados */
+const PW_KEY = "equipo:pw";
 const b64 = t => Uint8Array.from(atob(t), c => c.charCodeAt(0));
 async function fetchEnvelope(url, bust) {
   try {
@@ -766,11 +566,10 @@ function askPassword(msg) {
   $("#pwInput").focus();
   return new Promise(res => { dlg._res = res; });
 }
-// Devuelve { data, pw } con los datos descifrados, o null si la carga se canceló.
-async function unlock(env, myId) {
+async function unlock(env) {
   let pw = savedPw(), msg = "";
   for (;;) {
-    if (!pw) { setStatus("Datos protegidos con contraseña."); pw = await askPassword(msg); if (myId !== loadId) return null; }
+    if (!pw) { setStatus("Datos protegidos con contraseña."); pw = await askPassword(msg); }
     try {
       const data = await decryptEnvelope(env, pw);
       savePw(pw);
@@ -782,224 +581,162 @@ async function unlock(env, myId) {
   }
 }
 
-function setStatus(text, progress) {
-  const el = $("#status");
-  el.textContent = text || "";
-  if (progress != null) {
-    const bar = document.createElement("div");
-    bar.className = "progress";
-    bar.innerHTML = `<i style="width:${Math.round(progress * 100)}%"></i>`;
-    el.appendChild(bar);
-  }
-}
+function setStatus(text) { $("#status").textContent = text || ""; }
 function setNotices(list) {
   if (location.protocol === "file:") {
     list = [{ error: true, html:
-      `<p><strong>La página está abierta como archivo local.</strong> El navegador bloquea la lectura de <code>data/players.json</code> desde un archivo, y por eso no se ven los datos.</p>
-       <p>Publícala en GitHub Pages, o ábrela con un servidor local: en esta carpeta ejecuta <code>python -m http.server</code> y entra a <code>http://localhost:8000</code>.</p>` }, ...list];
+      `<p><strong>La página está abierta como archivo local.</strong> El navegador bloquea la lectura de los archivos de <code>data/</code> desde un archivo, y por eso no se ven los datos.</p>
+       <p>Publícala en GitHub Pages, o ábrela con un servidor local: en esta carpeta ejecuta <code>python -m http.server</code> y entra a <code>http://localhost:8000/equipo.html</code>.</p>` }, ...list];
   }
-  $("#notices").innerHTML = list.map(n =>
-    `<div class="notice${n.error ? " error" : ""}">${n.html}</div>`).join("");
+  $("#notices").innerHTML = list.map(n => `<div class="notice${n.error ? " error" : ""}">${n.html}</div>`).join("");
 }
 
-async function pool(items, size, worker, shouldStop) {
-  let i = 0;
-  const run = async () => { while (i < items.length && !shouldStop()) await worker(items[i++]); };
-  await Promise.all(Array.from({ length: Math.min(size, items.length) }, run));
-}
-
-let loadId = 0;
 async function load(force) {
-  const myId = ++loadId;
   setNotices([]);
   setStatus("Cargando jugadores…");
-
-  // 1) Datos generados de antemano: cifrados (data/players.enc.json) o, si no existen, sin cifrar (data/players.json).
   let st = null, pwUsed = null;
   const env = await fetchEnvelope(CONFIG.encData, force);
-  if (myId !== loadId) return;
   if (env) {
-    const u = await unlock(env, myId);
-    if (!u) return;
+    const u = await unlock(env);
     st = u.data; pwUsed = u.pw;
     estStart(pwUsed);
   } else {
-    st = await tryStatic(force);
-    if (myId !== loadId) return;
+    st = await tryStatic(force, CONFIG.staticData);
   }
   $("#forgetPw").hidden = !env;
-  if (st) {
-    for (const [id, v] of Object.entries(st.teams || {})) {
-      if (typeof v.bot === "boolean") TEAM_BOT.set(String(id), v.bot);
-      if (v.country?.name) TEAM_COUNTRY.set(String(id), String(v.country.name));
-    }
-    state.players = st.rows.map(r => normalize(r, st.api?.[r.pid]));
-    state.players.forEach((p, i) => { if (!st.api?.[st.rows[i].pid]) p.failed = true; });
-    state.stamp = st.generatedAt ? Date.parse(st.generatedAt) : null;
-    // Respaldo de la semana anterior (opcional) para marcar subidas y bajadas de skills.
-    state.prevStamp = null;
-    let pv = null;
-    if (env) {
-      const penv = await fetchEnvelope(CONFIG.encPrevData, force);
-      try { pv = penv ? await decryptEnvelope(penv, pwUsed) : null; } catch { pv = null; }
-    } else {
-      pv = await tryStatic(force, CONFIG.prevData);
-    }
-    if (myId !== loadId) return;
-    if (pv && pv.api) {
-      state.prevStamp = pv.generatedAt ? Date.parse(pv.generatedAt) : null;
-      for (const p of state.players) {
-        const a = pv.api[p.pid];
-        p.prev = a ? normalize({ n: p.n, name: p.name, pid: p.pid, skills: {} }, a).skills : null;
-      }
-    }
-    state.source = "archivo";
-    finish();
-    return;
-  }
 
-  // 2) Modo en vivo: hoja de Google + API de Sokker desde el navegador.
-  let rows;
-  try {
-    const r = await fetchWithTimeout(sheetUrl());
-    if (!r.ok) throw new Error("HTTP " + r.status);
-    rows = rowsToPlayers(parseCSV(await r.text()));
-  } catch (e) {
+  if (!st) {
     setStatus("");
     setNotices([{ error: true, html:
-      `<p><strong>No pude leer la hoja de Google.</strong> ${esc(e.message)}</p>
-       <p>Comprueba que la hoja esté compartida como «Cualquier persona con el enlace puede ver» y que tenga una columna llamada <code>PID</code>.</p>` }]);
+      `<p><strong>No encontré los datos de tu equipo.</strong> Falta el archivo <code>data/team.enc.json</code>.</p>
+       <p>Genera el archivo ejecutando <code>node fetch-team.mjs</code> en tu computador y súbelo a la carpeta <code>data</code> del repositorio. Los pasos están en <code>README-equipo.md</code>.</p>` }]);
+    render();
     return;
   }
-  if (myId !== loadId) return;
 
-  if (force) clearCache();
-  let oldest = Date.now();
-  const cached = new Map();
-  for (const r of rows) { const c = readCache(r.pid); if (c) { cached.set(r.pid, c.d); oldest = Math.min(oldest, c.t); } }
-  state.players = rows.map(r => normalize(r, cached.get(r.pid)));
-  state.source = "api";
-  state.stamp = oldest;
-  render();
+  state.teamName = st.team?.name || "";
+  state.calendar = st.calendar || null;
+  state.finance = st.finance || null;
+  state.players = st.rows.map(r => normalize(r, st.api?.[r.pid]));
+  state.stamp = st.generatedAt ? Date.parse(st.generatedAt) : null;
 
-  const todo = rows.filter(r => !cached.has(r.pid));
-  let done = 0, ok = 0, corsLike = false;
-  const total = todo.length;
-  const byPid = new Map(state.players.map(p => [p.pid, p]));
-  if (total) setStatus(`Leyendo la API de Sokker: 0 de ${total}`, 0);
-
-  await pool(todo, CONFIG.concurrency, async r => {
-    try {
-      const resp = await fetchWithTimeout(`${CONFIG.apiBase}/player/${r.pid}`, {
-        headers: { Accept: "application/json" },
-        credentials: state.session ? "include" : "omit"
-      });
-      if (!resp.ok) throw new Error("HTTP " + resp.status);
-      const api = await resp.json();
-      writeCache(r.pid, api);
-      byPid.set(r.pid, Object.assign(byPid.get(r.pid), normalize(r, api)));
-      ok++;
-    } catch (e) {
-      byPid.get(r.pid).failed = true;
-      if (e instanceof TypeError && ok === 0) corsLike = true;
+  // Respaldo de la semana anterior (opcional) para marcar subidas y bajadas de skills.
+  let pv = null;
+  if (env) {
+    const penv = await fetchEnvelope(CONFIG.encPrevData, force);
+    try { pv = penv ? await decryptEnvelope(penv, pwUsed) : null; } catch { pv = null; }
+  } else {
+    pv = await tryStatic(force, CONFIG.prevData);
+  }
+  state.prevStamp = null;
+  if (pv && pv.api) {
+    state.prevStamp = pv.generatedAt ? Date.parse(pv.generatedAt) : null;
+    for (const p of state.players) {
+      const a = pv.api[p.pid];
+      p.prev = a ? normalize({ n: p.n, name: p.name, pid: p.pid }, a).skills : null;
     }
-    done++;
-    if (myId === loadId) { setStatus(`Leyendo la API de Sokker: ${done} de ${total}`, done / total); if (done % 5 === 0 || done === total) render(); }
-  }, () => corsLike || myId !== loadId);
-
-  if (myId !== loadId) return;
-  if (!corsLike) {
-    const ids = [...new Set(state.players.map(p => p.teamId).filter(x => x != null))];
-    await checkOwners(ids, async id => {
-      const k = "cantera:owner:" + id;
-      try { const c = JSON.parse(localStorage.getItem(k)); if (c && Date.now() - c.t < CONFIG.cacheHours * 3600e3) return c.s; } catch {}
-      const r = await fetchWithTimeout(`${CONFIG.apiBase}/team/${id}/owner`, { headers: { Accept: "application/json" }, credentials: state.session ? "include" : "omit" });
-      try { localStorage.setItem(k, JSON.stringify({ t: Date.now(), s: r.status })); } catch {}
-      return r.status;
-    }, () => myId !== loadId);
-    if (myId !== loadId) return;
   }
-  state.stamp = state.stamp && cached.size === rows.length ? state.stamp : (total ? Date.now() : state.stamp);
-  const failed = state.players.filter(p => p.failed && !p.loaded).length;
+
   const notices = [];
-  if (corsLike) {
-    notices.push({ error: true, html:
-      `<p><strong>El navegador no pudo leer la API de Sokker.</strong> Lo más probable es que Sokker no permita llamadas desde otra página (bloqueo CORS).</p>
-       <p>Solución: genera el archivo <code>data/players.json</code> con <code>node fetch-players.mjs</code> y súbelo al repositorio. La página lo usa sola, sin llamar a la API. Los pasos están en el README.</p>` });
-  } else if (failed) {
-    notices.push({ error: true, html: `<p><strong>${failed} jugadores no se pudieron leer.</strong> Recarga la página para reintentar.</p>` });
-  }
-  finish(notices);
-}
-
-function finish(extraNotices = []) {
-  const notices = [...extraNotices];
   const loaded = state.players.filter(p => p.loaded);
   const anySkill = loaded.some(p => SKILL_KEYS.some(k => Number.isFinite(p.skills?.[k])));
-  if (loaded.length && !anySkill && state.source === "archivo") {
-    const seen = loaded.find(p => p.skillKeys)?.skillKeys || [];
+  if (!loaded.length) {
+    notices.push({ error: true, html: `<p><strong>El archivo de datos no trae información de jugadores.</strong> Vuelve a generarlo con <code>node fetch-team.mjs</code>.</p>` });
+  } else if (!anySkill) {
+    const seen = loaded.find(p => p.skillKeys.length)?.skillKeys || [];
     notices.push({ html:
-      `<p><strong>En <code>data/players.json</code> no encontré skills que la página reconozca.</strong> Las claves que veo en el primer jugador son: <code>${esc(seen.join(", ") || "ninguna")}</code>.</p>
-       <p>Si tus skills tienen otros nombres, agrégalos en <code>SKILL_ALIASES</code> al inicio del script. Si faltan por completo, vuelve a generar el archivo con tu sesión iniciada.</p>` });
-  } else if (loaded.length && (CONFIG.showPositions ? !loaded.some(p => hasSkills(p.skills)) : !anySkill)) {
+      `<p><strong>No encontré skills que la página reconozca.</strong> Las claves que veo en el primer jugador son: <code>${esc(seen.join(", ") || "ninguna")}</code>.</p>
+       <p>Si tus skills tienen otros nombres, agrégalos en <code>SKILL_ALIASES</code> al inicio del script. Comprueba también que <code>fetch-team.mjs</code> haya iniciado sesión con tu usuario: sin sesión la API oculta las skills.</p>` });
+  }
+  if (st.finance && !pickFinance(st.finance)) {
+    const paths = Object.entries(st.finance.paths || {}).map(([k, l]) => `${k}: ${l.slice(0, 40).join(", ")}`).join(" | ");
     notices.push({ html:
-      `<p><strong>${CONFIG.showPositions ? "Las posiciones no se pueden calcular todavía." : "No hay skills para mostrar todavía."}</strong> La API de Sokker no entrega las skills de jugadores de otros equipos: solo forma, disciplina táctica, trabajo en equipo y experiencia.${state.session ? " Con tu sesión solo se ven las skills de tus propios jugadores y de los que están en venta." : ""}</p>
-       <p>Si tienes las skills (por ejemplo, de la última transferencia), agrégalas a la hoja en columnas llamadas <code>RES</code>, <code>RAP</code>, <code>TEC</code>, <code>PAS</code>, <code>POR</code>, <code>DEF</code>, <code>CRE</code> y <code>ANO</code>, y esta página ${CONFIG.showPositions ? "calculará las posiciones" : "las mostrará"}.</p>` });
+      `<p><strong>No encontré el dinero disponible en los datos de la API.</strong> La fila Finanzas queda en «—».</p>
+       <p>Campos que entrega cada consulta: <code>${esc(paths)}</code></p>` });
+  }
+  if (loaded.length && !loaded.some(p => p.wage != null)) {
+    const first = st.api?.[loaded[0].pid]?.info;
+    const paths = first ? keyPaths(first) : [];
+    notices.push({ html:
+      `<p><strong>No encontré el campo de salario en los datos de la API.</strong> La columna Salario queda vacía hasta que se reconozca.</p>
+       <p>Campos que trae cada jugador: <code>${esc(paths.join(", ") || "ninguno")}</code>.</p>` });
   }
   setNotices(notices);
   setStatus("");
   render();
 }
 
-/* ─────────────── Vista ─────────────── */
-function buildHead() {
-  $("#head").innerHTML = COLS.map(c => {
-    const pos = POSITIONS.find(p => p.key === c.key);
-    const title = c.title ? ` title="${esc(c.title)}"`
-      : pos ? ` title="${esc(pos.label)}: ver «Cómo se calcula cada posición»"` : "";
-    return `<th class="${c.cls || ""}${SEP[c.key] ? " " + SEP[c.key] : ""}${c.left ? " l" : ""}${c.skill || c.comp || c.pos ? " ctr" : ""}" data-key="${c.key}" scope="col" aria-sort="none">
-      <button type="button"${title}>${esc(c.label)}</button></th>`;
-  }).join("");
-}
-
-/* ─────────────── Asignación Main / Bench / Observ ───────────────
-   Se guarda en este navegador y, si CONFIG.estUrl está definida, se sincroniza entre dispositivos a través de
-   un Apps Script de tu hoja de Google. Los valores viajan cifrados con la contraseña de la página. */
-const EST_KEY = "cantera:est2", EST_DIRTY_KEY = "cantera:est2dirty";
-const EST_OPTS = ["GK", "DEF", "MID", "ATT"];
+/* ─────────────── Asignación GK / DEF / MID / ATT ───────────────
+   Se guarda en este navegador y, si config.js define estUrl, se sincroniza entre dispositivos con el Apps Script de tu hoja.
+   Los valores viajan cifrados con la contraseña de la página. */
+const EST_KEY = "equipo:est", EST_DIRTY_KEY = "equipo:estdirty";
+const EST_OPTS = ["GK", "DEF", "MID", "ATT", "ENT", "EXT"];
+// Compatibilidad: la opción se llamó EXTRA antes de renombrarse a EXT (también en lo que quedó guardado en el servicio).
+const estDecode = v => v === "EXTRA" ? "EXT" : v;
+// Último momento (t) que el servicio tiene guardado para cada jugador. El servicio ignora, sin avisar, cualquier cambio con un t
+// menor al que ya guarda; por eso cada cambio usa un t siempre mayor que el conocido, aunque la hora del dispositivo esté atrasada.
+const remoteT = {};
+const nextT = pid => Math.max(Date.now(), (remoteT[pid] || 0) + 1);
 let estMap = {};      // pid → { v, t }   (t = momento del último cambio, en ms)
-const sync = { detail: "", key: null, token: "", pw: "", dirty: new Set(), busy: false, state: "local" };
+const sync = { detail: "", key: null, token: "", dirty: new Set(), busy: false, state: "local", jsonp: false, fetchErr: "" };
 try {
   const o = JSON.parse(localStorage.getItem(EST_KEY));
-  if (o && typeof o === "object") estMap = o;
-  else {                                                   // migra el formato anterior { pid: "Main" }
-    const old = JSON.parse(localStorage.getItem("cantera:est"));
-    if (old && typeof old === "object") for (const [k, v] of Object.entries(old)) if (EST_OPTS.includes(v)) { estMap[k] = { v, t: 1 }; sync.dirty.add(k); }
-  }
+  if (o && typeof o === "object") { estMap = o; for (const e of Object.values(estMap)) if (e && e.v === "EXTRA") e.v = "EXT"; }
   const d = JSON.parse(localStorage.getItem(EST_DIRTY_KEY));
   if (Array.isArray(d)) d.forEach(k => sync.dirty.add(String(k)));
 } catch {}
+/* ─────────────── Colores de las marcas de posición ───────────────
+   Se eligen en la página Plantel y viajan por el servicio con la clave j2000000000006 (las otras páginas solo los leen). */
+const POSCOL_KEY = "j2000000000006";
+const POS_LIST = ["GK", "DEF", "MID", "ATT", "ENT", "EXT"];
+const POS_DEF = { light: { GK: "#fbefc2", DEF: "#bfe3c4", MID: "#e3b0bf", ATT: "#b5c3e6", ENT: "#e6dcf5", EXT: "#d3eef0" },
+                  dark:  { GK: "#4a3f12", DEF: "#1b4a28", MID: "#4a1626", ATT: "#172447", ENT: "#33224f", EXT: "#17383d" } };
+let posCol = {};
+function parsePosCol(txt) {
+  let o = null; try { o = JSON.parse(txt); } catch {}
+  const m = {}; if (o && typeof o === "object") for (const k of POS_LIST) if (/^#[0-9a-f]{6}$/i.test(o[k] || "")) m[k] = o[k].toLowerCase();
+  return m;
+}
+function applyPosColors() {
+  let st = document.getElementById("poscolCss");
+  if (!st) { st = document.createElement("style"); st.id = "poscolCss"; document.head.appendChild(st); }
+  st.textContent = POS_LIST.filter(k => posCol[k]).map(k => {
+    const n = parseInt(posCol[k].slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255, lum = 0.299 * r + 0.587 * g + 0.114 * b;
+    const dk = [r, g, b].map(x => Math.round(x * 0.6).toString(16).padStart(2, "0")).join("");
+    return `${POSCOL_SEL(k)} { background: ${posCol[k]} !important; border-color: #${dk} !important; color: ${lum > 150 ? "#1b2a41" : "#ffffff"} !important; }`;
+  }).join("\n");
+}
+const POSCOL_SEL = k => `select.est[data-v="${k}"]`;
 const saveEst = () => { try { localStorage.setItem(EST_KEY, JSON.stringify(estMap)); localStorage.setItem(EST_DIRTY_KEY, JSON.stringify([...sync.dirty])); } catch {} };
 const estOf = p => { const e = estMap[p.pid]; return e && EST_OPTS.includes(e.v) ? e.v : ""; };
+function renderPosCol() {
+  const dm = document.documentElement.dataset.theme; const th = (dm === "dark" || (dm !== "light" && matchMedia("(prefers-color-scheme: dark)").matches)) ? "dark" : "light";
+  $("#poscol").innerHTML = `<strong>Colores de las marcas</strong><span class="pcrow">` + POS_LIST.map(k => `<label class="pcw"><input type="color" data-pcol="${k}" value="${posCol[k] || POS_DEF[th][k]}" aria-label="Color de ${k}">${k}</label>`).join("") + `</span>`;
+}
+function setPosColor() {
+  const k = POSCOL_KEY;
+  estMap[k] = { v: JSON.stringify(posCol), t: nextT(k) };
+  sync.dirty.add(k); saveEst();
+  clearTimeout(setPosColor.tm); setPosColor.tm = setTimeout(pushDirty, 800);
+}
 function setEst(pid, v) {
-  estMap[pid] = { v: EST_OPTS.includes(v) ? v : "", t: Date.now() };
+  estMap[pid] = { v: EST_OPTS.includes(v) ? v : "", t: nextT(pid) };
   sync.dirty.add(pid); saveEst();
   pushDirty();
 }
 
 const SYNC_TEXT = { local: "", ok: "Asignaciones sincronizadas.", pending: "Sincronizando asignaciones…",
   offline: "Asignaciones pendientes de sincronizar (sin conexión con el servicio).",
-  token: "No se pudo sincronizar las asignaciones: el servicio rechazó la clave (ver README)." };
+  token: "No se pudo sincronizar las asignaciones: el servicio rechazó la clave. Usa la misma contraseña que en la otra página." };
 const syncText = () => (SYNC_TEXT[sync.state] || "") + (sync.detail && (sync.state === "offline" || sync.state === "token") ? " Motivo: " + sync.detail : "");
 function setSyncState(st, detail = "") { sync.state = st; sync.detail = detail; const el = document.getElementById("syncMsg"); if (el) el.textContent = syncText() ? " " + syncText() : ""; }
-// Traduce el error a algo que se pueda corregir.
 function explainSync(err) {
   const m = String(err && err.message || err);
   if (err && err.name === "AbortError") return "el servicio tardó más de 15 s en responder (inténtalo de nuevo).";
-  if (err && err.net) return `el navegador no pudo conectar con el servicio (${sync.fetchErr || "sin detalle"}). Revisa que la URL termine en /exec, que el acceso sea «Cualquier persona» y que ninguna extensión (bloqueador de anuncios) bloquee script.google.com. Prueba además abrir en el navegador la URL del servicio añadiendo ?callback=hola al final: debe responder hola({"ok":true,...}); si responde sin «hola(», falta publicar la versión nueva de est-sync.gs.`;
-  if (err && err.name === "JsonpTimeout") return "el servicio no respondió. Si el navegador bloqueó la lectura directa, hace falta la versión actual de est-sync.gs: pégala en Apps Script y crea una «Nueva versión» de la implementación.";
+  if (err && err.net) return `el navegador no pudo conectar con el servicio (${sync.fetchErr || "sin detalle"}). Revisa que la URL de config.js termine en /exec y que ninguna extensión bloquee script.google.com.`;
+  if (err && err.name === "JsonpTimeout") return "el servicio no respondió. Revisa que est-sync.gs esté en su versión actual y publicado.";
   if (err instanceof TypeError) return "error interno de la página: " + m;
-  if (err instanceof SyntaxError) return "el servicio no respondió datos válidos (suele pasar si el acceso no es «Cualquier persona» o la URL no es la de la aplicación web).";
+  if (err instanceof SyntaxError) return "el servicio no respondió datos válidos.";
   if (/^HTTP \d+/.test(m)) return "el servicio respondió " + m + ".";
   return "el servicio respondió: " + m;
 }
@@ -1027,10 +764,9 @@ async function decV(s) {
   const o = unb64u(String(s));
   return new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv: o.slice(0, 12) }, sync.key, o.slice(12)));
 }
-// Carga una URL como <script> (JSONP): no depende de CORS. El servicio responde «función({...})».
 function jsonp(u) {
   return new Promise((res, rej) => {
-    const cb = "__cantera_" + Math.random().toString(36).slice(2);
+    const cb = "__equipo_" + Math.random().toString(36).slice(2);
     const el = document.createElement("script");
     let tm;
     const done = () => { delete window[cb]; el.remove(); clearTimeout(tm); };
@@ -1045,19 +781,19 @@ function jsonp(u) {
 async function estCall(params) {
   const u = new URL(CONFIG.estUrl);
   for (const [k, v] of Object.entries(params)) u.searchParams.set(k, v);
-  u.searchParams.set("_", Date.now());          // evita respuestas en caché
+  u.searchParams.set("_", Date.now());
   let j = null;
   if (!sync.jsonp) {
     let r = null;
     try { r = await fetchWithTimeout(u.toString()); }
     catch (err) {
       if (err.name === "AbortError") throw err;
-      sync.fetchErr = String(err.message || err);   // casi siempre: el navegador bloqueó la lectura (CORS)
+      sync.fetchErr = String(err.message || err);
     }
     if (r) {
       if (!r.ok) throw new Error("HTTP " + r.status);
       j = await r.json();
-    } else sync.jsonp = true;                       // desde ahora se usa la carga como <script>
+    } else sync.jsonp = true;
   }
   if (!j) j = await jsonp(u);
   if (!j.ok) throw new Error(j.error || "error");
@@ -1067,18 +803,35 @@ async function pushDirty() {
   if (!CONFIG.estUrl || !sync.key || sync.busy || !sync.dirty.size) return;
   sync.busy = true; setSyncState("pending");
   let failed = null;
+  const sent = {};
   try {
     for (const pid of [...sync.dirty]) {
       const e = estMap[pid];
       if (!e) { sync.dirty.delete(pid); continue; }
-      await estCall({ action: "set", pid, v: await encV(e.v), t: e.t, token: sync.token });
+      const ev = await encV(e.v);
+      await estCall({ action: "set", pid, v: ev, t: e.t, token: sync.token });
+      sent[pid] = ev;
+      remoteT[pid] = Math.max(remoteT[pid] || 0, e.t);
       if (estMap[pid] === e) sync.dirty.delete(pid);
       saveEst();
     }
   } catch (err) { failed = err; }
   sync.busy = false;
   if (failed) { setSyncState(/token/i.test(failed.message) ? "token" : "offline", explainSync(failed)); return; }
-  if (sync.dirty.size) pushDirty(); else setSyncState("ok");
+  if (sync.dirty.size) { pushDirty(); return; }
+  // Comprobación: se vuelve a leer lo guardado en el servicio y se compara con lo que se envió.
+  const bad = [];
+  try {
+    const j = await estCall({ action: "list" });
+    for (const [pid, ev] of Object.entries(sent)) {
+      const it = (j.items || []).find(x => String(x.pid) === String(pid));
+      const name = state.players.find(p => String(p.pid) === String(pid))?.name || pid;
+      if (!it) bad.push(`${name}: el servicio no lo guardó`);
+      else if (String(it.v ?? "") !== ev) bad.push(String(it.v ?? "").length === ev.length ? `${name}: el servicio conservó otro valor (probablemente uno más reciente de otro dispositivo)` : `${name}: se enviaron ${ev.length} caracteres y el servicio guardó ${String(it.v ?? "").length}`);
+    }
+  } catch {}
+  if (bad.length) setSyncState("offline", "el servicio no guardó lo que se envió (" + bad.slice(0, 3).join("; ") + (bad.length > 3 ? "; …" : "") + ").");
+  else setSyncState("ok");
 }
 async function pullEst() {
   if (!CONFIG.estUrl || !sync.key) return;
@@ -1088,8 +841,23 @@ async function pullEst() {
     let changed = false;
     for (const it of j.items || []) {
       const pid = String(it.pid), t = Number(it.t) || 0;
-      remote.add(pid);
-      let v; try { v = await decV(it.v); } catch { continue; }
+      if (pid === POSCOL_KEY) {          // colores de las marcas de posición (se guardan igual que las asignaciones: gana el cambio más reciente)
+        remote.add(pid); remoteT[pid] = Math.max(remoteT[pid] || 0, t);
+        let v; try { v = await decV(it.v); } catch { continue; }
+        const loc = estMap[pid];
+        if (!loc || t > loc.t) { estMap[pid] = { v, t }; sync.dirty.delete(pid); posCol = parsePosCol(v); applyPosColors(); renderPosCol(); }
+        else if (loc.t > t) sync.dirty.add(pid);
+        continue;
+      }
+      if (!/^\d+$/.test(pid)) continue;   // claves «j…»: son los Progresos de la página de juveniles
+      remote.add(pid); remoteT[pid] = Math.max(remoteT[pid] || 0, t);
+      let v;
+      try { v = estDecode(await decV(it.v)); }
+      catch {
+        // El valor guardado en el servicio no se puede leer (p. ej. quedó cortado): se vuelve a enviar el de este dispositivo.
+        if (estMap[pid]) { estMap[pid] = { v: estMap[pid].v, t: nextT(pid) }; sync.dirty.add(pid); }
+        continue;
+      }
       const loc = estMap[pid];
       if (!loc || t > loc.t) { estMap[pid] = { v: EST_OPTS.includes(v) ? v : "", t }; sync.dirty.delete(pid); changed = true; }
       else if (loc.t > t) sync.dirty.add(pid);
@@ -1110,36 +878,70 @@ async function estStart(pw) {
 document.addEventListener("visibilitychange", () => { if (!document.hidden) pullEst(); });
 window.addEventListener("online", () => { pullEst(); });
 
+// Diagnóstico (se activa abriendo la página con ?diag=1): compara lo que tiene este dispositivo con lo que tiene el servicio.
+async function runDiag() {
+  const out = $("#diagOut"), pre = $("#diagText"), L = [];
+  out.hidden = false; pre.textContent = "Consultando el servicio…";
+  L.push("Hora de este dispositivo: " + new Date().toISOString());
+  L.push("Servicio configurado: " + (CONFIG.estUrl ? "sí" : "NO") + " | clave lista: " + (sync.key ? "sí" : "NO") + " | lectura: " + (sync.jsonp ? "JSONP" : "fetch"));
+  L.push("Opciones de esta página: " + EST_OPTS.join(", "));
+  try {
+    const j = await estCall({ action: "list" });
+    const items = j.items || [], byPid = new Map(items.map(it => [String(it.pid), it]));
+    const cnt = o => Object.entries(o).map(([k, n]) => `${k} ${n}`).join(", ") || "ninguna";
+    const localCnt = {}, remoteCnt = {}, lines = [];
+    for (const pid of new Set([...byPid.keys(), ...Object.keys(estMap)])) {
+      const name = state.players.find(p => String(p.pid) === pid)?.name || "(no está en la plantilla)";
+      const loc = estMap[pid], it = byPid.get(pid);
+      let remV = null, rem = "sin fila";
+      if (it) {
+        try { remV = estDecode(await decV(it.v)); rem = `${remV || "(vacío)"}, t=${it.t}, ${String(it.v).length} car.`; }
+        catch { remV = "?"; rem = `ILEGIBLE, t=${it.t}, ${String(it.v).length} car.`; }
+      }
+      const locV = loc ? loc.v : null;
+      if (locV) localCnt[locV] = (localCnt[locV] || 0) + 1;
+      if (remV && remV !== "?") remoteCnt[remV] = (remoteCnt[remV] || 0) + 1;
+      const differs = (locV || "") !== (remV === "?" ? "?" : (remV || ""));
+      if (differs || locV === "EXT" || remV === "EXT" || remV === "?")
+        lines.push(`${pid} ${name} | aquí: ${loc ? (loc.v || "(vacío)") + ", t=" + loc.t : "sin dato"} | servidor: ${rem}${differs ? "  <-- DISTINTO" : ""}`);
+    }
+    L.push(`Filas en el servicio: ${items.length}`, `Aquí: ${cnt(localCnt)}`, `Servidor: ${cnt(remoteCnt)}`, "", ...(lines.length ? lines : ["Sin diferencias y sin jugadores EXT."]));
+  } catch (err) { L.push("Error al leer el servicio: " + explainSync(err)); }
+  pre.textContent = L.join("\n");
+}
+
+/* ─────────────── Vista ─────────────── */
+const tdCls = (c, extra = "") => [c.cls || "", SEP[c.key] || "", extra].filter(Boolean).join(" ");
+
+function buildHead() {
+  $("#head").innerHTML = COLS.map(c => {
+    const title = c.title ? ` title="${esc(c.title)}"` : "";
+    const cls = [c.cls || "", SEP[c.key] || "", c.left ? "l" : "", c.skill || c.comp || c.ctr ? "ctr" : ""].filter(Boolean).join(" ");
+    return `<th class="${cls}" data-key="${c.key}" scope="col" aria-sort="none"><button type="button"${title}>${esc(c.label)}</button></th>`;
+  }).join("");
+}
+
 function sortValue(p, key) {
   if (key === "est") { const i = EST_OPTS.indexOf(estOf(p)); return i < 0 ? null : i; }
-  if (POSITIONS.some(x => x.key === key)) return p.sc ? p.sc[key] : null;
   if (key.startsWith("sk_")) { const s = p.skills?.[key.slice(3)]; return Number.isFinite(s) ? s : null; }
   if (key.startsWith("c_")) return compositeValue(p, compOf(key));
   const v = p[key];
   return v === undefined || v === "" ? null : v;
 }
 
-const hasChange = p => !!p.prev && SKILL_COLUMNS.some(c => { const v = p.skills?.[c.skill], b = p.prev[c.skill]; return Number.isFinite(v) && Number.isFinite(b) && v !== b; });
 function visibleRows() {
   const q = state.q.trim().toLowerCase();
   const out = state.players.filter(p => {
-    if (q && !(`${p.name} ${state.showTeam ? p.team : ""} ${p.pid}`.toLowerCase().includes(q))) return false;
-    if (p.age != null && AGES.includes(p.age) && !state.ages.has(p.age)) return false;
+    if (q && !(`${p.name} ${p.pid}`.toLowerCase().includes(q))) return false;
+    if (state.ageMin != null && (p.age == null || p.age < state.ageMin)) return false;
+    if (state.ageMax != null && (p.age == null || p.age > state.ageMax)) return false;
     if (state.pos.size && !state.pos.has(estOf(p))) return false;
-    if (state.onlyBot && !isBot(p)) return false;
     if (state.onlyInjured && !p.injury) return false;
+    if (state.onlyChg && !SKILL_COLUMNS.some(c => c.skill && Number.isFinite(p.skills?.[c.skill]) && Number.isFinite(p.prev?.[c.skill]) && p.skills[c.skill] !== p.prev[c.skill])) return false;
     if (state.onlySusp && !p.red) return false;
-    if (state.onlyU21 && !p.callUp) return false;
-    if (state.onlyChanges && !hasChange(p)) return false;
-    const hs = hasSkills(p.skills);
-    if (state.skills === "visible" && !hs) return false;
-    if (state.skills === "hidden" && !(p.loaded && !hs)) return false;
+    if (state.onlySel && !p.callUp) return false;
     return true;
   });
-  for (const p of out) {
-    const F = state.withForm && p.form != null ? p.form / 10 - 1 : 0;
-    p.sc = hasSkills(p.skills) ? scores(p.skills, F) : null;
-  }
   const { key, dir } = state.sort;
   out.sort((a, b) => {
     const x = sortValue(a, key), y = sortValue(b, key);
@@ -1156,9 +958,8 @@ function cellText(p, key) {
   switch (key) {
     case "est": return estOf(p);
     case "value": return p.value == null ? "" : nf.format(p.value) + (p.currency ? " " + p.currency : "");
-    case "injury": return p.injury ? `Lesión ${p.injury} d` : (p.loaded ? (p.nt || "") : "");
+    case "wage": return p.wage == null ? "" : nf.format(p.wage) + (p.wageCurrency ? " " + p.wageCurrency : "");
     default: {
-      if (POSITIONS.some(x => x.key === key)) return p.sc ? String(Math.round(p.sc[key])) : "";
       if (key.startsWith("sk_")) { const s = p.skills?.[key.slice(3)]; return Number.isFinite(s) ? String(s) : ""; }
       if (key.startsWith("c_")) { const v = compositeValue(p, compOf(key)); return v == null ? "" : String(v); }
       const v = p[key];
@@ -1167,119 +968,9 @@ function cellText(p, key) {
   }
 }
 
-/* ─────────────── Sesión en Sokker ─────────────── */
-function updateSessionUI() {
-  const live = state.source !== "archivo";      // con data/players.json no hay llamadas desde el navegador
-  const on = !!state.session;
-  $("#login").hidden = !live || on;
-  $("#logout").hidden = !live || !on;
-  $("#who").hidden = !live || !on;
-  $("#who").textContent = on ? `Conectado como ${state.session.user}` : "";
-}
-
-const apiFetch = (path, opts = {}) => fetchWithTimeout(CONFIG.apiBase + path, {
-  credentials: "include",
-  ...opts,
-  headers: { Accept: "application/json", ...(opts.body ? { "Content-Type": "application/json" } : {}) }
-});
-
-function openLogin() {
-  $("#lgMsg").textContent = "";
-  $("#lgPass").value = "";
-  $("#dlg").showModal();
-  $("#lgUser").focus();
-}
-
-async function submitLogin(ev) {
-  ev.preventDefault();
-  const user = $("#lgUser").value.trim();
-  const pass = $("#lgPass").value;
-  $("#lgPass").value = "";                       // la contraseña no se queda en el formulario
-  const msg = t => { $("#lgMsg").textContent = t; };
-  if (!user || !pass) { msg("Escribe tu usuario y tu contraseña."); return; }
-
-  const ok = $("#lgOk");
-  ok.disabled = true; ok.textContent = "Conectando…"; msg("");
-  try {
-    let resp;
-    try {
-      resp = await apiFetch("/auth/login", {
-        method: "POST",
-        body: JSON.stringify({ [CONFIG.loginFields.username]: user, [CONFIG.loginFields.password]: pass, ...CONFIG.loginExtra })
-      });
-    } catch {
-      msg("El navegador no pudo comunicarse con Sokker (bloqueo CORS o sin conexión). Usa fetch-players.mjs con tu usuario, como indica el README.");
-      return;
-    }
-    if (resp.status === 400 || resp.status === 401) {
-      const detail = (await resp.text().catch(() => "")).slice(0, 200).trim();
-      msg(`Sokker no aceptó los datos${detail ? ` (${detail})` : ""}. Revisa usuario y contraseña. Si son correctos, CONFIG.loginFields o CONFIG.loginExtra pueden no coincidir con LoginRequest.`);
-      return;
-    }
-    if (!resp.ok && resp.status !== 403) { msg(`Sokker respondió con el error ${resp.status}. Prueba de nuevo en un rato.`); return; }
-
-    // 403 significa que ya había una sesión; en ambos casos se comprueba que el navegador la conserve.
-    let me;
-    try { me = await apiFetch("/current"); } catch { me = null; }
-    if (!me || !me.ok) {
-      msg("Sokker aceptó el login, pero el navegador no conservó la sesión (cookies de terceros bloqueadas). Usa fetch-players.mjs con tu usuario, como indica el README.");
-      return;
-    }
-    state.session = { user };
-    $("#dlg").close();
-    clearCache();
-    load(true);
-  } finally {
-    ok.disabled = false; ok.textContent = "Conectar";
-  }
-}
-
-async function logout() {
-  try { await apiFetch("/auth/logout", { method: "POST" }); } catch {}
-  state.session = null;
-  clearCache();
-  load(true);
-}
-
-/* ─────────────── Configuración recordada ─────────────── */
-const PREFS_KEY = "cantera:prefs";
-let prefsReady = false;   // no se guarda nada hasta haber leído lo guardado
-function savePrefs() {
-  if (!prefsReady) return;
-  try {
-    localStorage.setItem(PREFS_KEY, JSON.stringify({
-      ages: [...state.ages], pos: [...state.pos], onlyBot: state.onlyBot, onlyInjured: state.onlyInjured, onlySusp: state.onlySusp, onlyU21: state.onlyU21, onlyChanges: state.onlyChanges,
-      hidden: state.skills === "hidden", clubs: state.showTeam, hideVal: state.hideVal, sort: state.sort
-    }));
-  } catch {}
-}
-function loadPrefs() {
-  let p = null;
-  prefsReady = true;
-  try { p = JSON.parse(localStorage.getItem(PREFS_KEY)); } catch {}
-  if (!p || typeof p !== "object") return;
-  if (Array.isArray(p.ages)) state.ages = new Set(p.ages.filter(a => AGES.includes(a)));
-  if (Array.isArray(p.pos)) state.pos = new Set(p.pos.filter(x => EST_OPTS.includes(x)));
-  state.onlyBot = p.onlyBot === true;
-  state.onlyInjured = p.onlyInjured === true;
-  state.onlySusp = p.onlySusp === true;
-  state.onlyU21 = p.onlyU21 === true;
-  state.onlyChanges = p.onlyChanges === true;
-  state.skills = p.hidden === true ? "hidden" : "all";
-  if (p.sort && COLS.some(c => c.key === p.sort.key) && (p.sort.dir === 1 || p.sort.dir === -1)) state.sort = { key: p.sort.key, dir: p.sort.dir };
-  if (!CONFIG.showTeam && typeof p.clubs === "boolean") setClubs(p.clubs);
-  if (p.hideVal === true) setHideVal(true);
-  // Sincroniza el aspecto de los botones con lo recuperado.
-  const press = (id, on) => $(id).setAttribute("aria-pressed", String(on));
-  press("#onlyBot", state.onlyBot); press("#onlyInjured", state.onlyInjured);
-  press("#onlySusp", state.onlySusp); press("#onlyU21", state.onlyU21); press("#onlyChanges", state.onlyChanges); press("#onlyHidden", state.skills === "hidden");
-  document.querySelectorAll("#poss button[data-pos]").forEach(b => b.setAttribute("aria-pressed", String(state.pos.has(b.dataset.pos))));
-  document.querySelectorAll("#ages button[data-age]").forEach(b => b.setAttribute("aria-pressed", String(state.ages.has(Number(b.dataset.age)))));
-}
-
-const FREEZE_KEYS = ["n", "est", "name", "team", "age", "value", "form", "sk_stamina"];
+const FREEZE_KEYS = ["n", "est", "name", "age", "value", "wage", "form", "sk_stamina"];
 function applyFreeze() {
-  const wrap = document.querySelector("#mainwrap");
+  const wrap = document.querySelector(".tablewrap");
   document.querySelectorAll(".frz").forEach(el => { el.classList.remove("frz", "frz-last"); el.style.left = ""; });
   if (!wrap || document.querySelector("#body td.empty")) return;
   const ths = FREEZE_KEYS.map(k => document.querySelector(`#head th[data-key="${k}"]`)).filter(th => th && th.offsetWidth > 0);
@@ -1300,159 +991,157 @@ function applyFreeze() {
 window.addEventListener("resize", () => applyFreeze());
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => applyFreeze());
 
+const PREFS_KEY = "equipo:prefs";
+let prefsReady = false;
+function savePrefs() {
+  if (!prefsReady) return;
+  try {
+    localStorage.setItem(PREFS_KEY, JSON.stringify({
+      ageMin: state.ageMin, ageMax: state.ageMax, pos: [...state.pos], onlyInjured: state.onlyInjured, onlyChg: state.onlyChg,
+      onlySel: state.onlySel, onlySusp: state.onlySusp, hideVal: state.hideVal, sort: state.sort
+    }));
+  } catch {}
+}
+function loadPrefs() {
+  let p = null;
+  prefsReady = true;
+  try { p = JSON.parse(localStorage.getItem(PREFS_KEY)); } catch {}
+  if (!p || typeof p !== "object") return;
+  const age = v => Number.isFinite(v) ? v : null;
+  state.ageMin = age(p.ageMin); state.ageMax = age(p.ageMax);
+  $("#ageMin").value = state.ageMin ?? ""; $("#ageMax").value = state.ageMax ?? "";
+  if (Array.isArray(p.pos)) state.pos = new Set(p.pos.filter(x => EST_OPTS.includes(x)));
+  state.onlyInjured = p.onlyInjured === true;
+  state.onlyChg = p.onlyChg === true;
+  state.onlySusp = p.onlySusp === true;
+  state.onlySel = p.onlySel === true;
+  if (p.sort && p.sort.key !== "n" && COLS.some(c => c.key === p.sort.key) && (p.sort.dir === 1 || p.sort.dir === -1)) state.sort = { key: p.sort.key, dir: p.sort.dir };
+  if (p.hideVal === true) setHideVal(true);
+  $("#onlyInjured").setAttribute("aria-pressed", String(state.onlyInjured));
+  $("#onlyChg").setAttribute("aria-pressed", String(state.onlyChg));
+  $("#onlySusp").setAttribute("aria-pressed", String(state.onlySusp));
+  $("#onlySel").setAttribute("aria-pressed", String(state.onlySel));
+  document.querySelectorAll("#poss button[data-pos]").forEach(b => b.setAttribute("aria-pressed", String(state.pos.has(b.dataset.pos))));
+}
+
 function render() {
   savePrefs();
-  updateSessionUI();
   const rows = visibleRows();
-  const maxBy = {};
-  for (const pos of POSITIONS) maxBy[pos.key] = Math.max(0, ...rows.map(p => p.sc ? p.sc[pos.key] : 0));
-  for (const c of COMPOSITES) maxBy[c.key] = Math.max(0, ...rows.map(p => compositeValue(p, c) ?? 0));
 
   $("#body").innerHTML = rows.length ? rows.map((p, rowIdx) => {
     const tds = COLS.map(c => {
       if (c.key === "n") return `<td class="c-n">${rowIdx + 1}</td>`;
-      if (c.key === "est") { const v = estOf(p); return `<td class="c-est"><select class="est" data-pid="${esc(p.pid)}" data-v="${v}" aria-label="Asignación de ${esc(p.name || p.pid)}"><option value=""${v ? "" : " selected"}>—</option>${EST_OPTS.map(o => `<option${o === v ? " selected" : ""}>${o}</option>`).join("")}</select></td>`; }
-      if (c.key === "name") return `<td class="l c-name"><a href="${esc(p.link)}" target="_blank" rel="noopener">${esc(p.name || p.pid)}</a><button type="button" class="copypid" data-pid="${esc(p.pid)}" title="Copiar PID ${esc(p.pid)}" aria-label="Copiar PID ${esc(p.pid)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>${p.callUp ? `<span class="u21" title="Citado a la selección">U21</span>` : ""}${p.injury ? `<span class="inj" title="Lesionado: ${p.injury} ${p.injury === 1 ? "día" : "días"}" aria-label="Lesionado, ${p.injury} ${p.injury === 1 ? "día" : "días"}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 2h6v7h7v6h-7v7H9v-7H2V9h7z"/></svg>${p.injury} d</span>` : ""}${p.red ? `<span class="red" title="Tarjeta roja en la selección${p.red > 1 ? ` (${p.red})` : ""}" aria-label="Tarjeta roja en la selección${p.red > 1 ? `, ${p.red}` : ""}"><i></i>${p.red > 1 ? "×" + p.red : ""}</span>` : ""}${isBot(p) ? `<span class="bot" title="Este equipo no tiene dueño">Bot</span>` : ""}</td>`;
-      if (c.key === "team") {
-        if (!p.team) return `<td class="l dim">${p.loaded || p.failed ? "—" : "…"}</td>`;
-        const ct = p.teamId != null ? TEAM_COUNTRY.get(String(p.teamId)) : "";
-        return `<td class="l">${ct ? `<span class="ctry" title="País del equipo">${esc(ct)}</span>` : ""}${p.teamId != null ? `<a class="tlink" href="https://sokker.org/en/app/team/${encodeURIComponent(p.teamId)}/" target="_blank" rel="noopener">${esc(p.team)}</a>` : esc(p.team)}</td>`;
+      if (c.key === "est") {
+        const v = estOf(p);
+        return `<td class="c-est"><select class="est" data-pid="${esc(p.pid)}" data-v="${v}" aria-label="Asignación de ${esc(p.name || p.pid)}"><option value=""${v ? "" : " selected"}>—</option>${EST_OPTS.map(o => `<option${o === v ? " selected" : ""}>${o}</option>`).join("")}</select></td>`;
       }
-      if (c.key === "injury") {
-        if (!p.loaded) return `<td class="l dim">${p.failed ? "Sin datos" : "…"}</td>`;
-        return `<td class="l">${p.injury ? `<span class="tag">Lesión ${p.injury} d</span>` : `<span class="dim">${esc(p.nt)}</span>`}</td>`;
+      if (c.key === "name") {
+        return `<td class="l c-name"><a href="${esc(p.link)}" target="_blank" rel="noopener">${esc(p.name || p.pid)}</a>`
+          + `<button type="button" class="copypid" data-pid="${esc(p.pid)}" title="Copiar PID ${esc(p.pid)}" aria-label="Copiar PID ${esc(p.pid)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>`
+          + (p.callUp ? `<span class="sel" title="Citado a la selección">SEL</span>` : "")
+          + (p.injury ? `<span class="inj" title="Lesionado: ${p.injury} ${p.injury === 1 ? "día" : "días"}" aria-label="Lesionado, ${p.injury} ${p.injury === 1 ? "día" : "días"}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 2h6v7h7v6h-7v7H9v-7H2V9h7z"/></svg>${p.injury} d</span>` : "")
+          + (p.red ? `<span class="redcard" title="Tarjeta roja: suspendido" aria-label="Tarjeta roja, suspendido" role="img"></span>` : "")
+          + `</td>`;
       }
       if (c.skill) {
         const v = p.skills?.[c.skill];
-        if (!Number.isFinite(v)) return `<td class="sk dim">${!p.loaded && !p.failed ? "…" : "—"}</td>`;
+        if (!Number.isFinite(v)) return `<td class="${tdCls(c, "sk dim")}">—</td>`;
         const before = p.prev?.[c.skill];
         const mark = Number.isFinite(before) && before !== v
           ? (v > before ? ` <span class="chg up" title="Subió: antes ${before}" aria-label="subió, antes ${before}">▲</span>` : ` <span class="chg down" title="Bajó: antes ${before}" aria-label="bajó, antes ${before}">▼</span>`)
           : "";
-        const cc = Number.isFinite(before) && before !== v ? (v > before ? " cu" : " cd") : "";
-        return `<td class="sk${cc}">${v}${mark}</td>`;
+        const hl = mark ? (v > before ? " chgup" : " chgdn") : "";
+        return `<td class="${tdCls(c, "sk")}${hl}">${v}${mark}</td>`;
       }
       if (c.comp) {
         const v = compositeValue(p, c.comp);
-        if (v == null) return `<td class="pos dim">${!p.loaded && !p.failed ? "…" : "—"}</td>`;
-        const w = maxBy[c.key] > 0 ? v / maxBy[c.key] * 100 : 0;
-        return `<td class="pos">${v}</td>`;
+        return v == null ? `<td class="${tdCls(c, "pos dim")}">—</td>` : `<td class="${tdCls(c, "pos")}">${v}</td>`;
       }
-      if (c.pos) {
-        if (!p.sc) return `<td class="pos dim">—</td>`;
-        const w = maxBy[c.key] > 0 ? Math.max(0, p.sc[c.key]) / maxBy[c.key] * 100 : 0;
-        return `<td class="pos">${Math.round(p.sc[c.key])}</td>`;
-      }
-      if (!p.loaded) return `<td class="${c.left ? "l " : ""}dim">${p.failed ? "—" : "…"}</td>`;
+      if (!p.loaded) return `<td class="${tdCls(c, "dim")}">—</td>`;
       const t = cellText(p, c.key);
-      return `<td class="${c.left ? "l" : ""}">${t === "" ? '<span class="dim">—</span>' : esc(t)}</td>`;
+      return `<td class="${tdCls(c)}">${t === "" ? '<span class="dim">—</span>' : esc(t)}</td>`;
     }).join("");
     return `<tr>${tds}</tr>`;
-  }).join("") : `<tr><td class="empty" colspan="${COLS.length}">Ningún jugador coincide con los filtros. Borra la búsqueda o amplía el rango de edad.</td></tr>`;
+  }).join("") : `<tr><td class="empty" colspan="${COLS.length}">${state.players.length ? "Ningún jugador coincide con los filtros. Borra la búsqueda o amplía el rango de edad." : "No hay jugadores para mostrar."}</td></tr>`;
 
-  if (rows.length) document.querySelectorAll("#body tr").forEach(tr => {
-    tr.children[TEAM_IDX]?.classList.add("c-team");
-    tr.children[VAL_IDX]?.classList.add("c-val");
-    COLS.forEach((c, i) => { if (SEP[c.key] && tr.children[i]) tr.children[i].classList.add(...SEP[c.key].split(" ")); });
-  });
-
-  updateSummary();
   applyFreeze();
-  if (state.countries) renderCountries();
 
-  // Al ordenar por DEF, DEFside, MID, ATT o ATTside se resaltan las skills que entran en esa suma; Suma solo se resalta a sí misma.
+  // Al ordenar por una suma se resaltan las skills que entran en ella.
   const act = compOf(state.sort.key);
   const hlKeys = new Set(!act ? [] : act === SUM_COMP ? [act.key] : [act.key, ...act.parts.map(k => "sk_" + k)]);
   COLS.forEach((c, i) => {
     document.querySelector(`#head th[data-key="${c.key}"]`)?.classList.toggle("hl", hlKeys.has(c.key));
     if (rows.length && hlKeys.has(c.key)) document.querySelectorAll(`#body tr td:nth-child(${i + 1})`).forEach(td => td.classList.add("hl"));
   });
-
   document.querySelectorAll("#head th").forEach(th => {
     th.setAttribute("aria-sort", th.dataset.key === state.sort.key ? (state.sort.dir === 1 ? "ascending" : "descending") : "none");
   });
 
+  const name = (state.teamName || CONFIG.title).toUpperCase();
+  $("#title").textContent = name;
+  document.title = name;
+  { const c = state.calendar, parts = [];
+    if (c && Number.isFinite(c.season)) parts.push("Temporada " + c.season);
+    if (c && Number.isFinite(c.week)) parts.push("Semana " + c.week);
+    const el = $("#season"); el.textContent = parts.join(" · "); el.hidden = !parts.length; }
+
   const total = state.players.length;
-  const skillCount = state.players.filter(p => SKILL_KEYS.some(k => Number.isFinite(p.skills?.[k]))).length;
   const when = state.stamp ? fmtDate(state.stamp) : "";
   const prevWhen = state.prevStamp ? fmtDate(state.prevStamp) : "";
   const stamp = (when ? ` Datos al ${when}${when.endsWith(".") ? "" : "."}` : "")
     + (prevWhen ? ` Flechas ▲▼: cambios respecto al ${prevWhen.replace(/,.*$/, "")}.` : "");
   $("#lede").innerHTML = total
-    ? `<strong>${total} jugadores</strong> en la hoja, ${rows.length} visibles.${esc(stamp)}${esc(skillCount ? ` ${skillCount} con skills.` : "")}<span id="syncMsg">${syncText() ? " " + esc(syncText()) : ""}</span>`
+    ? `${esc(stamp.trim())}<span id="syncMsg">${syncText() ? " " + esc(syncText()) : ""}</span>`
     : "No hay jugadores para mostrar.";
+  renderSummary();
 }
 
-// ── Vista «Países»: cuántos equipos (distintos) hay de cada país entre los jugadores visibles ──
-const CT_COLS = [{ key: "n", label: "#" }, { key: "name", label: "País", left: true }, { key: "f", label: "Equipos" }, { key: "j", label: "Jugadores" }, { key: "pct", label: "Jugadores %" }];
-const cstate = { sort: { key: "n", dir: 1 } };
-function countryRows() {
-  const byC = new Map();
-  const vis = visibleRows();
-  for (const p of vis) {
-    if (p.teamId == null) continue;
-    const c = TEAM_COUNTRY.get(String(p.teamId));
-    if (!c) continue;
-    if (!byC.has(c)) byC.set(c, { teams: new Set(), j: 0 });
-    const e = byC.get(c); e.teams.add(String(p.teamId)); e.j++;
-  }
-  const list = [...byC].map(([name, e]) => ({ name, f: e.teams.size, j: e.j, pct: vis.length ? e.j / vis.length * 100 : 0 }));
-  list.sort((a, b) => b.f - a.f || a.name.localeCompare(b.name, "es"));   // orden base: más frecuentes primero
-  const { key, dir } = cstate.sort;
-  if (key === "name") list.sort((a, b) => dir * a.name.localeCompare(b.name, "es"));
-  else if (key === "f" || key === "j" || key === "pct") list.sort((a, b) => dir * (a[key] - b[key]) || a.name.localeCompare(b.name, "es"));
-  else if (dir === -1) list.reverse();
-  return list;
+// Cuadro de resumen de todo el equipo (no depende de los filtros de la tabla).
+const nf1 = new Intl.NumberFormat("es-CL", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+// Elige el campo de dinero disponible entre los que guardó el script: primero por nombre (money, budget, cash…) y luego por consulta.
+const FIN_NAMES = ["money", "budget", "cash", "available", "funds", "balance", "wallet", "finance"];
+const FIN_SRC = ["current", "transfer", "economy", "economy2", "team"];
+function pickFinance(fin) {
+  const f = (fin?.fields || []).filter(x => Number.isFinite(x.value));
+  if (!f.length) return null;
+  const rank = x => {
+    const last = x.path.split(".").pop().toLowerCase();
+    const i = FIN_NAMES.findIndex(n => last.includes(n)), j = FIN_SRC.indexOf(x.src);
+    return [i < 0 ? 99 : i, j < 0 ? 99 : j];
+  };
+  const all = f.slice().sort((a, b) => { const ra = rank(a), rb = rank(b); return ra[0] - rb[0] || ra[1] - rb[1]; });
+  return { best: all[0], all };
 }
-function renderCountries() {
-  $("#chead").innerHTML = CT_COLS.map(c => {
-    const on = cstate.sort.key === c.key;
-    return `<th class="${c.left ? "l" : ""}" data-key="${c.key}" scope="col" aria-sort="${on ? (cstate.sort.dir === 1 ? "ascending" : "descending") : "none"}"><button type="button">${c.label}</button></th>`;
-  }).join("");
-  const list = countryRows();
-  $("#cbody").innerHTML = list.length
-    ? list.map((r, i) => `<tr><td>${i + 1}</td><td class="l">${esc(r.name)}</td><td>${r.f}</td><td>${r.j}</td><td>${pctText(r.pct)}</td></tr>`).join("")
-    : `<tr><td class="empty" colspan="5">No hay países para mostrar. Los países se cargan con fetch-players.mjs y dependen de los filtros activos.</td></tr>`;
+function renderSummary() {
+  const el = $("#summary"), ps = state.players;
+  if (!ps.length) { el.hidden = true; return; }
+  el.hidden = false;
+  const total = f => { const v = ps.map(f).filter(Number.isFinite); return v.length ? v.reduce((a, b) => a + b, 0) : null; };
+  const money = (n, cur) => n == null ? "—" : nf.format(n) + (cur ? " " + cur : "");
+  const avgAge = list => { const a = list.map(p => p.age).filter(Number.isFinite); return a.length ? nf1.format(a.reduce((x, y) => x + y, 0) / a.length) : "—"; };
+  const cur = ps.find(p => p.currency)?.currency || "";
+  const wcur = ps.find(p => p.wageCurrency)?.wageCurrency || cur;
+  const starters = ps.filter(p => ["GK", "DEF", "MID", "ATT"].includes(estOf(p)));
+  const trainees = ps.filter(p => estOf(p) === "ENT");
+  const fin = pickFinance(state.finance);
+  const finTip = fin
+    ? `Campo usado: ${fin.best.src}.${fin.best.path}` + (fin.all.length > 1 ? ". Otros campos: " + fin.all.slice(1, 6).map(x => `${x.src}.${x.path} = ${nf.format(x.value)}`).join("; ") : "")
+    : (state.finance ? "No se encontró el dinero disponible en los datos de la API." : "Vuelve a ejecutar node fetch-team.mjs para obtener las finanzas.");
+  // Este cuadro se muestra siempre y no depende de los filtros; solo Finanzas sigue al botón Ocultar Val/Sal.
+  const rows = [["Finanzas", state.hideVal ? "-" : (fin ? money(fin.best.value, fin.best.currency || cur) : "—"), state.hideVal ? "" : finTip],
+    ["Jugadores", String(ps.length)], ["Valor Total", money(total(p => p.value), cur)], ["Salario Total", money(total(p => p.wage), wcur)]];
+  rows.push(["Edad Titulares", avgAge(starters)], ["Edad Entrenables", avgAge(trainees)],
+    ["Subidas Entrenables", String(trainees.reduce((n, p) => n + SKILL_COLUMNS.filter(c => c.skill && Number.isFinite(p.skills?.[c.skill]) && Number.isFinite(p.prev?.[c.skill]) && p.skills[c.skill] > p.prev[c.skill]).length, 0)), "Cantidad de skills que subieron (▲) respecto a la semana anterior en los jugadores marcados ENT"],
+    ["Lesionados", String(ps.filter(p => p.injury).length)], ["Suspendidos", String(ps.filter(p => p.red).length)]);
+  el.innerHTML = `<dl>${rows.map(([k, v, tip]) => `<dt>${k}</dt><dd${tip ? ` title="${esc(tip)}"` : ""}>${esc(v)}</dd>`).join("")}</dl>`;
 }
-function setCountries(on) {
-  state.countries = on;
-  document.body.classList.toggle("view-countries", on);
-  $("#cwrap").hidden = !on;
-  $("#showCountries").setAttribute("aria-pressed", String(on));
-  if (on) renderCountries();
-}
+
 function setHideVal(on) {
   state.hideVal = on;
-  document.querySelector("#tbl").classList.toggle("no-val", on);
+  document.querySelector("table").classList.toggle("no-val", on);
   const b = $("#hideVal");
   b.setAttribute("aria-pressed", String(on));
-  b.textContent = on ? "Mostrar Valor" : "Ocultar Valor";
-}
-function updateSummary() {
-  const box = $("#summary");
-  const all = state.players;
-  box.hidden = !all.length;
-  if (!all.length) return;
-  const loaded = all.filter(p => p.loaded).length;
-  const n = f => String(all.filter(f).length);
-  $("#sumPlayers").textContent = String(all.length);
-  $("#sumU21").textContent = n(p => p.callUp);
-  $("#sumInj").textContent = n(p => p.injury > 0);
-  $("#sumSusp").textContent = n(p => p.red > 0);
-  $("#sumBot").textContent = n(isBot);
-  let ups = 0, hasPrev = false;
-  for (const p of all) {
-    if (!p.prev) continue;
-    hasPrev = true;
-    for (const c of SKILL_COLUMNS) { const v = p.skills?.[c.skill], b = p.prev[c.skill]; if (Number.isFinite(v) && Number.isFinite(b) && v > b) ups++; }
-  }
-  $("#sumUp").textContent = hasPrev ? String(ups) : "—";
-}
-function setClubs(on) {
-  state.showTeam = on;
-  document.querySelector("#tbl").classList.toggle("no-team", !on);
-  $("#showClubs").setAttribute("aria-pressed", String(on));
-  $("#q").placeholder = on ? "Nombre, club o PID" : "Nombre o PID";
+  b.textContent = on ? "Mostrar Val/Sal" : "Ocultar Val/Sal";
 }
 let toastTimer;
 function toast(msg) {
@@ -1462,36 +1151,7 @@ function toast(msg) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove("show"), 2000);
 }
-async function copyPid(pid) {
-  try { await navigator.clipboard.writeText(pid); }
-  catch {
-    const ta = document.createElement("textarea");
-    ta.value = pid; ta.style.position = "fixed"; ta.style.opacity = "0";
-    document.body.appendChild(ta); ta.select();
-    try { document.execCommand("copy"); } catch {}
-    ta.remove();
-  }
-  toast("PID copiado");
-}
-
-function pctText(v) { return v.toLocaleString("es-CL", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " %"; }
-async function copyTable() {
-  const countries = state.countries;
-  const rows = countries ? countryRows() : visibleRows();
-  const cols = countries ? CT_COLS : COLS.filter(c => c.key !== "team" || state.showTeam).flatMap(c => c.key === "name" ? [c, { key: "pid", label: "PID" }] : [c]);
-  const head = cols.map(c => c.long || (c.label === "#" ? "N" : c.label));
-  const lines = [head.join("\t")];
-  for (const p of rows) {
-    if (countries) { lines.push([rows.indexOf(p) + 1, p.name, p.f, p.j, pctText(p.pct)].join("\t")); continue; }
-    lines.push(cols.map(c => {
-      if (c.key === "n") return rows.indexOf(p) + 1;
-      if (c.key === "name") return p.name || p.pid;
-      if (c.key === "pid") return p.pid;
-      return cellText(p, c.key).replace(/\t|\n/g, " ");
-    }).join("\t"));
-  }
-  const text = lines.join("\n");
-  const btn = $("#copy");
+async function copyText(text) {
   try { await navigator.clipboard.writeText(text); }
   catch {
     const ta = document.createElement("textarea");
@@ -1500,16 +1160,23 @@ async function copyTable() {
     try { document.execCommand("copy"); } catch {}
     ta.remove();
   }
-  const old = btn.textContent;
-  btn.textContent = countries ? `Copiados ${rows.length} países` : `Copiadas ${rows.length} filas`;
+}
+async function copyTable() {
+  const rows = visibleRows();
+  const cols = COLS.filter(c => !((c.key === "value" || c.key === "wage") && state.hideVal));
+  const lines = [cols.flatMap(c => c.key === "name" ? [c.label, "PID"] : [c.label === "#" ? "N" : c.label]).join("\t")];
+  rows.forEach((p, i) => {
+    lines.push(cols.flatMap(c => c.key === "n" ? [i + 1] : c.key === "name" ? [p.name || p.pid, p.pid ?? ""] : [cellText(p, c.key).replace(/\t|\n/g, " ")]).join("\t"));
+  });
+  await copyText(lines.join("\n"));
+  const btn = $("#copy"), old = btn.textContent;
+  btn.textContent = `Copiadas ${rows.length} filas`;
   setTimeout(() => { btn.textContent = old; }, 1800);
 }
 
-/* ─────────────── Eventos ─────────────── */
 /* ─────────────── Modo claro y oscuro ─────────────── */
 const ICON_SUN = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>`;
 const ICON_MOON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>`;
-
 function currentTheme() {
   return document.documentElement.dataset.theme
     || (window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
@@ -1520,7 +1187,7 @@ function paintThemeButton() {
   const label = dark ? "Cambiar a modo claro" : "Cambiar a modo oscuro";
   b.setAttribute("aria-label", label);
   b.title = label;
-  b.innerHTML = dark ? ICON_SUN : ICON_MOON;   // el icono muestra el modo al que se cambia
+  b.innerHTML = dark ? ICON_SUN : ICON_MOON;
 }
 function initTheme() {
   paintThemeButton();
@@ -1532,25 +1199,29 @@ function initTheme() {
   });
 }
 
+/* ─────────────── Eventos ─────────────── */
 function init() {
-  document.title = CONFIG.title;
-  $("#title").firstChild.textContent = CONFIG.title;
   initTheme();
-  setClubs(CONFIG.showTeam);
-  $("#formToggle").hidden = !CONFIG.showPositions;   // «Con forma» solo afecta a las posiciones
-  $("#formulas").hidden = !CONFIG.showPositions;
+  $("#nav").addEventListener("change", e => { location.href = e.target.value; });
+  window.addEventListener("pageshow", () => { $("#nav").value = "./"; });   // al volver atrás, el menú debe indicar esta sección
   buildHead();
   $("#head").addEventListener("click", e => {
     const th = e.target.closest("th"); if (!th) return;
-    const key = th.dataset.key;
-    const textual = key === "name" || key === "team" || key === "est";
+    let key = th.dataset.key;
+    if (key === "n") { state.sort = { key: "value", dir: -1 }; render(); return; }   // «#» vuelve al orden por defecto: Valor, de mayor a menor
+    const textual = key === "name" || key === "est";
     state.sort = state.sort.key === key
       ? { key, dir: -state.sort.dir }
       : { key, dir: textual || key === "n" ? 1 : -1 };
     render();
   });
   $("#q").addEventListener("input", e => { state.q = e.target.value; render(); });
-  $("#ages").innerHTML = AGES.map(a => `<button type="button" data-age="${a}" aria-pressed="true" title="Mostrar u ocultar a los jugadores de ${a} años">${a}</button>`).join("");
+  const ageInput = (id, field) => $(id).addEventListener("input", e => {
+    const v = e.target.value.trim();
+    state[field] = v !== "" && Number.isFinite(Number(v)) ? Number(v) : null;
+    render();
+  });
+  ageInput("#ageMin", "ageMin"); ageInput("#ageMax", "ageMax");
   $("#poss").innerHTML = EST_OPTS.map(o => `<button type="button" data-pos="${o}" aria-pressed="false" title="Mostrar solo a los jugadores marcados ${o} (puedes combinar varias posiciones)">${o}</button>`).join("");
   $("#poss").addEventListener("click", e => {
     const b = e.target.closest("button[data-pos]"); if (!b) return;
@@ -1559,65 +1230,27 @@ function init() {
     b.setAttribute("aria-pressed", String(state.pos.has(o)));
     render();
   });
-  $("#ages").addEventListener("click", e => {
-    const b = e.target.closest("button[data-age]"); if (!b) return;
-    const a = Number(b.dataset.age);
-    if (state.ages.has(a)) state.ages.delete(a); else state.ages.add(a);
-    b.setAttribute("aria-pressed", String(state.ages.has(a)));
-    render();
-  });
-  $("#withForm").addEventListener("change", e => { state.withForm = e.target.checked; render(); });
   $("#copy").addEventListener("click", copyTable);
-  $("#onlyInjured").addEventListener("click", e => {
-    state.onlyInjured = !state.onlyInjured;
-    e.currentTarget.setAttribute("aria-pressed", String(state.onlyInjured));
+  const toggle = (id, field) => $(id).addEventListener("click", e => {
+    state[field] = !state[field];
+    e.currentTarget.setAttribute("aria-pressed", String(state[field]));
     render();
   });
-  $("#onlySusp").addEventListener("click", e => {
-    state.onlySusp = !state.onlySusp;
-    e.currentTarget.setAttribute("aria-pressed", String(state.onlySusp));
-    render();
-  });
-  $("#onlyU21").addEventListener("click", e => {
-    state.onlyU21 = !state.onlyU21;
-    e.currentTarget.setAttribute("aria-pressed", String(state.onlyU21));
-    render();
-  });
-  $("#onlyChanges").addEventListener("click", e => {
-    state.onlyChanges = !state.onlyChanges;
-    e.currentTarget.setAttribute("aria-pressed", String(state.onlyChanges));
-    render();
-  });
-  $("#onlyHidden").addEventListener("click", e => {
-    state.skills = state.skills === "hidden" ? "all" : "hidden";
-    e.currentTarget.setAttribute("aria-pressed", String(state.skills === "hidden"));
-    render();
-  });
+  toggle("#onlyInjured", "onlyInjured"); toggle("#onlySusp", "onlySusp"); toggle("#onlyChg", "onlyChg"); toggle("#onlySel", "onlySel");
+  $("#poscol").addEventListener("input", e => { const c = e.target.closest("[data-pcol]"); if (c) { posCol[c.dataset.pcol] = c.value.toLowerCase(); applyPosColors(); } });
+  $("#poscol").addEventListener("change", e => { const c = e.target.closest("[data-pcol]"); if (c) { posCol[c.dataset.pcol] = c.value.toLowerCase(); applyPosColors(); setPosColor(); } });
+  $("#hideVal").addEventListener("click", () => { setHideVal(!state.hideVal); render(); });
   $("#body").addEventListener("change", e => {
     const sel = e.target.closest("select.est"); if (!sel) return;
     setEst(sel.dataset.pid, sel.value);
     sel.dataset.v = sel.value;
+    renderSummary();
     if (state.sort.key === "est" || state.pos.size) render();
   });
-  $("#body").addEventListener("click", e => {
-    const b = e.target.closest(".copypid"); if (b) copyPid(b.dataset.pid);
+  $("#body").addEventListener("click", async e => {
+    const b = e.target.closest(".copypid"); if (!b) return;
+    await copyText(b.dataset.pid); toast("PID copiado");
   });
-  $("#showCountries").addEventListener("click", () => setCountries(!state.countries));
-  $("#chead").addEventListener("click", e => {
-    const th = e.target.closest("th[data-key]"); if (!th) return;
-    const k = th.dataset.key;
-    cstate.sort = k === "n" ? { key: "n", dir: 1 } : { key: k, dir: cstate.sort.key === k ? -cstate.sort.dir : (k === "f" || k === "j" || k === "pct" ? -1 : 1) };
-    renderCountries();
-  });
-  $("#hideVal").addEventListener("click", () => { setHideVal(!state.hideVal); render(); });
-  $("#showClubs").addEventListener("click", () => { setClubs(!state.showTeam); render(); });
-  $("#onlyBot").addEventListener("click", e => {
-    state.onlyBot = !state.onlyBot;
-    e.currentTarget.setAttribute("aria-pressed", String(state.onlyBot));
-    render();
-  });
-  $("#login").addEventListener("click", openLogin);
-  $("#logout").addEventListener("click", logout);
   $("#pwForm").addEventListener("submit", ev => {
     ev.preventDefault();
     const pw = $("#pwInput").value;
@@ -1627,8 +1260,12 @@ function init() {
   });
   $("#pwDlg").addEventListener("cancel", ev => ev.preventDefault());   // no se puede cerrar sin contraseña
   $("#forgetPw").addEventListener("click", () => { forgetPw(); location.reload(); });
-  $("#lgForm").addEventListener("submit", submitLogin);
-  $("#lgCancel").addEventListener("click", () => { $("#lgPass").value = ""; $("#dlg").close(); });
+  if (/[?&]diag=1(&|$)/.test(location.search)) {
+    $("#diagBtn").hidden = false;
+    $("#diagBtn").addEventListener("click", runDiag);
+    $("#diagCopy").addEventListener("click", async () => { await copyText($("#diagText").textContent); toast("Diagnóstico copiado"); });
+  }
+  posCol = parsePosCol(estMap[POSCOL_KEY] && estMap[POSCOL_KEY].v); applyPosColors(); renderPosCol();
   loadPrefs();
   render();
   load(false);
