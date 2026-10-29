@@ -153,7 +153,8 @@ select.est {
   text-align: center; text-align-last: center;
   color: var(--ink); background: var(--bg); border: 1px solid var(--line);
 }
-.poscol { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 0 0 12px; }
+.poscol { display: flex; flex-direction: column; gap: 6px; padding: 0 0 12px; }
+.poscol .pcrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
 .pcw { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; font-size: .85rem; }
 .pcw input[type="color"] { width: 34px; height: 28px; padding: 0; border: 1px solid var(--line); border-radius: 4px; background: none; cursor: pointer; }
 select.est[data-v="GK"] { background: #fbefc2; border-color: #c9a227; font-weight: 700; }
@@ -709,7 +710,7 @@ const saveEst = () => { try { localStorage.setItem(EST_KEY, JSON.stringify(estMa
 const estOf = p => { const e = estMap[p.pid]; return e && EST_OPTS.includes(e.v) ? e.v : ""; };
 function renderPosCol() {
   const dm = document.documentElement.dataset.theme; const th = (dm === "dark" || (dm !== "light" && matchMedia("(prefers-color-scheme: dark)").matches)) ? "dark" : "light";
-  $("#poscol").innerHTML = `<strong>Colores de las marcas</strong>` + POS_LIST.map(k => `<label class="pcw"><input type="color" data-pcol="${k}" value="${posCol[k] || POS_DEF[th][k]}" aria-label="Color de ${k}">${k}</label>`).join("");
+  $("#poscol").innerHTML = `<strong>Colores de las marcas</strong><span class="pcrow">` + POS_LIST.map(k => `<label class="pcw"><input type="color" data-pcol="${k}" value="${posCol[k] || POS_DEF[th][k]}" aria-label="Color de ${k}">${k}</label>`).join("") + `</span>`;
 }
 function setPosColor() {
   const k = POSCOL_KEY;
@@ -1126,6 +1127,7 @@ function renderSummary() {
   const rows = [["Finanzas", state.hideVal ? "-" : (fin ? money(fin.best.value, fin.best.currency || cur) : "—"), state.hideVal ? "" : finTip],
     ["Jugadores", String(ps.length)], ["Valor Total", money(total(p => p.value), cur)], ["Salario Total", money(total(p => p.wage), wcur)]];
   rows.push(["Edad Titulares", avgAge(starters)], ["Edad Entrenables", avgAge(trainees)],
+    ["Subidas Entrenables", String(trainees.reduce((n, p) => n + SKILL_COLUMNS.filter(c => c.skill && Number.isFinite(p.skills?.[c.skill]) && Number.isFinite(p.prev?.[c.skill]) && p.skills[c.skill] > p.prev[c.skill]).length, 0)), "Cantidad de skills que subieron (▲) respecto a la semana anterior en los jugadores marcados ENT"],
     ["Lesionados", String(ps.filter(p => p.injury).length)], ["Suspendidos", String(ps.filter(p => p.red).length)]);
   el.innerHTML = `<dl>${rows.map(([k, v, tip]) => `<dt>${k}</dt><dd${tip ? ` title="${esc(tip)}"` : ""}>${esc(v)}</dd>`).join("")}</dl>`;
 }

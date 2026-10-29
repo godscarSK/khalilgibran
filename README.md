@@ -57,6 +57,7 @@ Se muestra siempre y cuenta a todo el equipo, sin importar los filtros ni los bo
 - **Valor Total** y **Salario Total**: suma de todos los jugadores.
 - **Edad Titulares**: promedio de edad de los marcados GK, DEF, MID y ATT (todos juntos).
 - **Edad Entrenables**: promedio de edad de los marcados ENT.
+- **Subidas Entrenables**: cantidad de skills que subieron (▲) respecto a la semana anterior entre los jugadores marcados ENT.
 - **Lesionados** y **Suspendidos**: cantidad de jugadores.
 
 Finanzas y Salario dependen de los nombres de campo que entregue la API de Sokker. Al pasar el mouse sobre la cifra de Finanzas se ve qué campo se usó y cuáles otros se encontraron. Si la fila queda en «—», la página muestra un aviso con los nombres de los campos disponibles.
