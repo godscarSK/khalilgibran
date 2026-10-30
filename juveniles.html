@@ -173,6 +173,11 @@ td.c-prog input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 tbody tr:nth-child(even) td { background-color: var(--zebra); }
 tbody tr:hover td { background-color: color-mix(in srgb, var(--accent) 7%, var(--panel)); }
 
+.mkf { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.mkf button { font: inherit; font-weight: 800; font-size: 1rem; cursor: pointer; min-height: 32px; min-width: 40px; padding: 0 8px; border-radius: 999px; border: 1px solid currentColor; background: transparent; }
+.mkf button[data-m="V"], .mkf button[data-m="G"] { color: #2ea35a; } .mkf button[data-m="Y"] { color: #d9a400; } .mkf button[data-m="R"], .mkf button[data-m="2"] { color: #e03131; }
+.mkf button[aria-pressed="true"] { background: currentColor; }
+.mkf button[aria-pressed="true"] span { color: var(--panel); }
 th.c-chk, td.c-chk { width: 4.6rem; min-width: 4.6rem; padding-left: 4px; padding-right: 4px; text-align: center; }
 select.chk { width: 4.1rem; height: 24px; padding: 0 2px; font: inherit; font-weight: 700; font-size: .9rem; text-align: center; text-align-last: center; cursor: pointer; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); }
 select.chk[data-v="2"] { color: #d11a1a; border-color: #d11a1a; font-size: 1.05rem; }
@@ -312,6 +317,7 @@ dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
       <input type="search" id="q" placeholder="Nombre" autocomplete="off">
     </label>
     <div class="actions" role="group" aria-label="Acciones">
+      <span class="mkf" id="mkf" role="group" aria-label="Filtrar por la marca de la columna «?»"></span>
       <button class="btn" id="stars" type="button" aria-pressed="false" title="Muestra solo a los juveniles con tres estrellas ★★★">Talentosos</button>
       <button class="btn" id="simplify" type="button" aria-pressed="false" title="Oculta las columnas Talento, Tipo, Progreso y Regresión">Simplificar</button>
       <button class="btn" id="calcBtn" type="button" aria-pressed="false" title="Muestra una fila vacía para hacer cálculos; no se guarda ni se sincroniza">Calculadora</button>
@@ -855,7 +861,7 @@ function normalize(it, i) {
 }
 
 /* ─────────────── Estado y datos ─────────────── */
-const state = { players: [], q: "", onlyStars: false, sort: { key: "n", dir: 1 }, stamp: null, prevStamp: null, teamName: "", simple: false, calc: false, calcP: null, school: null };
+const state = { players: [], q: "", onlyStars: false, chk: new Set(), sort: { key: "n", dir: 1 }, stamp: null, prevStamp: null, teamName: "", simple: false, calc: false, calcP: null, school: null };
 
 async function fetchWithTimeout(url, opts = {}) {
   const ctl = new AbortController();
@@ -1025,6 +1031,7 @@ function visibleRows() {
   const out = state.players.filter(p => {
     if (q && !p.name.toLowerCase().includes(q)) return false;
     if (state.onlyStars && !tripleStar(p)) return false;
+    if (state.chk.size && !state.chk.has(chkVal(p))) return false;
     return true;
   });
   const { key, dir } = state.sort;
@@ -1348,6 +1355,8 @@ function init() {
   $("#q").addEventListener("input", e => { state.q = e.target.value; render(); });
   $("#copy").addEventListener("click", copyTable);
   $("#body").addEventListener("change", ev => { const t = ev.target; if (t && t.dataset && t.dataset.chk) { setCheck(t.dataset.chk, t.value); t.dataset.v = t.value; } });
+  $("#mkf").innerHTML = [["V","✔","✔ verde"],["G","?","? verde"],["Y","?","? amarillo"],["R","?","? rojo"],["2","✘","✘ rojo"]].map(([v, l, t]) => `<button type="button" data-m="${v}" aria-pressed="false" title="Mostrar solo los juveniles con ${t} (puedes combinar varias)"><span>${l}</span></button>`).join("");
+  $("#mkf").addEventListener("click", ev => { const b = ev.target.closest("button[data-m]"); if (!b) return; const v = b.dataset.m; if (state.chk.has(v)) state.chk.delete(v); else state.chk.add(v); b.setAttribute("aria-pressed", String(state.chk.has(v))); render(); });
   $("#stars").addEventListener("click", () => { state.onlyStars = !state.onlyStars; $("#stars").setAttribute("aria-pressed", String(state.onlyStars)); render(); });
   $("#simplify").addEventListener("click", () => { setSimple(!state.simple); render(); });
   $("#calcBtn").addEventListener("click", () => { setCalc(!state.calc); render(); });
