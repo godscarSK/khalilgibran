@@ -340,6 +340,7 @@ select.trs { appearance: none; -webkit-appearance: none; cursor: pointer; font: 
 :is(.chip, select.trs)[data-t="RAP"] { background: #bfe6fa; border-color: #4aa8d8; color: #1b2a41; }
 :is(.chip, select.trs)[data-t="TEC"] { background: #dccbf5; border-color: #8a62c9; color: #1b2a41; }
 :is(.chip, select.trs)[data-t="PAS"] { background: #f8cfe1; border-color: #d65a95; color: #1b2a41; }
+:is(.chip, select.trs)[data-t="GK"] { background: #f7ecb0; border-color: #c9a227; color: #1b2a41; }
 :is(.chip, select.trs)[data-t="DEF"] { background: #fbd5ae; border-color: #e08a2b; color: #1b2a41; }
 :is(.chip, select.trs)[data-t="CRE"] { background: #f5b8b4; border-color: #d0362f; color: #1b2a41; }
 :is(.chip, select.trs)[data-t="ATT"] { background: #d9dde0; border-color: #8a959d; color: #1b2a41; }
@@ -348,15 +349,16 @@ select.trs { appearance: none; -webkit-appearance: none; cursor: pointer; font: 
 :root[data-theme="dark"] [data-t] { color: #e6edf1; }
 :root[data-theme="dark"] :is(.chip, select.trs)[data-t="RAP"] { background: #17435a; } :root[data-theme="dark"] :is(.chip, select.trs)[data-t="TEC"] { background: #3b2a5c; }
 :root[data-theme="dark"] :is(.chip, select.trs)[data-t="PAS"] { background: #5a2440; } :root[data-theme="dark"] :is(.chip, select.trs)[data-t="DEF"] { background: #5a3a12; }
-:root[data-theme="dark"] :is(.chip, select.trs)[data-t="CRE"] { background: #5a1a17; } :root[data-theme="dark"] :is(.chip, select.trs)[data-t="ATT"] { background: #3a4248; }
+:root[data-theme="dark"] :is(.chip, select.trs)[data-t="GK"] { background: #4d4412; } :root[data-theme="dark"] :is(.chip, select.trs)[data-t="CRE"] { background: #5a1a17; } :root[data-theme="dark"] :is(.chip, select.trs)[data-t="ATT"] { background: #3a4248; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) [data-t] { color: #e6edf1; }
   :root:not([data-theme="light"]) :is(.chip, select.trs)[data-t="RAP"] { background: #17435a; } :root:not([data-theme="light"]) :is(.chip, select.trs)[data-t="TEC"] { background: #3b2a5c; }
   :root:not([data-theme="light"]) :is(.chip, select.trs)[data-t="PAS"] { background: #5a2440; } :root:not([data-theme="light"]) :is(.chip, select.trs)[data-t="DEF"] { background: #5a3a12; }
-  :root:not([data-theme="light"]) :is(.chip, select.trs)[data-t="CRE"] { background: #5a1a17; } :root:not([data-theme="light"]) :is(.chip, select.trs)[data-t="ATT"] { background: #3a4248; } }
+  :root:not([data-theme="light"]) :is(.chip, select.trs)[data-t="GK"] { background: #4d4412; } :root:not([data-theme="light"]) :is(.chip, select.trs)[data-t="CRE"] { background: #5a1a17; } :root:not([data-theme="light"]) :is(.chip, select.trs)[data-t="ATT"] { background: #3a4248; } }
 .hintline { color: var(--muted); margin: 0 0 10px; max-width: 80ch; }
 html.cust-RAP :is(.chip, select.trs)[data-t="RAP"] { background: var(--trc-RAP) !important; color: var(--trt-RAP) !important; }
 html.cust-TEC :is(.chip, select.trs)[data-t="TEC"] { background: var(--trc-TEC) !important; color: var(--trt-TEC) !important; }
 html.cust-PAS :is(.chip, select.trs)[data-t="PAS"] { background: var(--trc-PAS) !important; color: var(--trt-PAS) !important; }
+html.cust-GK :is(.chip, select.trs)[data-t="GK"] { background: var(--trc-GK) !important; color: var(--trt-GK) !important; }
 html.cust-DEF :is(.chip, select.trs)[data-t="DEF"] { background: var(--trc-DEF) !important; color: var(--trt-DEF) !important; }
 html.cust-CRE :is(.chip, select.trs)[data-t="CRE"] { background: var(--trc-CRE) !important; color: var(--trt-CRE) !important; }
 html.cust-ATT :is(.chip, select.trs)[data-t="ATT"] { background: var(--trc-ATT) !important; color: var(--trt-ATT) !important; }
@@ -487,7 +489,7 @@ const MAXSUB = 3;            // jugadores por número: titular y hasta dos susti
 const LKEY = i => "j2" + String(i + 1).padStart(12, "0");
 const TRN_KEY = "j2000000000009";           // entrenamiento asignado a cada posición (también viaja por el servicio)
 const LKEYS = [...LINEUPS.map((_, i) => LKEY(i)), TRN_KEY];
-const TRN_OPTS = ["RAP", "TEC", "PAS", "DEF", "CRE", "ATT"];   // celeste, violeta, rosado, naranjo, rojo, gris
+const TRN_OPTS = ["RAP", "TEC", "PAS", "GK", "DEF", "CRE", "ATT"];   // celeste, violeta, rosado, amarillo, naranjo, rojo, gris
 const EST_OPTS = ["GK", "DEF", "MID", "ATT", "ENT", "EXT"];
 const SKILL_KEYS = ["stamina", "pace", "technique", "passing", "keeper", "defender", "playmaker", "striker"];
 const SKILL_ALIASES = {
@@ -759,8 +761,8 @@ function parseTrn() {
   if (o && o.c && typeof o.c === "object") for (const k of TRN_OPTS) if (/^#[0-9a-f]{6}$/i.test(o.c[k] || "")) t.c[k] = o.c[k].toLowerCase();
   return t;
 }
-const TRN_DEF = { light: { RAP: "#bfe6fa", TEC: "#dccbf5", PAS: "#f8cfe1", DEF: "#fbd5ae", CRE: "#f5b8b4", ATT: "#d9dde0" },
-                  dark:  { RAP: "#17435a", TEC: "#3b2a5c", PAS: "#5a2440", DEF: "#5a3a12", CRE: "#5a1a17", ATT: "#3a4248" } };
+const TRN_DEF = { light: { RAP: "#bfe6fa", TEC: "#dccbf5", PAS: "#f8cfe1", GK: "#f7ecb0", DEF: "#fbd5ae", CRE: "#f5b8b4", ATT: "#d9dde0" },
+                  dark:  { RAP: "#17435a", TEC: "#3b2a5c", PAS: "#5a2440", GK: "#4d4412", DEF: "#5a3a12", CRE: "#5a1a17", ATT: "#3a4248" } };
 // Colores elegidos a mano para cada entrenamiento (si no hay, valen los de siempre). Texto claro u oscuro según el brillo del color.
 function applyTrnColors() {
   const r = document.documentElement;
