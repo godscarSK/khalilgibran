@@ -94,6 +94,8 @@ Para actualizar esta página hay que volver a ejecutar `node fetch-team.mjs` y s
 
 ## Página de alineaciones
 
+**Juveniles:** bajo el cuadro de entrenamiento hay dos botones, **Titulares** y **Juveniles** (se recuerda el último en cada dispositivo). «Juveniles» muestra una sola alineación de 11 puestos, con su propia lista de juveniles a la derecha (de `data/juniors.enc.json`). Cada juvenil muestra **Nivel · Edad · Semanas Entrenadas** y la marca de posición que le diste en la página Juveniles; al tocar su nombre se abre un cuadro con esos mismos datos. Tiene lo mismo que las otras: rival, fecha y un selector de **día**, puestos con posición editable, sustitutos y minutos, y se guarda con «Guardar Datos». Solo admite juveniles (los titulares no se pueden mezclar). Su fecha también **avanza 7 días cada jueves**, igual que las demás.
+
 En pantallas anchas, la lista **Jugadores** queda a la derecha; en pantallas angostas (teléfono vertical) sigue arriba.
 
 `alineaciones.html` (sección **Alineaciones** del menú) arma cuatro alineaciones de 11 puestos con los jugadores del plantel: **Copa Internacional** (viernes), **Liga 1** (domingo), **Copa/Amistoso** (lunes) y **Liga 2** (miércoles). Cada una tiene, bajo el título, el día, un campo para el **rival** y otro para la **fecha**.

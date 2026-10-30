@@ -364,6 +364,12 @@ html.cust-ATT :is(.chip, select.trs)[data-t="ATT"] { background: var(--trc-ATT) 
 .trcol .tcrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
 .tcw { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; font-size: .85rem; }
 .tcw input[type="color"] { width: 34px; height: 28px; padding: 0; border: 1px solid var(--line); border-radius: 4px; background: none; cursor: pointer; }
+.modebar { display: flex; gap: 8px; margin: 0 0 12px; }
+.modebar button { font: inherit; font-weight: 700; cursor: pointer; min-height: 38px; padding: 0 18px; border-radius: 999px; border: 1px solid var(--ink); background: var(--ink); color: var(--panel); }
+.modebar button[aria-pressed="false"] { background: transparent; color: var(--ink); }
+.jd { flex: none; font-size: .75rem; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lu .meta select.dayinp { font: inherit; font-weight: 700; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; min-height: 34px; padding: 0 6px; min-width: 5.2rem; }
+#luJ .lu { max-width: 640px; }
 @media (max-width: 960px) {
   .board { grid-template-columns: minmax(0, 1fr); }
   .pool { grid-column: 1; position: sticky; top: 8px; max-height: 42vh; z-index: 5; box-shadow: 0 4px 14px rgba(0,0,0,.18); }
@@ -410,9 +416,14 @@ html.cust-ATT :is(.chip, select.trs)[data-t="ATT"] { background: var(--trc-ATT) 
 
   <section class="trn" id="trn" aria-label="Entrenamiento por posición"></section>
 
+  <div class="modebar" role="group" aria-label="Sección de alineaciones">
+    <button type="button" data-mode="t" aria-pressed="true">Titulares</button>
+    <button type="button" data-mode="j" aria-pressed="false">Juveniles</button>
+  </div>
+
   <div class="board">
-    <aside class="pool" id="pool" aria-label="Jugadores del plantel">
-      <div class="ph"><h2>Jugadores</h2><button class="btn primary" id="syncBtn" type="button" hidden title="Sube los datos actuales a la nube y reemplaza los anteriores">Guardar Datos</button><small id="poolInfo"></small></div>
+    <aside class="pool" id="pool" aria-label="Lista de jugadores">
+      <div class="ph"><h2 id="poolTitle">Jugadores</h2><button class="btn primary" id="syncBtn" type="button" hidden title="Sube los datos actuales a la nube y reemplaza los anteriores">Guardar Datos</button><small id="poolInfo"></small></div>
       <div class="pt">
         <input type="search" id="q" placeholder="Buscar" autocomplete="off" aria-label="Buscar jugador">
         <button class="btn" id="onlyFree" type="button" aria-pressed="false" title="Mostrar solo a los jugadores que no están en ninguna alineación">Sin alinear</button>
@@ -456,8 +467,12 @@ const LINEUPS = [
   { name: "Copa Internacional", day: "Viernes" },
   { name: "Liga 1",     day: "Domingo" },
   { name: "Copa/Amistoso", day: "Lunes" },
-  { name: "Liga 2",     day: "Miércoles" }
+  { name: "Liga 2",     day: "Miércoles" },
+  { name: "Juveniles",  day: "", jr: true }          // alineación de juveniles: sección aparte, con su propia lista
 ];
+const NT = 4;                // alineaciones de titulares (las demás son de juveniles)
+const DAYS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+const isJrPid = pid => /^j\d/.test(String(pid));
 const SLOTS = 11;
 const MAXSUB = 3;            // jugadores por número: titular y hasta dos sustitutos
 const LKEY = i => "j2" + String(i + 1).padStart(12, "0");
@@ -486,7 +501,8 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": 
 const num = v => (typeof v === "number" && Number.isFinite(v)) ? v : (typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v))) ? Number(v) : null;
 const fmtDate = t => new Date(t).toLocaleString("es-CL", { dateStyle: "medium", timeStyle: "short" });
 
-const state = { players: [], q: "", onlyFree: false, pos: new Set(), sel: "", stamp: null };
+const state = { players: [], juniors: [], mode: "t", q: "", onlyFree: false, pos: new Set(), sel: "", stamp: null };
+try { if (localStorage.getItem("equipo:almode") === "j") state.mode = "j"; } catch {}
 const byPid = new Map();
 
 /* ─────────────── Carga de datos ─────────────── */
@@ -593,16 +609,56 @@ function makePlayer(row, api) {
   };
 }
 function labelPlayers() {
-  const cnt = {};
-  for (const p of state.players) cnt[p.last.toLowerCase()] = (cnt[p.last.toLowerCase()] || 0) + 1;
-  for (const p of state.players) p.label = cnt[p.last.toLowerCase()] > 1 && p.first ? `${p.last} (${p.first[0]}.)` : p.last;
+  for (const list of [state.players, state.juniors]) {
+    const cnt = {};
+    for (const p of list) cnt[p.last.toLowerCase()] = (cnt[p.last.toLowerCase()] || 0) + 1;
+    for (const p of list) p.label = cnt[p.last.toLowerCase()] > 1 && p.first ? `${p.last} (${p.first[0]}.)` : p.last;
+  }
+}
+/* Juveniles: los datos vienen de data/juniors.enc.json (con la misma contraseña). Se identifican con «j» + id para no chocar con los pid del plantel. */
+function deepFind(o, re, depth = 0) {
+  if (!o || typeof o !== "object" || Array.isArray(o) || depth > 3) return null;
+  for (const [k, v] of Object.entries(o)) if (re.test(k) && v !== null && typeof v !== "object") return v;
+  for (const v of Object.values(o)) { if (v && typeof v === "object" && !Array.isArray(v)) { const r = deepFind(v, re, depth + 1); if (r !== null) return r; } }
+  return null;
+}
+function juniorName(o) {
+  const n = o.name;
+  if (typeof n === "string" && n) return n;
+  if (n && typeof n === "object") {
+    if (n.full) return String(n.full);
+    const parts = [n.first ?? n.firstName ?? n.name, n.last ?? n.lastName ?? n.surname].filter(Boolean);
+    if (parts.length) return parts.join(" ");
+  }
+  const f = deepFind(o, /^(fullName|full)$/i);
+  if (f) return String(f);
+  return [deepFind(o, /^(firstName|name)$/i), deepFind(o, /^(lastName|surname)$/i)].filter(Boolean).join(" ");
+}
+function makeJunior(it, i) {
+  const src = it && it.info && typeof it.info === "object" ? it.info : (it || {});
+  const id = src.id ?? src.juniorId ?? it?.id ?? it?.juniorId ?? null;
+  if (id == null || !/^\d+$/.test(String(id))) return null;
+  const full = juniorName(src) || "Juvenil " + id;
+  return { pid: "j" + id, id: String(id), jr: true, full, last: surnameOf(src, full), first: full.trim().split(/\s+/)[0] || "", injury: 0, red: 0, form: null, sk: null,
+    age: num(deepFind(src, /^age$/i)), skill: num(src.skill ?? deepFind(src, /^skill$/i)), weeksIn: num(deepFind(src, /^weeksIn$/i)) };
+}
+async function loadJuniors(pw) {
+  let st = null;
+  try {
+    const env = await fetchEnvelope("data/juniors.enc.json", false);
+    if (env && pw) st = await decryptEnvelope(env, pw);
+    else if (!env) { const r = await fetchWithTimeout("data/juniors.json", { cache: "no-store" }); if (r.ok) st = await r.json(); }
+  } catch { st = null; }
+  state.juniors = st && Array.isArray(st.items) ? st.items.map(makeJunior).filter(Boolean) : [];
+  labelPlayers();
+  for (const p of state.juniors) byPid.set(p.pid, p);
 }
 
 async function load() {
   setNotices([]); setStatus("Cargando jugadores…");
-  let st = null;
+  let st = null, pwUsed = "";
   const env = await fetchEnvelope(CONFIG.encData, false);
-  if (env) { const u = await unlock(env); st = u.data; estStart(u.pw); }
+  if (env) { const u = await unlock(env); st = u.data; pwUsed = u.pw; estStart(u.pw); }
   else st = await tryStatic(CONFIG.staticData);
   if (!st) {
     setStatus("");
@@ -615,6 +671,7 @@ async function load() {
   state.dataReady = true;
   labelPlayers();
   byPid.clear(); for (const p of state.players) byPid.set(p.pid, p);
+  await loadJuniors(pwUsed);
   setStatus("");
   renderAll();
   maybeAdvance();
@@ -650,7 +707,8 @@ function applyPosColors() {
   }).join("\n");
 }
 const POSCOL_SEL = k => `.ptag[data-v="${k}"], select.est[data-v="${k}"]`;
-const estPos = {};               // pid → GK/DEF/MID/ATT/ENT/EXT (solo lectura: se asigna en la página Plantel)
+const estPos = {};
+const jPos = {};   // posición (GK, DEF, MID, ATT) elegida para cada juvenil en la página Juveniles               // pid → GK/DEF/MID/ATT/ENT/EXT (solo lectura: se asigna en la página Plantel)
 try {
   const o = JSON.parse(localStorage.getItem(LIN_KEY)); if (o && typeof o === "object") linMap = o;
   const d = JSON.parse(localStorage.getItem(LIN_DIRTY_KEY)); if (Array.isArray(d)) d.forEach(k => sync.dirty.add(String(k)));
@@ -658,6 +716,8 @@ try {
   if (e && typeof e === "object") for (const [pid, x] of Object.entries(e)) { const v = x && x.v === "EXTRA" ? "EXT" : x && x.v; if (EST_OPTS.includes(v)) estPos[pid] = v; }
   if (e && e[POSCOL_KEY]) posCol = parsePosCol(e[POSCOL_KEY].v);
   applyPosColors();
+  const jp = JSON.parse(localStorage.getItem("juveniles:prog"));
+  if (jp && typeof jp === "object") for (const [k, x] of Object.entries(jp)) { const m = /^j1(\d{12})$/.exec(k); if (m && x && SLOT_POS_OPTS.includes(x.v)) jPos[String(+m[1])] = x.v; }
 } catch {}
 const saveLin = () => { try { localStorage.setItem(LIN_KEY, JSON.stringify(linMap)); localStorage.setItem(LIN_DIRTY_KEY, JSON.stringify([...sync.dirty])); } catch {} };
 
@@ -670,7 +730,7 @@ function parseLineup(i) {
   const s = raw.map(x => x.split("+").slice(0, MAXSUB).map(t => { const [pid, m] = t.trim().split(":"); return pid && pid.trim() ? { p: pid.trim(), m: /^\d{1,3}$/.test(m || "") ? String(+m) : "" } : null; }).filter(Boolean));
   let sp = o && typeof o.p === "string" ? o.p.split(",").slice(0, SLOTS).map(x => x.trim()) : null;
   if (!sp || sp.length < SLOTS || sp.some(x => x !== "" && !SLOT_POS_OPTS.includes(x))) sp = SLOT_POS_DEFAULT.slice();
-  return { s, p: sp, w: /^\d{4}-\d{2}-\d{2}$/.test(o && o.w) ? o.w : "", r: String((o && o.r) || "").slice(0, 30), d: /^\d{4}-\d{2}-\d{2}$/.test(o && o.d) ? o.d : "" };
+  return { s, p: sp, w: /^\d{4}-\d{2}-\d{2}$/.test(o && o.w) ? o.w : "", y: DAYS.includes(o && o.y) ? o.y : "", r: String((o && o.r) || "").slice(0, 30), d: /^\d{4}-\d{2}-\d{2}$/.test(o && o.d) ? o.d : "" };
 }
 let lu = LINEUPS.map((_, i) => parseLineup(i));
 // La semana de Sokker va de jueves a miércoles. «w» de cada alineación = jueves de la semana de los datos con que se fijó su fecha.
@@ -713,7 +773,7 @@ function saveTrn() {
 function saveLineup(i) {
   const k = LKEY(i), L = lu[i];
   if (!L.w) L.w = dataWeekKey();
-  linMap[k] = { v: JSON.stringify({ w: L.w, s: L.s.map(es => es.map(e => e.m !== "" ? e.p + ":" + e.m : e.p).join("+")).join(","), p: L.p.join(","), r: L.r, d: L.d }), t: nextT(k) };
+  linMap[k] = { v: JSON.stringify({ w: L.w, s: L.s.map(es => es.map(e => e.m !== "" ? e.p + ":" + e.m : e.p).join("+")).join(","), p: L.p.join(","), r: L.r, d: L.d, ...(LINEUPS[i].jr ? { y: L.y } : {}) }), t: nextT(k) };
   sync.dirty.add(k); saveLin();
   touched.add(k);
   if (CONFIG.estUrl) setSyncState("unsynced");   // solo se sube a la nube con el botón «Guardar Datos»
@@ -815,6 +875,11 @@ async function pullLin() {
     for (const it of j.items || []) {
       const k = String(it.pid), t = Number(it.t) || 0;
       if (k === POSCOL_KEY) { try { const m = parsePosCol(await decV(it.v)); if (JSON.stringify(m) !== JSON.stringify(posCol)) { posCol = m; applyPosColors(); } } catch {} continue; }
+      const jm = /^j1(\d{12})$/.exec(k);
+      if (jm) {                                    // posición de cada juvenil (página Juveniles): solo se lee
+        try { const v = await decV(it.v), id = String(+jm[1]), w = SLOT_POS_OPTS.includes(v) ? v : ""; if ((jPos[id] || "") !== w) { if (w) jPos[id] = w; else delete jPos[id]; changed = true; } } catch {}
+        continue;
+      }
       if (/^\d+$/.test(k)) {                       // asignaciones de la página Plantel: solo se leen, para mostrar la posición
         try { const v = await decV(it.v); const w = v === "EXTRA" ? "EXT" : v; if (EST_OPTS.includes(w)) { if (estPos[k] !== w) { estPos[k] = w; changed = true; } } else if (estPos[k]) { delete estPos[k]; changed = true; } } catch {}
         continue;
@@ -891,28 +956,33 @@ function flags(p) {
   return (d ? `<span class="flg inj" title="Lesionado: ${d} ${d === 1 ? "día" : "días"}" aria-label="Lesionado, ${d} ${d === 1 ? "día" : "días"}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 2h6v7h7v6h-7v7H9v-7H2V9h7z"/></svg>${d} d</span>` : "")
     + (p.red ? `<span class="flg redcard" title="Tarjeta roja: suspendido" role="img" aria-label="Tarjeta roja, suspendido"></span>` : "");
 }
-const chipHtml = (p, t) => `<span class="chip"${t ? ` data-t="${t}"` : ""} data-pid="${esc(p.pid)}" title="${esc(p.full)}${t ? " · entrenando " + t : ""} · toca para ver sus skills"><span class="grip" aria-hidden="true">⠿</span><span class="nm">${esc(p.label)}</span>${flags(p)}</span>`;
+const chipHtml = (p, t) => `<span class="chip"${t ? ` data-t="${t}"` : ""} data-pid="${esc(p.pid)}" title="${esc(p.full)}${t ? " · entrenando " + t : ""} · toca para ver ${p.jr ? "sus datos" : "sus skills"}"><span class="grip" aria-hidden="true">⠿</span><span class="nm">${esc(p.label)}</span>${flags(p)}</span>`;
 const spSelect = (i, j) => { const v = lu[i].p[j]; return `<select class="ptag sp"${v ? ` data-v="${v}"` : ""} data-sp="${i},${j}" aria-label="Posición del puesto ${j + 1} de ${esc(LINEUPS[i].name)}"><option value=""${v ? "" : " selected"}>—</option>${SLOT_POS_OPTS.map(o => `<option${o === v ? " selected" : ""}>${o}</option>`).join("")}</select>`; };
-const posTag = pid => estPos[pid] ? `<span class="ptag" data-v="${estPos[pid]}" title="Posición asignada en el Plantel">${estPos[pid]}</span>` : `<span class="ptag" style="visibility:hidden">—</span>`;
+const posTag = pid => { const v = isJrPid(pid) ? jPos[pid.slice(1)] : estPos[pid]; return v ? `<span class="ptag" data-v="${v}" title="${isJrPid(pid) ? "Posición marcada en Juveniles" : "Posición asignada en el Plantel"}">${v}</span>` : `<span class="ptag" style="visibility:hidden">—</span>`; };
+const jInfo = p => `<span class="jd" title="Nivel · Edad · Semanas Entrenadas">${Number.isFinite(p.skill) ? p.skill : "—"} · ${Number.isFinite(p.age) ? p.age : "—"} · ${Number.isFinite(p.weeksIn) ? p.weeksIn : "—"}</span>`;
 
 // Con «Sin alinear» activo, un jugador seleccionado que ya quedó alineado (y por eso sale de la lista) deja de estar seleccionado.
 const dropStaleSel = () => { if (state.onlyFree && state.sel && countOf(state.sel)) state.sel = ""; };
 function renderPool() {
   dropStaleSel();
+  const jr = state.mode === "j", list = jr ? state.juniors : state.players, den = jr ? 1 : NT;
   const q = state.q.trim().toLowerCase();
-  const rows = state.players.filter(p => {
+  const posOf = p => jr ? jPos[p.id] : estPos[p.pid];
+  const rows = list.filter(p => {
     if (state.onlyFree && countOf(p.pid)) return false;
-    if (state.pos.size && !state.pos.has(estPos[p.pid])) return false;
+    if (!jr && state.pos.size && !state.pos.has(estPos[p.pid])) return false;
     return !q || p.full.toLowerCase().includes(q) || p.pid.includes(q);
-  }).sort((a, b) => ((POS_ORDER[estPos[a.pid]] ?? 99) - (POS_ORDER[estPos[b.pid]] ?? 99)) || a.label.localeCompare(b.label, "es"));
-  const free = state.players.filter(p => !countOf(p.pid)).length;
-  $("#poolInfo").textContent = state.players.length ? `${state.players.length} jugadores · ${free} sin alinear` : "";
+  }).sort((a, b) => ((POS_ORDER[posOf(a)] ?? 99) - (POS_ORDER[posOf(b)] ?? 99)) || a.label.localeCompare(b.label, "es"));
+  const free = list.filter(p => !countOf(p.pid)).length;
+  $("#poolTitle").textContent = jr ? "Juveniles" : "Jugadores";
+  $("#poolInfo").textContent = list.length ? `${list.length} ${jr ? "juveniles" : "jugadores"} · ${free} sin alinear` : "";
+  $("#posf").hidden = jr;
   $("#poolList").innerHTML = rows.length ? rows.map(p => {
     const n = countOf(p.pid);
-    return `<div class="pl${n ? "" : " free"}${state.sel === p.pid ? " sel" : ""}" data-pid="${esc(p.pid)}" title="${esc(p.full)} · en ${n} de ${LINEUPS.length} alineaciones">
-      ${chipHtml(p)}<span class="sp-fill"></span>${posTag(p.pid)}
-      <span class="mins${minsOf(p.pid) ? "" : " z"}" title="Minutos acumulados en todas las alineaciones">${minsOf(p.pid)}′</span><span class="cnt${n === 0 ? " z" : n === LINEUPS.length ? " full" : ""}" aria-label="En ${n} alineaciones">${n}</span></div>`;
-  }).join("") : `<div class="empty">${state.players.length ? "Ningún jugador coincide." : "Sin jugadores."}</div>`;
+    return `<div class="pl${n ? "" : " free"}${state.sel === p.pid ? " sel" : ""}" data-pid="${esc(p.pid)}" title="${esc(p.full)} · en ${n} de ${den} ${den === 1 ? "alineación" : "alineaciones"}">
+      ${chipHtml(p)}<span class="sp-fill"></span>${jr ? jInfo(p) : ""}${posTag(p.pid)}
+      <span class="mins${minsOf(p.pid) ? "" : " z"}" title="Minutos acumulados en todas las alineaciones">${minsOf(p.pid)}′</span><span class="cnt${n === 0 ? " z" : n === den ? " full" : ""}" aria-label="En ${n} alineaciones">${n}</span></div>`;
+  }).join("") : `<div class="empty">${list.length ? "Ningún jugador coincide." : jr ? "Sin juveniles (falta data/juniors.enc.json)." : "Sin jugadores."}</div>`;
 }
 const HIDE_KEY = "equipo:alhidden";   // alineaciones ocultas: preferencia de este dispositivo (no se sincroniza)
 const hiddenLu = new Set();
@@ -927,20 +997,30 @@ function applyHidden() {
 }
 function buildLineups() {
   const art = (l, i) => `<article class="lu" data-l="${i}">
-    <div class="lh"><h2>${esc(l.name)}</h2><span class="n"><span data-n="${i}">0</span>/${SLOTS} <button class="btn" type="button" data-clear="${i}" title="Vaciar esta alineación" style="min-height:28px;padding:2px 8px;margin-left:6px">Vaciar</button><button class="btn" type="button" data-hide="${i}" title="Ocultar esta alineación (la de al lado ocupa su espacio)" style="min-height:28px;padding:2px 8px;margin-left:4px">Ocultar</button></span></div>
-    <div class="meta"><span class="day">${esc(l.day)}</span>
+    <div class="lh"><h2>${esc(l.name)}</h2><span class="n"><span data-n="${i}">0</span>/${SLOTS} <button class="btn" type="button" data-clear="${i}" title="Vaciar esta alineación" style="min-height:28px;padding:2px 8px;margin-left:6px">Vaciar</button>${l.jr ? "" : `<button class="btn" type="button" data-hide="${i}" title="Ocultar esta alineación (la de al lado ocupa su espacio)" style="min-height:28px;padding:2px 8px;margin-left:4px">Ocultar</button>`}</span></div>
+    <div class="meta">${l.jr ? `<select class="dayinp" data-y="${i}" aria-label="Día de ${esc(l.name)}"><option value="">Día</option>${DAYS.map(d => `<option>${d}</option>`).join("")}</select>` : `<span class="day">${esc(l.day)}</span>`}
       <input class="rival" type="text" maxlength="30" placeholder="Rival" aria-label="Rival de ${esc(l.name)}" data-r="${i}">
       <input class="date" type="date" aria-label="Fecha de ${esc(l.name)}" data-d="${i}"></div>
     <ol class="slots" data-slots="${i}"></ol></article>`;
-  $("#lineups").innerHTML = `<div class="hbar" id="hbar" hidden></div><div class="lrow">${art(LINEUPS[0], 0)}${art(LINEUPS[1], 1)}</div><div class="lrow">${art(LINEUPS[2], 2)}${art(LINEUPS[3], 3)}</div>`;
-  applyHidden(); syncMeta();
+  $("#lineups").innerHTML = `<div id="luT"><div class="hbar" id="hbar" hidden></div><div class="lrow">${art(LINEUPS[0], 0)}${art(LINEUPS[1], 1)}</div><div class="lrow">${art(LINEUPS[2], 2)}${art(LINEUPS[3], 3)}</div></div>`
+    + `<div id="luJ" hidden><div class="lrow">${art(LINEUPS[4], 4)}</div></div>`;
+  applyHidden(); syncMeta(); applyMode();
 }
 function syncMeta() {
   LINEUPS.forEach((_, i) => {
     const r = document.querySelector(`input[data-r="${i}"]`), d = document.querySelector(`input[data-d="${i}"]`);
     if (r && r !== document.activeElement && r.value !== lu[i].r) r.value = lu[i].r;
     if (d && d !== document.activeElement && d.value !== lu[i].d) d.value = lu[i].d;
+    const y = document.querySelector(`select[data-y="${i}"]`);
+    if (y && y.value !== lu[i].y) y.value = lu[i].y;
   });
+}
+// Titulares o juveniles: dos secciones, cada una con su lista de jugadores y sus alineaciones.
+function applyMode() {
+  const jr = state.mode === "j";
+  $("#luT").hidden = jr; $("#luJ").hidden = !jr; $("#trn").hidden = jr;
+  document.querySelectorAll(".modebar button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.mode === state.mode)));
+  $("#q").placeholder = "Buscar";
 }
 function entHtml(i, j, k) {
   const L = lu[i], es = L.s[j], e = es[k], p = byPid.get(e.p);
@@ -981,7 +1061,9 @@ function renderAll() {
 const findIn = (i, pid) => { const S = lu[i].s; for (let j = 0; j < S.length; j++) { const k = S[j].findIndex(e => e.p === pid); if (k >= 0) return { j, k }; } return null; };
 // Suelta a pid sobre un jugador (o sobre un número vacío) de la alineación i. Sobre un jugador: si pid ya está en la alineación, se intercambian
 // de lugar (cada uno con sus minutos); si no, pid ocupa su lugar. Sobre un número vacío: pid pasa a ser su titular (y se mueve si ya estaba en otro).
+const wrongList = (i, pid) => { const bad = !!LINEUPS[i].jr !== isJrPid(pid); if (bad) toast(LINEUPS[i].jr ? "A esta alineación solo van juveniles" : "A esta alineación solo van jugadores del plantel"); return bad; };
 function dropEntry(i, j, k, pid) {
+  if (wrongList(i, pid)) return false;
   const S = lu[i].s, tgt = S[j][k], ex = findIn(i, pid);
   if (!tgt) { S[j].push(ex ? S[ex.j].splice(ex.k, 1)[0] : { p: pid, m: "" }); }
   else if (ex && ex.j === j && ex.k === k) return false;
@@ -991,6 +1073,7 @@ function dropEntry(i, j, k, pid) {
 }
 // Suelta a pid como sustituto del número j (hasta MAXSUB jugadores por número). Si ya estaba en otro número de la alineación, se mueve.
 function dropPlus(i, j, pid) {
+  if (wrongList(i, pid)) return false;
   const S = lu[i].s, ex = findIn(i, pid);
   if (!S[j].length) return dropEntry(i, j, 0, pid);
   if (ex && ex.j === j) return false;
@@ -1105,7 +1188,11 @@ function showSkills(pid, anchor) {
   const p = byPid.get(pid); if (!p) return;
   popPid = pid;
   const pop = $("#skillPop");
-  pop.innerHTML = `<div class="pt2"><h3>${esc(p.full)}</h3>${flags(p)}<button class="cl" type="button" data-closepop aria-label="Cerrar">✕</button></div>
+  const nv = v => Number.isFinite(v) ? v : "—";
+  if (p.jr) pop.innerHTML = `<div class="pt2"><h3>${esc(p.full)}</h3><button class="cl" type="button" data-closepop aria-label="Cerrar">✕</button></div>
+    <table><tbody><tr><td>Nivel</td><td class="v">${nv(p.skill)}</td><td>Edad</td><td class="v">${nv(p.age)}</td></tr><tr><td>Semanas Entrenadas</td><td class="v">${nv(p.weeksIn)}</td><td></td><td></td></tr></tbody></table>
+    <button class="btn selbtn" type="button" data-selpop>${state.sel === pid ? "Quitar selección" : "Seleccionar para colocar"}</button>`;
+  else pop.innerHTML = `<div class="pt2"><h3>${esc(p.full)}</h3>${flags(p)}<button class="cl" type="button" data-closepop aria-label="Cerrar">✕</button></div>
     <table><tbody>${SKILL_ROWS.map(([l1, k1, l2, k2]) => `<tr><td>${l1}</td><td class="v">${skillVal(p, k1)}</td>${l2 ? `<td>${l2}</td><td class="v">${skillVal(p, k2)}</td>` : "<td></td><td></td>"}</tr>`).join("")}</tbody></table>
     <button class="btn selbtn" type="button" data-selpop>${state.sel === pid ? "Quitar selección" : "Seleccionar para colocar"}</button>`;
   pop.hidden = false;
@@ -1150,8 +1237,16 @@ function init() {
     trn.c[c.dataset.tcol] = c.value.toLowerCase(); applyTrnColors();
   });
 
+  $(".modebar").addEventListener("click", e => {
+    const b = e.target.closest("button[data-mode]"); if (!b || b.dataset.mode === state.mode) return;
+    state.mode = b.dataset.mode; state.sel = ""; closeSkills();
+    try { localStorage.setItem("equipo:almode", state.mode); } catch {}
+    applyMode(); renderAll();
+  });
   $("#lineups").addEventListener("change", e => {
     if (e.target.closest("[data-min]")) { renderAll(); return; }
+    const yy = e.target.closest("[data-y]");
+    if (yy) { lu[+yy.dataset.y].y = yy.value; saveLineup(+yy.dataset.y); return; }
     const sp = e.target.closest("[data-sp]"); if (!sp) return;
     const [i, j] = sp.dataset.sp.split(",").map(Number);
     lu[i].p[j] = sp.value; saveLineup(i); renderAll();
