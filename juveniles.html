@@ -176,21 +176,16 @@ tbody tr:hover td { background-color: color-mix(in srgb, var(--accent) 7%, var(-
 th.c-chk, td.c-chk { width: 4.6rem; min-width: 4.6rem; padding-left: 4px; padding-right: 4px; text-align: center; }
 select.chk { width: 4.1rem; height: 24px; padding: 0 2px; font: inherit; font-weight: 700; font-size: .9rem; text-align: center; text-align-last: center; cursor: pointer; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); }
 select.chk[data-v="2"] { color: #d11a1a; border-color: #d11a1a; font-size: 1.05rem; }
-select.chk[data-v="GK"] { background: #fbefc2; border-color: #c9a227; }
-select.chk[data-v="DEF"] { background: #bfe3c4; border-color: #2f7d3b; }
-select.chk[data-v="MID"] { background: #e3b0bf; border-color: #7b1e3a; }
-select.chk[data-v="ATT"] { background: #b5c3e6; border-color: #1b2a63; }
-:root[data-theme="dark"] select.chk[data-v="2"] { color: #ff6b6b; border-color: #ff6b6b; }
-:root[data-theme="dark"] select.chk[data-v="GK"] { background: #4a3f12; border-color: #c9a227; }
-:root[data-theme="dark"] select.chk[data-v="DEF"] { background: #1b4a28; border-color: #4fa862; }
-:root[data-theme="dark"] select.chk[data-v="MID"] { background: #4a1626; border-color: #b03a5a; }
-:root[data-theme="dark"] select.chk[data-v="ATT"] { background: #172447; border-color: #4a63b5; }
+select.chk[data-v="V"], select.chk[data-v="G"] { color: #1f8f4a; border-color: #1f8f4a; font-size: 1.05rem; }
+select.chk[data-v="Y"] { color: #b8860b; border-color: #b8860b; font-size: 1.05rem; }
+select.chk[data-v="R"] { color: #d11a1a; border-color: #d11a1a; font-size: 1.05rem; }
+:root[data-theme="dark"] select.chk[data-v="2"], :root[data-theme="dark"] select.chk[data-v="R"] { color: #ff6b6b; border-color: #ff6b6b; }
+:root[data-theme="dark"] select.chk[data-v="V"], :root[data-theme="dark"] select.chk[data-v="G"] { color: #5fd58b; border-color: #5fd58b; }
+:root[data-theme="dark"] select.chk[data-v="Y"] { color: #f0cf4d; border-color: #f0cf4d; }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) select.chk[data-v="2"] { color: #ff6b6b; border-color: #ff6b6b; }
-  :root:not([data-theme="light"]) select.chk[data-v="GK"] { background: #4a3f12; border-color: #c9a227; }
-  :root:not([data-theme="light"]) select.chk[data-v="DEF"] { background: #1b4a28; border-color: #4fa862; }
-  :root:not([data-theme="light"]) select.chk[data-v="MID"] { background: #4a1626; border-color: #b03a5a; }
-  :root:not([data-theme="light"]) select.chk[data-v="ATT"] { background: #172447; border-color: #4a63b5; }
+  :root:not([data-theme="light"]) select.chk[data-v="2"], :root:not([data-theme="light"]) select.chk[data-v="R"] { color: #ff6b6b; border-color: #ff6b6b; }
+  :root:not([data-theme="light"]) select.chk[data-v="V"], :root:not([data-theme="light"]) select.chk[data-v="G"] { color: #5fd58b; border-color: #5fd58b; }
+  :root:not([data-theme="light"]) select.chk[data-v="Y"] { color: #f0cf4d; border-color: #f0cf4d; }
 }
 th.c-n, td.c-n { width: 3.2rem; min-width: 3.2rem; color: var(--muted); }
 th.c-est, td.c-est { width: 5.6rem; min-width: 5.6rem; padding-left: 4px; padding-right: 4px; }
@@ -513,10 +508,11 @@ function normProgInput(inp) {
 }
 // Casilla de verificación de cada juvenil. Viaja por el mismo servicio que Progreso, con una clave propia («j1» + id con 12 dígitos) que la página del plantel ignora.
 // Opciones de la marca de cada juvenil: ✘ (valor "2", se conserva el de antes) y las posiciones, con los colores de la página Plantel.
-const CHK_OPTS = ["2", "GK", "DEF", "MID", "ATT"];
-const CHK_LABEL = { "2": "✘" };
+const CHK_OPTS = ["V", "G", "Y", "R", "2"];   // ✔ verde, ? verde, ? amarillo, ? rojo, ✘ rojo («2» es el valor de siempre de la ✘)
+const CHK_LABEL = { V: "✔", G: "?", Y: "?", R: "?", "2": "✘" };
+const CHK_COLOR = { V: "#1f8f4a", G: "#1f8f4a", Y: "#b8860b", R: "#d11a1a", "2": "#d11a1a" };
 const chkKey = id => "j1" + String(id).padStart(12, "0");
-const chkVal = p => (!p.calc && p.id != null && /^\d+$/.test(String(p.id)) && CHK_OPTS.includes(progMap[chkKey(p.id)]?.v)) ? progMap[chkKey(p.id)].v : "";   // "2" = ✘ roja; GK / DEF / MID / ATT
+const chkVal = p => (!p.calc && p.id != null && /^\d+$/.test(String(p.id)) && CHK_OPTS.includes(progMap[chkKey(p.id)]?.v)) ? progMap[chkKey(p.id)].v : "";   // V ✔ verde; G ? verde; Y ? amarillo; R ? rojo; 2 ✘ roja
 function setCheck(id, v) {
   const k = chkKey(id);
   progMap[k] = { v: CHK_OPTS.includes(v) ? v : "", t: nextT(k) };
@@ -751,7 +747,7 @@ const SKILL_ALIASES = {
 const SEP = { age: "sepl", ageOut: "sepl", lvlFinal: "sepr", weeksIn: "sepr" };   // líneas verticales: a la izquierda de Edad y de Edad Final, y a la derecha de Nivel Final
 const COLS = [
   { key: "n",     label: "#", cls: "c-n", left: true, title: "Número de fila. Al pulsarlo vuelves al orden original." },
-  { key: "chk",   label: "Pos.", cls: "c-chk", title: "Marca manual: GK, DEF, MID, ATT o ✘; se sincroniza entre dispositivos. Al pulsar el encabezado se ordenan GK, DEF, MID, ATT y ✘" },
+  { key: "chk",   label: "?", cls: "c-chk", title: "Marca manual: ✔ verde, ? verde, ? amarillo, ? rojo o ✘ rojo; se sincroniza entre dispositivos. Al pulsar el encabezado se ordenan en ese mismo orden" },
   { key: "name",  label: "Juvenil", cls: "c-name", left: true },
   { key: "age",   label: "Edad" },
   { key: "skill", label: "Nivel", title: "Nivel (skill) general del juvenil" },
@@ -1014,7 +1010,7 @@ function buildHead() {
   }).join("");
 }
 function sortValue(p, key) {
-  if (key === "chk") return { GK: 6, DEF: 5, MID: 4, ATT: 3, "2": 2 }[chkVal(p)] || 0;
+  if (key === "chk") return { V: 5, G: 4, Y: 3, R: 2, "2": 1 }[chkVal(p)] || 0;
   if (key === "lvlFinal") { const r = levelFinalOf(p); return r ? r.v : null; }
   if (key === "ageOut") return ageOutOf(p);
   if (key === "exitWeek") { const e = exitWeekOf(p); return e ? e.seasons * 13 + e.week : null; }
@@ -1215,7 +1211,7 @@ function cellHtml(c, p, rowIdx) {
     if (c.key === "chk") {
     if (p.calc || p.id == null || !/^\d+$/.test(String(p.id))) return `<td class="c-chk"></td>`;
     const v = chkVal(p);
-    return `<td class="c-chk"><select class="chk" data-chk="${esc(String(p.id))}" data-v="${v}" aria-label="Marca de ${esc(p.name)}"><option value=""${v === "" ? " selected" : ""}></option>${CHK_OPTS.map(o => `<option value="${o}"${v === o ? " selected" : ""}>${CHK_LABEL[o] || o}</option>`).join("")}</select></td>`;
+    return `<td class="c-chk"><select class="chk" data-chk="${esc(String(p.id))}" data-v="${v}" aria-label="Marca de ${esc(p.name)}"><option value=""${v === "" ? " selected" : ""}></option>${CHK_OPTS.map(o => `<option value="${o}" style="color:${CHK_COLOR[o]}"${v === o ? " selected" : ""}>${CHK_LABEL[o] || o}</option>`).join("")}</select></td>`;
   }
   if (c.key === "name") return `<td class="l c-name" ${p.calc ? "" : `data-nm="${esc(String(p.id ?? ""))}"`}>${nameHtml(p)}</td>`;
     if (REG_KEYS.includes(c.key)) { const rc = regCol(c.key, progOf(p)), t = rc.t; return `<td class="c-reg${t ? "" : " dim"}${rc.hi ? " hi" : ""}" ${p.calc ? "" : `data-reg="${esc(String(p.id ?? ""))}"`} data-f="${c.key}">${t ? esc(t) : "—"}</td>`; }
