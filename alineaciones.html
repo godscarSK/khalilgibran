@@ -376,12 +376,12 @@ html.cust-ATT :is(.chip, select.trs)[data-t="ATT"] { background: var(--trc-ATT) 
 .pool .mkf { flex-wrap: nowrap; gap: 4px; }
 .pool .mkf button { min-width: 30px; min-height: 32px; padding: 0 4px; font-size: .95rem; }
 .mkf button { font: inherit; font-weight: 800; font-size: 1rem; cursor: pointer; min-height: 32px; min-width: 40px; padding: 0 8px; border-radius: 999px; border: 1px solid currentColor; background: transparent; }
-.mkf button[data-m="V"] { color: #3b82f6; } .mkf button[data-m="G"] { color: #2ea35a; } .mkf button[data-m="Y"] { color: #d9a400; } .mkf button[data-m="R"] { color: #e03131; } .mkf button[data-m="2"] { color: #e8128a; }
+.mkf button[data-m="V"] { color: #3b82f6; } .mkf button[data-m="G"] { color: #2ea35a; } .mkf button[data-m="Y"] { color: #d9a400; } .mkf button[data-m="R"] { color: #e03131; } .mkf button[data-m="2"] { color: #fd7e14; }
 .mkf button[aria-pressed="true"] { background: currentColor; }
 .mkf button[aria-pressed="true"] span { color: var(--panel); }
 .board.jm { grid-template-columns: minmax(0, 640px) 350px; justify-content: center; }
 .jmk { flex: none; min-width: 34px; text-align: center; padding: 0 6px; border-radius: 999px; border: 1px solid currentColor; font-size: .85rem; font-weight: 800; line-height: 1.3; }
-.jmk[data-m="V"] { color: #3b82f6; } .jmk[data-m="G"] { color: #2ea35a; } .jmk[data-m="Y"] { color: #d9a400; } .jmk[data-m="R"] { color: #e03131; } .jmk[data-m="2"] { color: #e8128a; }
+.jmk[data-m="V"] { color: #3b82f6; } .jmk[data-m="G"] { color: #2ea35a; } .jmk[data-m="Y"] { color: #d9a400; } .jmk[data-m="R"] { color: #e03131; } .jmk[data-m="2"] { color: #fd7e14; }
 @media (max-width: 960px) {
   .board, .board.jm { grid-template-columns: minmax(0, 1fr); }
   .pool { grid-column: 1; position: sticky; top: 8px; max-height: 42vh; z-index: 5; box-shadow: 0 4px 14px rgba(0,0,0,.18); }
@@ -1236,7 +1236,7 @@ function init() {
   $("#syncBtn").hidden = !CONFIG.estUrl;
   $("#syncBtn").addEventListener("click", saveNow);
   $("#posf").innerHTML = EST_OPTS.map(o => `<button type="button" data-pos="${o}" aria-pressed="false" title="Mostrar solo a los jugadores marcados ${o} en el Plantel (puedes combinar varias)">${o}</button>`).join("");
-  $("#mkf").innerHTML = [["V","✔","✔ azul"],["G","●","● verde"],["Y","●","● amarillo"],["R","●","● rojo"],["2","✘","✘ rosa"]].map(([v, l, t]) => `<button type="button" data-m="${v}" aria-pressed="false" title="Mostrar solo los juveniles con ${t} (puedes combinar varias)"><span>${l}</span></button>`).join("");
+  $("#mkf").innerHTML = [["V","✔","✔ azul"],["G","●","● verde"],["Y","●","● amarillo"],["R","●","● rojo"],["2","✘","✘ naranjo"]].map(([v, l, t]) => `<button type="button" data-m="${v}" aria-pressed="false" title="Mostrar solo los juveniles con ${t} (puedes combinar varias)"><span>${l}</span></button>`).join("");
   $("#mkf").addEventListener("click", e => { const b = e.target.closest("button[data-m]"); if (!b) return; const v = b.dataset.m; if (state.jm.has(v)) state.jm.delete(v); else state.jm.add(v); b.setAttribute("aria-pressed", String(state.jm.has(v))); renderPool(); });
   $("#posf").addEventListener("click", e => {
     const b = e.target.closest("button[data-pos]"); if (!b) return;
