@@ -368,6 +368,7 @@ html.cust-ATT :is(.chip, select.trs)[data-t="ATT"] { background: var(--trc-ATT) 
 .tcw input[type="color"] { width: 34px; height: 28px; padding: 0; border: 1px solid var(--line); border-radius: 4px; background: none; cursor: pointer; }
 .modebar { display: flex; gap: 8px; margin: 0 0 12px; }
 .modebar button { font: inherit; font-weight: 700; cursor: pointer; min-height: 38px; padding: 0 18px; border-radius: 999px; border: 1px solid var(--ink); background: var(--ink); color: var(--panel); }
+.modebar button.exp { margin-left: auto; background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 .modebar button[aria-pressed="false"] { background: transparent; color: var(--ink); }
 .jd { flex: none; font-size: .75rem; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .lu .meta select.dayinp { font: inherit; font-weight: 700; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; min-height: 34px; padding: 0 6px; min-width: 5.2rem; }
@@ -423,13 +424,14 @@ html.cust-ATT :is(.chip, select.trs)[data-t="ATT"] { background: var(--trc-ATT) 
 
   <div id="status" role="status" aria-live="polite"></div>
   <div id="notices"></div>
-  <p class="hintline">Arrastra un apellido (con su marca) a un puesto; con el dedo, desde el asa ⠿. Con «＋» agregas un sustituto en el mismo número (hasta 3 por número) y los minutos se reparten solos (90, 45 o 30), aunque puedes cambiarlos a mano. Toca un apellido para ver sus skills. También puedes tocar el espacio a la derecha del apellido para seleccionarlo y luego tocar el puesto. La posición de cada puesto se puede cambiar. Al abrir la página se cargan los datos guardados en la nube; para guardar los cambios allí, presiona «Guardar Datos». Dentro de una alineación, arrastrar sobre otro puesto los intercambia; entre alineaciones, copia al jugador. Para quitarlo, usa la ✕ o suéltalo sobre la lista de jugadores.</p>
+  <p class="hintline">Arrastra un apellido (con su marca) a un puesto; con el dedo, desde el asa ⠿. Con «＋» agregas un sustituto en el mismo número (hasta 3 por número) y los minutos se reparten solos (90, 45 o 30), aunque puedes cambiarlos a mano. Toca un apellido para ver sus skills. También puedes tocar el espacio a la derecha del apellido para seleccionarlo y luego tocar el puesto. La posición de cada puesto se puede cambiar. Al abrir la página se cargan los datos guardados en la nube; para guardar los cambios allí, presiona «Guardar Datos». Dentro de una alineación, arrastrar sobre otro puesto los intercambia; entre alineaciones, el jugador se mueve (deja de estar en la de origen). Para quitarlo, usa la ✕ o suéltalo sobre la lista de jugadores.</p>
 
   <section class="trn" id="trn" aria-label="Entrenamiento por posición"></section>
 
   <div class="modebar" role="group" aria-label="Sección de alineaciones">
     <button type="button" data-mode="t" aria-pressed="true">Titulares</button>
     <button type="button" data-mode="j" aria-pressed="false">Juveniles</button>
+    <button type="button" class="exp" id="exportBtn" title="Copia todas las alineaciones (titulares y juveniles) para pegarlas en una planilla">Exportar</button>
   </div>
 
   <div class="board">
@@ -1105,6 +1107,33 @@ function dropAt(el, pid) {
   if (slot) return dropPlus(+slot.dataset.l, +slot.dataset.j, pid);
   return false;
 }
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); }
+  catch {
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); } catch {}
+    ta.remove();
+  }
+}
+// Todas las alineaciones (titulares y juveniles) como texto separado por tabulaciones, una fila por jugador (los puestos vacíos llevan una fila sin jugador).
+function exportLineups() {
+  const dmy = d => d ? d.split("-").reverse().join("-") : "";
+  const lines = [["Alineación", "Día", "Rival", "Fecha", "N°", "Pos.", "Rol", "PID", "Jugador", "Minutos"].join("\t")];
+  LINEUPS.forEach((l, i) => {
+    const L = lu[i];
+    L.s.forEach((es, j) => {
+      const base = [l.name, l.day, L.r, dmy(L.d), j + 1, L.p[j] || ""];
+      if (!es.length) { lines.push([...base, "", "", "", ""].join("\t")); return; }
+      es.forEach((e, k) => {
+        const p = byPid.get(e.p);
+        lines.push([...base, k === 0 ? "Titular" : "Sust. " + k, isJrPid(e.p) ? e.p.slice(1) : e.p, p ? p.full : "Jugador " + e.p, entMin(es, e)].join("\t"));
+      });
+    });
+  });
+  return lines.join("\n");
+}
 function removeEntry(i, j, k) { if (!lu[i].s[j][k]) return; lu[i].s[j].splice(k, 1); saveLineup(i); }
 
 let drag = null, suppressClick = false;
@@ -1165,7 +1194,13 @@ function onUp(e) {
   if (!was) return;
   suppressClick = true; setTimeout(() => { suppressClick = false; }, 0);
   const t = dropTarget(e.clientX, e.clientY);
-  if (t.mark) { dropAt(t.el, d.pid); renderAll(); }
+  if (t.mark) {
+    const ok = dropAt(t.el, d.pid);
+    // Entre alineaciones, el jugador se mueve: deja de estar en la de origen.
+    const m = t.mark, tl = m.classList.contains("plus") ? +m.dataset.plus.split(",")[0] : +m.dataset.l;
+    if (ok && d.from && tl !== d.from.l) removeEntry(d.from.l, d.from.j, d.from.k);
+    renderAll();
+  }
   else if (t.pool && d.from) { removeEntry(d.from.l, d.from.j, d.from.k); renderAll(); }
 }
 function onCancel() { drag = null; endDrag(); }
@@ -1256,6 +1291,7 @@ function init() {
     trn.c[c.dataset.tcol] = c.value.toLowerCase(); applyTrnColors();
   });
 
+  $("#exportBtn").addEventListener("click", async () => { await copyText(exportLineups()); toast("Alineaciones copiadas: pégalas en una planilla"); });
   $(".modebar").addEventListener("click", e => {
     const b = e.target.closest("button[data-mode]"); if (!b || b.dataset.mode === state.mode) return;
     state.mode = b.dataset.mode; state.sel = ""; closeSkills();
