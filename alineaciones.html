@@ -955,7 +955,8 @@ async function saveNow() {
   while (sync.busy) await new Promise(r => setTimeout(r, 100));
   await pushDirty();
   b.disabled = false; b.textContent = old;
-  toast(sync.state === "ok" ? "Datos guardados" : "No se pudo guardar");
+  if (sync.state === "ok") toast("Datos guardados");
+  else toast("No se pudo guardar" + (sync.detail ? ": " + sync.detail : ". Revisa el mensaje bajo el título."), 9000);
 }
 
 /* ─────────────── Dibujo ─────────────── */
@@ -1222,9 +1223,9 @@ document.addEventListener("keydown", e => { if (e.key === "Escape") closeSkills(
 
 /* ─────────────── Eventos ─────────────── */
 let toastTimer;
-function toast(msg) {
+function toast(msg, ms = 2000) {
   const t = $("#toast"); t.textContent = msg; t.classList.add("show");
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 2000);
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), ms);
 }
 function init() {
   initTheme();
