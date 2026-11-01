@@ -862,9 +862,10 @@ async function estCall(params) {
 async function pushDirty() {
   if (!CONFIG.estUrl || !sync.key || sync.busy || !sync.dirty.size) return;
   sync.busy = true; setSyncState("pending");
-  let failed = null;
+  let failed = null, curK = "";
   try {
     for (const k of [...sync.dirty]) {
+      curK = k;
       const e = linMap[k];
       if (!e) { sync.dirty.delete(k); continue; }
       await estCall({ action: "set", pid: k, v: await encV(e.v), t: e.t, token: sync.token });
@@ -874,7 +875,7 @@ async function pushDirty() {
     }
   } catch (err) { failed = err; }
   sync.busy = false;
-  if (failed) { setSyncState(/token/i.test(failed.message) ? "token" : "offline", explainSync(failed)); return; }
+  if (failed) { setSyncState(/token/i.test(failed.message) ? "token" : "offline", explainSync(failed) + (/pid inv/i.test(failed.message) ? " (clave " + curK + ")" : "")); return; }
   if (sync.dirty.size) { pushDirty(); return; }
   setSyncState("ok");
 }
