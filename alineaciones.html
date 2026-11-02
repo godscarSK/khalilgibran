@@ -232,7 +232,7 @@ dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
 @media (max-width: 640px) { th.c-n, td.c-n { width: 2.6rem; min-width: 2.6rem; padding-left: 6px; padding-right: 6px; } }
 
 /* ─────────────── Alineaciones ─────────────── */
-.board { display: grid; grid-template-columns: minmax(0, 1fr) 350px; gap: 16px; align-items: start; margin-bottom: 40px; }
+.board { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 16px; align-items: start; margin-bottom: 40px; }
 .pool { grid-column: 2; grid-row: 1; align-self: start; position: sticky; top: 8px; max-height: calc(100vh - 16px); display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; }
 .pool h2, .lu h2 { margin: 0; font-family: "Barlow Condensed", "Arial Narrow", sans-serif; font-weight: 700; font-size: 1.5rem; line-height: 1.1; }
 .pool .ph { padding: 10px 12px 8px; border-bottom: 2px solid var(--ink); display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 10px; }
@@ -380,7 +380,7 @@ html.cust-ATT :is(.chip, select.trs)[data-t="ATT"] { background: var(--trc-ATT) 
 .mkf button[data-m="V"] { color: #3b82f6; } .mkf button[data-m="G"] { color: #2ea35a; } .mkf button[data-m="Y"] { color: #d9a400; } .mkf button[data-m="R"] { color: #fd7e14; } .mkf button[data-m="2"] { color: #e03131; }
 .mkf button[aria-pressed="true"] { background: currentColor; }
 .mkf button[aria-pressed="true"] span { color: var(--panel); }
-.board.jm { grid-template-columns: minmax(0, 640px) 350px; justify-content: center; }
+.board.jm { grid-template-columns: minmax(0, 640px) 420px; justify-content: center; }
 .jmk { flex: none; min-width: 34px; text-align: center; padding: 0 6px; border-radius: 999px; border: 1px solid currentColor; font-size: .7rem; letter-spacing: 0; font-weight: 800; line-height: 1.5; }
 .jmk[data-m="V"] { color: #3b82f6; } .jmk[data-m="G"] { color: #2ea35a; } .jmk[data-m="Y"] { color: #d9a400; } .jmk[data-m="R"] { color: #fd7e14; } .jmk[data-m="2"] { color: #e03131; }
 @media (max-width: 960px) {
