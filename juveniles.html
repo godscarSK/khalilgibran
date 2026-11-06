@@ -173,6 +173,7 @@ td.c-prog input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 tbody tr:nth-child(even) td { background-color: var(--zebra); }
 tbody tr:hover td { background-color: color-mix(in srgb, var(--accent) 7%, var(--panel)); }
 
+.newj { display: inline-block; padding: 0 8px; border-radius: 999px; background: #7c3aed; color: #fff; font-weight: 700; }
 .mkf { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .mkf button { font: inherit; font-weight: 800; font-size: .75rem; letter-spacing: 0; cursor: pointer; min-height: 32px; min-width: 40px; padding: 0 8px; border-radius: 999px; border: 1px solid currentColor; background: transparent; }
 .mkf button[data-m="V"] { color: #3b82f6; } .mkf button[data-m="G"] { color: #2ea35a; } .mkf button[data-m="Y"] { color: #d9a400; } .mkf button[data-m="R"] { color: #fd7e14; } .mkf button[data-m="2"] { color: #e03131; }
@@ -703,24 +704,28 @@ function autoAppend() {
   if (CONFIG.estUrl && (!sync.key || (sync.state !== "ok"))) return;   // con sincronización, solo sobre datos ya al día
   if (!state.stamp) return;
   const wk = weekKeyOf(state.stamp), last = (progMap[WK_KEY] && progMap[WK_KEY].v) || "";
-  if (last && last >= wk) return;                                       // esta semana ya se hizo
-  let n = 0; const done = [], long = [];
+  const lastWk = last.slice(0, 10), emptiesDone = last.endsWith("e");   // «2026-11-05e»: esa semana ya incluyó a los juveniles con Progreso vacío
+  if (lastWk && lastWk >= wk && emptiesDone) return;                    // esta semana ya se hizo
+  const onlyEmpty = !!lastWk && lastWk >= wk;                           // semana ya procesada, pero sin los juveniles nuevos: solo se completan los vacíos
+  let n = 0, nNew = 0; const done = [], long = [];
   for (const p of state.players) {
     if (p.id == null || p.calc || !Number.isFinite(p.skill)) continue;
     const k = progKey(p.id), cur = progOf(p);
-    if (!cur.split(",").some(x => x.trim() !== "")) continue;           // sin Progreso no se toca
-    const next = cur.replace(/[,\s]+$/, "") + "," + p.skill;
+    const empty = !cur.split(",").some(x => x.trim() !== "");
+    if (onlyEmpty && !empty) continue;
+    const next = empty ? String(p.skill) : cur.replace(/[,\s]+$/, "") + "," + p.skill;
     if (next.length > 200) { long.push(p.name); continue; }
-    progMap[k] = { v: next, t: nextT(k) }; sync.dirty.add(k); n++; done.push(`${p.name} (${p.skill})`);
+    progMap[k] = { v: next, t: nextT(k) }; sync.dirty.add(k); n++;
+    if (empty) { nNew++; done.push(`<span class="newj">${esc(p.name)} (${p.skill})</span>`); } else done.push(`${esc(p.name)} (${p.skill})`);
   }
-  progMap[WK_KEY] = { v: wk, t: nextT(WK_KEY) }; sync.dirty.add(WK_KEY);
+  progMap[WK_KEY] = { v: wk + "e", t: nextT(WK_KEY) }; sync.dirty.add(WK_KEY);
   saveProg(); refreshProgInputs(); pushDirty();
   if (!n && !long.length) return;
   if (n) toast(`Se añadió el Nivel al Progreso de ${n} juvenil${n === 1 ? "" : "es"}.`, 6000);
   // Aviso que queda visible hasta recargar la página.
   const box = document.createElement("div");
   box.className = "notice";
-  box.innerHTML = `<p><strong>Actualización semanal de Progreso:</strong> se añadió el Nivel al final del Progreso de ${n} juvenil${n === 1 ? "" : "es"}${n ? ": " + esc(done.join(", ")) : ""}.${long.length ? ` No se añadió (Progreso demasiado largo, máx. 200 caracteres): ${esc(long.join(", "))}.` : ""}</p>`;
+  box.innerHTML = `<p><strong>Actualización semanal de Progreso:</strong> se añadió el Nivel al final del Progreso de ${n} juvenil${n === 1 ? "" : "es"}${n ? ": " + done.join(", ") : ""}.${nNew ? ` <span class="newj">Resaltados</span>: tenían el Progreso vacío y este es su primer Nivel (${nNew}).` : ""}${long.length ? ` No se añadió (Progreso demasiado largo, máx. 200 caracteres): ${esc(long.join(", "))}.` : ""}</p>`;
   $("#notices").appendChild(box);
 }
 let estStarted = "";
