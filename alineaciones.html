@@ -106,6 +106,7 @@ button.btn {
   font: inherit; font-weight: 600; cursor: pointer; min-height: 38px; padding: 7px 14px;
   border-radius: 4px; border: 1px solid var(--ink); background: var(--panel); color: var(--ink);
 }
+button.btn.primary.saved { background: #1f8f4a; border-color: #1f8f4a; color: #fff; }
 button.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 button.btn:hover { filter: brightness(0.96); }
 button.btn[aria-pressed="true"] { background: var(--ink); color: var(--panel); border-color: var(--ink); }
@@ -793,11 +794,12 @@ function saveLineup(i) {
   if (CONFIG.estUrl) setSyncState("unsynced");   // solo se sube a la nube con el botón «Guardar Datos»
 }
 
-const SYNC_TEXT = { local: "", loaded: "Datos cargados desde la nube.", unsynced: "Hay cambios sin guardar en la nube: presiona «Guardar Datos».", ok: "Datos guardados en la nube.", pending: "Conectando con la nube…",
+const SYNC_TEXT = { local: "", loaded: "Datos cargados desde la nube.", unsynced: "Hay cambios sin guardar en la nube: presiona «Guardar Datos».", ok: "Datos guardados en la nube", pending: "Conectando con la nube…",
   offline: "Sin conexión con la nube: se muestran los datos de este dispositivo.",
   token: "No se pudo usar la nube: el servicio rechazó la clave. Usa la misma contraseña que en la página del plantel." };
-const syncText = () => (SYNC_TEXT[sync.state] || "") + (sync.detail && (sync.state === "offline" || sync.state === "token") ? " Motivo: " + sync.detail : "");
-function setSyncState(st, detail = "") { sync.state = st; sync.detail = detail; const el = document.getElementById("syncMsg"); if (el) el.textContent = syncText() ? " " + syncText() : ""; }
+const hhmm = d => d.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", hour12: false });
+const syncText = () => (sync.state === "ok" ? SYNC_TEXT.ok + (sync.okAt ? " a las " + hhmm(sync.okAt) : "") + "." : (SYNC_TEXT[sync.state] || "")) + (sync.detail && (sync.state === "offline" || sync.state === "token") ? " Motivo: " + sync.detail : "");
+function setSyncState(st, detail = "") { if (st === "ok") sync.okAt = new Date(); sync.state = st; sync.detail = detail; const el = document.getElementById("syncMsg"); if (el) el.textContent = syncText() ? " " + syncText() : ""; }
 function explainSync(err) {
   const m = String(err && err.message || err);
   if (err && err.name === "AbortError") return "el servicio tardó más de 15 s en responder (inténtalo de nuevo).";
@@ -952,20 +954,36 @@ async function saveNow() {
   const b = $("#syncBtn");
   if (!CONFIG.estUrl) { toast("No hay servicio configurado (config.js)."); return; }
   if (!sync.key) { toast("Espera a que carguen los datos e inténtalo de nuevo."); return; }
-  b.disabled = true; const old = b.textContent; b.textContent = "Guardando…";
+  b.disabled = true; const old = "Guardar Datos"; b.textContent = "Guardando…"; b.classList.remove("saved");
+  LINEUPS.forEach((_, i) => { if (!linMap[LKEY(i)]) saveLineup(i); });   // aunque no hayas tocado nada, sube todas las alineaciones
   for (const k of LKEYS) if (linMap[k]) { linMap[k] = { v: linMap[k].v, t: nextT(k) }; sync.dirty.add(k); }   // todo se sube, con hora nueva
   saveLin();
   while (sync.busy) await new Promise(r => setTimeout(r, 100));
   await pushDirty();
   b.disabled = false; b.textContent = old;
-  if (sync.state === "ok") toast("Datos guardados");
+  if (sync.state === "ok") {
+    toast("Datos guardados a las " + hhmm(sync.okAt));
+    b.classList.add("saved"); b.textContent = "✓ Guardado";
+    clearTimeout(saveNow.tm); saveNow.tm = setTimeout(() => { b.classList.remove("saved"); b.textContent = old; }, 3000);
+  }
   else toast("No se pudo guardar" + (sync.detail ? ": " + sync.detail : ". Revisa el mensaje bajo el título."), 9000);
 }
 
 /* ─────────────── Dibujo ─────────────── */
 const countOf = pid => lu.reduce((n, L) => n + (L.s.some(es => es.some(e => e.p === pid)) ? 1 : 0), 0);
 // Minutos de un jugador en su número: los escritos a mano o, si no, 90 repartidos entre los jugadores de ese número (90, 45 o 30).
-const entMin = (es, e) => e.m !== "" ? Number(e.m) : Math.round(90 / es.length);
+// Minutos de cada jugador de un número. El titular juega lo que escribas (o 90 si está solo; 45 si tiene sustitutos y no lo has cambiado).
+// Los sustitutos reciben los minutos que le faltan al titular para completar 90; con dos sustitutos, ese resto se reparte entre ambos
+// (si uno tiene minutos escritos a mano, el otro recibe lo que quede).
+function minsArr(es) {
+  const T = es[0].m !== "" ? Number(es[0].m) : (es.length === 1 ? 90 : 45);
+  const out = [T], subs = es.slice(1);
+  const man = subs.reduce((a, e) => a + (e.m !== "" ? Number(e.m) : 0), 0), nAuto = subs.filter(e => e.m === "").length;
+  const rem = Math.max(0, 90 - T - man); let a = 0;
+  subs.forEach(e => { if (e.m !== "") out.push(Number(e.m)); else { out.push(Math.floor(rem / nAuto) + (a < rem % nAuto ? 1 : 0)); a++; } });
+  return out;
+}
+const entMin = (es, e) => minsArr(es)[es.indexOf(e)];
 const minsOf = pid => lu.reduce((n, L) => n + L.s.reduce((a, es) => a + es.reduce((b, e) => b + (e.p === pid ? entMin(es, e) : 0), 0), 0), 0);
 function flags(p) {
   const d = p.injury;
@@ -1046,7 +1064,7 @@ function entHtml(i, j, k) {
   const tr = estPos[e.p] === "ENT" && L.p[j] ? trn[L.p[j]] || "" : "";
   const name = p ? p.label : "Jugador " + e.p;
   const chip = p ? chipHtml(p, tr) : `<span class="chip" data-pid="${esc(e.p)}"><span class="grip" aria-hidden="true">⠿</span><span class="nm">${esc(name)}</span></span>`;
-  const mv = e.m !== "" ? e.m : String(Math.round(90 / es.length));
+  const mv = e.m !== "" ? e.m : String(entMin(es, e));
   return `<span class="ent${state.sel === e.p ? " sel" : ""}" data-l="${i}" data-j="${j}" data-k="${k}" data-pid="${esc(e.p)}">${chip}`
     + `<input class="min${e.m !== "" ? " man" : ""}" type="text" inputmode="numeric" maxlength="3" value="${mv}" data-min="${i},${j},${k}" aria-label="Minutos de ${esc(name)}" title="Minutos que jugará (si no los cambias: 90 con un jugador en el número, 45 con dos, 30 con tres)"><span class="mu" aria-hidden="true">′</span>`
     + `<span class="sp-fill"></span><button class="x" type="button" data-x="${i},${j},${k}" aria-label="Quitar a ${esc(name)} de ${esc(LINEUPS[i].name)}" title="Quitar">✕</button></span>`;
