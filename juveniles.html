@@ -755,7 +755,7 @@ let egrRows = [];
 // Talento Estimado, R2 y Semanas Entrenadas se calculan al momento desde el Progreso guardado (si no se puede, se usa el valor guardado antes, si lo hay).
 function egrCalc(r) {
   const te = regCol("treal", r.p).v, q = regCol("r2", r.p).v;
-  const sem = String(r.p || "").split(",").filter(x => x.trim() !== "").length;
+  const sem = Math.max(0, String(r.p || "").split(",").filter(x => x.trim() !== "").length - 1);   // elementos de Progreso menos 1 (el primero es el nivel inicial)
   return { te: te ?? (r.te === "" ? null : r.te ?? null), r2: q ?? (r.r2 === "" ? null : r.r2 ?? null), sem };
 }
 const egrRowTSV = r => { const c = egrCalc(r); return [r.n, r.a, r.i, r.f, c.sem, c.te == null ? "" : nf2.format(c.te), c.r2 == null ? "" : nf3.format(c.r2), r.p, r.d].join("\t"); };
