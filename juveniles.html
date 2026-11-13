@@ -286,6 +286,8 @@ dialog.egr { width: min(900px, calc(100vw - 24px)); }
 .egr-wrap table { width: 100%; border-collapse: collapse; font-size: .9rem; }
 .egr-wrap th, .egr-wrap td { padding: 5px 8px; text-align: left; border-bottom: 1px solid var(--line); }
 .egr-wrap th { position: sticky; top: 0; background: var(--head-bg); }
+.egr-wrap .btn.mini { padding: 0 5px; min-height: 0; line-height: 1.4; font-size: .8rem; margin-left: 4px; vertical-align: baseline; }
+.egr-wrap td.egr-n { white-space: nowrap; }
 .egr-wrap td.num, .egr-wrap th.num { text-align: center; }
 dialog.dlg::backdrop { background: rgba(10, 20, 30, .55); }
 dialog.dlg h2 { margin: 0 0 6px; font-family: "Barlow Condensed", "Arial Narrow", sans-serif; font-size: 2rem; line-height: 1; font-weight: 700; }
@@ -367,9 +369,9 @@ dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
 
 <dialog id="egrDlg" class="dlg egr" aria-labelledby="egrTitle" tabindex="-1" autofocus>
   <h2 id="egrTitle">Egresados</h2>
-  <p class="hint" id="egrHint">Juveniles que llegaron a «Listo». Se guarda su nombre, la edad final, el nivel inicial, el nivel final (el que tenían al quedar «Listo»), el Talento Estimado, R2 y su Progreso.</p>
+  <p class="hint" id="egrHint">Juveniles que llegaron a «Listo». Se guarda su nombre, la edad final, el nivel inicial, el nivel final (el que tenían al quedar «Listo») y su Progreso; las semanas entrenadas, el Talento Estimado y R2 se calculan desde el Progreso al abrir esta ventana.</p>
   <div class="field"><input id="egrQ" type="search" placeholder="Buscar por nombre" autocomplete="off" aria-label="Buscar egresado"></div>
-  <div class="egr-wrap"><table id="egrTable"><thead><tr><th>Nombre</th><th>Edad Final</th><th>Nivel Inicial</th><th>Nivel Final</th><th>Talento Estimado</th><th>R2</th><th>Progreso</th><th>Fecha</th><th></th></tr></thead><tbody id="egrBody"></tbody></table></div>
+  <div class="egr-wrap"><table id="egrTable"><thead><tr><th>Nombre</th><th>Edad Final</th><th>Nivel Inicial</th><th>Nivel Final</th><th>Semanas Entrenadas</th><th>Talento Estimado</th><th>R2</th><th>Progreso</th><th>Fecha</th><th></th></tr></thead><tbody id="egrBody"></tbody></table></div>
   <div class="actions"><button class="btn" id="egrCopy" type="button">Copiar</button><button class="btn primary" id="egrClose" type="button">Cerrar</button></div>
 </dialog>
 
@@ -750,17 +752,25 @@ async function archiveListos() {
   }
 }
 let egrRows = [];
+// Talento Estimado, R2 y Semanas Entrenadas se calculan al momento desde el Progreso guardado (si no se puede, se usa el valor guardado antes, si lo hay).
+function egrCalc(r) {
+  const te = regCol("treal", r.p).v, q = regCol("r2", r.p).v;
+  const sem = String(r.p || "").split(",").filter(x => x.trim() !== "").length;
+  return { te: te ?? (r.te === "" ? null : r.te ?? null), r2: q ?? (r.r2 === "" ? null : r.r2 ?? null), sem };
+}
+const egrRowTSV = r => { const c = egrCalc(r); return [r.n, r.a, r.i, r.f, c.sem, c.te == null ? "" : nf2.format(c.te), c.r2 == null ? "" : nf3.format(c.r2), r.p, r.d].join("\t"); };
+const EGR_HEAD = "Nombre\tEdad Final\tNivel Inicial\tNivel Final\tSemanas Entrenadas\tTalento Estimado\tR2\tProgreso\tFecha";
 function egrRender() {
   const q = $("#egrQ").value.trim().toLowerCase();
   const rows = egrRows.filter(r => !q || String(r.n).toLowerCase().includes(q));
-  $("#egrBody").innerHTML = rows.length ? rows.map(r => `<tr><td>${esc(r.n)}</td><td class="num">${esc(r.a)}</td><td class="num">${esc(r.i)}</td><td class="num">${esc(r.f)}</td><td class="num">${r.te === "" || r.te == null ? "—" : nf2.format(r.te)}</td><td class="num">${r.r2 === "" || r.r2 == null ? "—" : nf3.format(r.r2)}</td><td>${esc(r.p)}</td><td>${esc(r.d.split("-").reverse().join("-"))}</td><td><button class="btn" type="button" data-egr="${esc(r.id ?? "")}" title="Copiar solo los datos de este jugador">Copiar</button></td></tr>`).join("") : `<tr><td colspan="9">${egrRows.length ? "Sin coincidencias." : "Todavía no hay egresados guardados."}</td></tr>`;
+  $("#egrBody").innerHTML = rows.length ? rows.map(r => { const c = egrCalc(r); return `<tr><td class="egr-n">${esc(r.n)} <button class="btn mini" type="button" data-egrnp="${esc(r.id ?? "")}" title="Copiar solo el nombre y el Progreso de este jugador" aria-label="Copiar nombre y Progreso">⧉</button></td><td class="num">${esc(r.a)}</td><td class="num">${esc(r.i)}</td><td class="num">${esc(r.f)}</td><td class="num">${c.sem}</td><td class="num">${c.te == null ? "—" : nf2.format(c.te)}</td><td class="num">${c.r2 == null ? "—" : nf3.format(c.r2)}</td><td>${esc(r.p)}</td><td>${esc(r.d.split("-").reverse().join("-"))}</td><td><button class="btn" type="button" data-egr="${esc(r.id ?? "")}" title="Copiar todos los datos de este jugador">Copiar</button></td></tr>`; }).join("") : `<tr><td colspan="10">${egrRows.length ? "Sin coincidencias." : "Todavía no hay egresados guardados."}</td></tr>`;
   $("#egrHint").dataset.n = rows.length;
 }
 async function egrOpen() {
   const dlg = $("#egrDlg"); if (!dlg.open) dlg.showModal();
   if (document.activeElement && document.activeElement !== dlg) document.activeElement.blur();   // que no se enfoque el buscador (en móvil abriría el teclado)
-  $("#egrBody").innerHTML = `<tr><td colspan="9">Cargando…</td></tr>`;
-  if (!CONFIG.estUrl || !sync.key) { $("#egrBody").innerHTML = `<tr><td colspan="9">No hay conexión con la nube.</td></tr>`; return; }
+  $("#egrBody").innerHTML = `<tr><td colspan="10">Cargando…</td></tr>`;
+  if (!CONFIG.estUrl || !sync.key) { $("#egrBody").innerHTML = `<tr><td colspan="10">No hay conexión con la nube.</td></tr>`; return; }
   try {
     const j = await estCall({ action: "glist" });
     if (!Array.isArray(j.items) || (j.version || 0) < 6) throw new Error("antiguo");
@@ -770,7 +780,7 @@ async function egrOpen() {
     egrRows = [...byId.values()].sort((a, b) => String(b.d).localeCompare(String(a.d)) || String(a.n).localeCompare(String(b.n), "es"));
     egrRender();
   } catch (err) {
-    $("#egrBody").innerHTML = `<tr><td colspan="9">No se pudo consultar: actualiza <code>est-sync.gs</code> (versión 6 o posterior) y publícalo como nueva versión.</td></tr>`;
+    $("#egrBody").innerHTML = `<tr><td colspan="10">No se pudo consultar: actualiza <code>est-sync.gs</code> (versión 6 o posterior) y publícalo como nueva versión.</td></tr>`;
   }
 }
 function autoAppend() {
@@ -1439,14 +1449,16 @@ function init() {
   $("#egrClose").addEventListener("click", () => $("#egrDlg").close());
   $("#egrQ").addEventListener("input", egrRender);
   $("#egrBody").addEventListener("click", async ev => {
+    const np = ev.target.closest("button[data-egrnp]");
+    if (np) { const q = egrRows.find(x => String(x.id) === np.dataset.egrnp); if (q) { await copyText(q.n + "\t" + q.p); toast("Copiado: nombre y Progreso de " + q.n); } return; }
     const b = ev.target.closest("button[data-egr]"); if (!b) return;
     const r = egrRows.find(x => String(x.id) === b.dataset.egr); if (!r) return;
-    await copyText([r.n, r.a, r.i, r.f, r.te ?? "", r.r2 ?? "", r.p, r.d].join("\t")); toast("Copiado: " + r.n);
+    await copyText(egrRowTSV(r)); toast("Copiado: " + r.n);
   });
   $("#egrCopy").addEventListener("click", async () => {
     const q = $("#egrQ").value.trim().toLowerCase();
     const rows = egrRows.filter(r => !q || String(r.n).toLowerCase().includes(q));
-    const txt = ["Nombre\tEdad Final\tNivel Inicial\tNivel Final\tTalento Estimado\tR2\tProgreso\tFecha", ...rows.map(r => [r.n, r.a, r.i, r.f, r.te ?? "", r.r2 ?? "", r.p, r.d].join("\t"))].join("\n");
+    const txt = [EGR_HEAD, ...rows.map(egrRowTSV)].join("\n");
     try { await navigator.clipboard.writeText(txt); toast("Egresados copiados"); } catch { toast("No se pudo copiar"); }
   });
   $("#copy").addEventListener("click", copyTable);
