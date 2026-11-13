@@ -365,11 +365,11 @@ dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
   </form>
 </dialog>
 
-<dialog id="egrDlg" class="dlg egr" aria-labelledby="egrTitle">
+<dialog id="egrDlg" class="dlg egr" aria-labelledby="egrTitle" tabindex="-1" autofocus>
   <h2 id="egrTitle">Egresados</h2>
-  <p class="hint" id="egrHint">Juveniles que llegaron a «Listo». Se guarda su nombre, la edad final, el nivel inicial, el nivel final (el que tenían al quedar «Listo») y su Progreso.</p>
+  <p class="hint" id="egrHint">Juveniles que llegaron a «Listo». Se guarda su nombre, la edad final, el nivel inicial, el nivel final (el que tenían al quedar «Listo»), el Talento Estimado, R2 y su Progreso.</p>
   <div class="field"><input id="egrQ" type="search" placeholder="Buscar por nombre" autocomplete="off" aria-label="Buscar egresado"></div>
-  <div class="egr-wrap"><table id="egrTable"><thead><tr><th>Nombre</th><th>Edad Final</th><th>Nivel Inicial</th><th>Nivel Final</th><th>Progreso</th><th>Fecha</th></tr></thead><tbody id="egrBody"></tbody></table></div>
+  <div class="egr-wrap"><table id="egrTable"><thead><tr><th>Nombre</th><th>Edad Final</th><th>Nivel Inicial</th><th>Nivel Final</th><th>Talento Estimado</th><th>R2</th><th>Progreso</th><th>Fecha</th><th></th></tr></thead><tbody id="egrBody"></tbody></table></div>
   <div class="actions"><button class="btn" id="egrCopy" type="button">Copiar</button><button class="btn primary" id="egrClose" type="button">Cerrar</button></div>
 </dialog>
 
@@ -719,7 +719,7 @@ const weekKeyOf = t => { const d = new Date(t), back = (d.getDay() - 4 + 7) % 7;
 /* ─────────────── Egresados ───────────────
    Cuando un juvenil llega a «Listo» se guarda una vez, en una pestaña aparte de tu hoja (EGRESADOS), con: nombre, edad final, nivel inicial,
    nivel final (el que tenía en ese momento) y Progreso. No se descarga al abrir la página: solo al pulsar «Egresados». */
-const ARCH_KEY = "juveniles:arch";
+const ARCH_KEY = "juveniles:arch2";   // ids guardados con el formato nuevo (clave «f»; las «e» son las primeras, sin Talento Estimado ni R2)
 let archSet = new Set(); try { archSet = new Set(JSON.parse(localStorage.getItem(ARCH_KEY) || "[]")); } catch {}
 const saveArchSet = () => { try { localStorage.setItem(ARCH_KEY, JSON.stringify([...archSet])); } catch {} };
 const firstItem = t => { const x = String(t || "").split(",").map(v => v.trim()).find(v => v !== ""); return x === undefined ? "" : x; };
@@ -730,9 +730,9 @@ async function archiveListos() {
   const ok = [];
   for (const p of cand) {
     const prog = progOf(p), ao = ageOutOf(p);
-    const rec = { n: p.name || "", a: ao != null ? ao : (p.age ?? ""), i: firstItem(prog), f: p.skill ?? "", p: prog, d: new Date(state.stamp || Date.now()).toISOString().slice(0, 10) };
+    const rec = { n: p.name || "", a: ao != null ? ao : (p.age ?? ""), i: firstItem(prog), f: p.skill ?? "", te: (v => v == null ? "" : Math.round(v * 100) / 100)(regCol("treal", prog).v), r2: (v => v == null ? "" : Math.round(v * 1000) / 1000)(regCol("r2", prog).v), p: prog, d: new Date(state.stamp || Date.now()).toISOString().slice(0, 10) };
     let r;
-    try { r = await estCall({ action: "gset", pid: "e" + p.id, v: await encV(JSON.stringify(rec)), t: Date.now(), token: sync.token }); }
+    try { r = await estCall({ action: "gset", pid: "f" + p.id, v: await encV(JSON.stringify(rec)), t: Date.now(), token: sync.token }); }
     catch { return; }                                         // sin conexión: se reintenta la próxima vez
     if (r.saved !== true) {                                    // servicio antiguo: no conoce «gset»
       const box = document.createElement("div"); box.className = "notice";
@@ -753,22 +753,24 @@ let egrRows = [];
 function egrRender() {
   const q = $("#egrQ").value.trim().toLowerCase();
   const rows = egrRows.filter(r => !q || String(r.n).toLowerCase().includes(q));
-  $("#egrBody").innerHTML = rows.length ? rows.map(r => `<tr><td>${esc(r.n)}</td><td class="num">${esc(r.a)}</td><td class="num">${esc(r.i)}</td><td class="num">${esc(r.f)}</td><td>${esc(r.p)}</td><td>${esc(r.d.split("-").reverse().join("-"))}</td></tr>`).join("") : `<tr><td colspan="6">${egrRows.length ? "Sin coincidencias." : "Todavía no hay egresados guardados."}</td></tr>`;
+  $("#egrBody").innerHTML = rows.length ? rows.map(r => `<tr><td>${esc(r.n)}</td><td class="num">${esc(r.a)}</td><td class="num">${esc(r.i)}</td><td class="num">${esc(r.f)}</td><td class="num">${r.te === "" || r.te == null ? "—" : nf2.format(r.te)}</td><td class="num">${r.r2 === "" || r.r2 == null ? "—" : nf3.format(r.r2)}</td><td>${esc(r.p)}</td><td>${esc(r.d.split("-").reverse().join("-"))}</td><td><button class="btn" type="button" data-egr="${esc(r.id ?? "")}" title="Copiar solo los datos de este jugador">Copiar</button></td></tr>`).join("") : `<tr><td colspan="9">${egrRows.length ? "Sin coincidencias." : "Todavía no hay egresados guardados."}</td></tr>`;
   $("#egrHint").dataset.n = rows.length;
 }
 async function egrOpen() {
   const dlg = $("#egrDlg"); if (!dlg.open) dlg.showModal();
-  $("#egrBody").innerHTML = `<tr><td colspan="6">Cargando…</td></tr>`;
-  if (!CONFIG.estUrl || !sync.key) { $("#egrBody").innerHTML = `<tr><td colspan="6">No hay conexión con la nube.</td></tr>`; return; }
+  if (document.activeElement && document.activeElement !== dlg) document.activeElement.blur();   // que no se enfoque el buscador (en móvil abriría el teclado)
+  $("#egrBody").innerHTML = `<tr><td colspan="9">Cargando…</td></tr>`;
+  if (!CONFIG.estUrl || !sync.key) { $("#egrBody").innerHTML = `<tr><td colspan="9">No hay conexión con la nube.</td></tr>`; return; }
   try {
     const j = await estCall({ action: "glist" });
-    if (!Array.isArray(j.items) || (j.version || 0) < 6 && j.items.some(it => !/^e\d+$/.test(it.pid))) throw new Error("antiguo");
+    if (!Array.isArray(j.items) || (j.version || 0) < 6) throw new Error("antiguo");
     const out = [];
-    for (const it of j.items) { if (!/^e\d+$/.test(it.pid)) continue; try { out.push(JSON.parse(await decV(it.v))); } catch {} }
-    egrRows = out.sort((a, b) => String(b.d).localeCompare(String(a.d)) || String(a.n).localeCompare(String(b.n), "es"));
+    const byId = new Map();   // si un juvenil está con los dos formatos («e» antiguo y «f» nuevo), se muestra el nuevo
+    for (const it of j.items) { const m = /^([ef])(\d+)$/.exec(it.pid); if (!m) continue; if (m[1] === "e" && byId.has(m[2])) continue; try { byId.set(m[2], { ...JSON.parse(await decV(it.v)), id: m[2] }); } catch {} }
+    egrRows = [...byId.values()].sort((a, b) => String(b.d).localeCompare(String(a.d)) || String(a.n).localeCompare(String(b.n), "es"));
     egrRender();
   } catch (err) {
-    $("#egrBody").innerHTML = `<tr><td colspan="6">No se pudo consultar: actualiza <code>est-sync.gs</code> (versión 6 o posterior) y publícalo como nueva versión.</td></tr>`;
+    $("#egrBody").innerHTML = `<tr><td colspan="9">No se pudo consultar: actualiza <code>est-sync.gs</code> (versión 6 o posterior) y publícalo como nueva versión.</td></tr>`;
   }
 }
 function autoAppend() {
@@ -1436,10 +1438,15 @@ function init() {
   $("#egrBtn").addEventListener("click", egrOpen);
   $("#egrClose").addEventListener("click", () => $("#egrDlg").close());
   $("#egrQ").addEventListener("input", egrRender);
+  $("#egrBody").addEventListener("click", async ev => {
+    const b = ev.target.closest("button[data-egr]"); if (!b) return;
+    const r = egrRows.find(x => String(x.id) === b.dataset.egr); if (!r) return;
+    await copyText([r.n, r.a, r.i, r.f, r.te ?? "", r.r2 ?? "", r.p, r.d].join("\t")); toast("Copiado: " + r.n);
+  });
   $("#egrCopy").addEventListener("click", async () => {
     const q = $("#egrQ").value.trim().toLowerCase();
     const rows = egrRows.filter(r => !q || String(r.n).toLowerCase().includes(q));
-    const txt = ["Nombre\tEdad Final\tNivel Inicial\tNivel Final\tProgreso\tFecha", ...rows.map(r => [r.n, r.a, r.i, r.f, r.p, r.d].join("\t"))].join("\n");
+    const txt = ["Nombre\tEdad Final\tNivel Inicial\tNivel Final\tTalento Estimado\tR2\tProgreso\tFecha", ...rows.map(r => [r.n, r.a, r.i, r.f, r.te ?? "", r.r2 ?? "", r.p, r.d].join("\t"))].join("\n");
     try { await navigator.clipboard.writeText(txt); toast("Egresados copiados"); } catch { toast("No se pudo copiar"); }
   });
   $("#copy").addEventListener("click", copyTable);
