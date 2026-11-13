@@ -7,6 +7,9 @@ Página con la tabla de **los jugadores de tu propio equipo en Sokker**. Es una 
 - `index.html`: la página del plantel.
 - `juveniles.html`: la página de juveniles.
 - `alineaciones.html`: la página de alineaciones.
+- `entrenamiento.html`: la página de entrenamiento (historial semanal de cada jugador).
+- `cifrar-entrenamiento.mjs` y `entrenamiento-datos.json`: se usan **una sola vez** en tu computador para cifrar el historial inicial (ver «Página de entrenamiento»). No subas `entrenamiento-datos.json` al repositorio: está sin cifrar.
+- `data/training.enc.json`: el historial inicial de entrenamiento, cifrado (lo crea `cifrar-entrenamiento.mjs`).
 - `logo.png`: el escudo que se muestra junto al título (opcional: si falta, la página se ve igual, sin escudo).
 - `config.js`: configuración propia (dirección del servicio que sincroniza la columna «Pos.» entre dispositivos). No hace falta tocarlo al actualizar `index.html`.
 - `fetch-team.mjs`: script que se ejecuta en tu computador, inicia sesión en Sokker y genera los datos.
@@ -30,7 +33,7 @@ Si la API entrega la temporada y la semana actuales, ambas páginas las muestran
 
 ## Menú de secciones
 
-Arriba a la derecha, junto al botón de tema, hay un menú desplegable con tres opciones: **Plantel** (`index.html`), **Juveniles** (`juveniles.html`) y **Alineaciones** (`alineaciones.html`). La contraseña se escribe una sola vez: las tres páginas la comparten en el mismo navegador.
+Arriba a la derecha, junto al botón de tema, hay un menú desplegable con cuatro opciones: **Plantel** (`index.html`), **Juveniles** (`juveniles.html`), **Alineaciones** (`alineaciones.html`) y **Entrenamiento** (`entrenamiento.html`). La contraseña se escribe una sola vez: las páginas la comparten en el mismo navegador.
 
 ## Qué muestra el plantel
 
@@ -93,6 +96,19 @@ La API entrega los datos de los juveniles bajo nombres de campo que la página b
 Los textos se identifican por el id del juvenil. Si pegas (o escribes) números separados por espacios, la página pone una coma entre ellos automáticamente («10 12 14» queda «10,12,14»). Junto a Progreso, la columna **Recuento de Entrenos** cuenta cuántos elementos tiene el texto (separados por coma, sin espacios) y le resta 1 (nunca baja de 0) y se actualiza mientras escribes. Muestra ✓ si el número coincide con **Semanas Entrenadas** y ✗ si no.
 
 Para actualizar esta página hay que volver a ejecutar `node fetch-team.mjs` y subir `data/juniors.enc.json`.
+
+## Página de entrenamiento
+
+Reproduce tu planilla «Entrenamiento Khalil Gibran»: una vista **Resumen** y una vista por jugador (Olivares, Vera, Vial, Motta, Sabat, Bevan, Rivas, Lavin, Delage y Andaur), que se eligen con los botones de arriba.
+
+- **Resumen:** POS, Entreno Actual, Jugador, Edad, DEF, DEFside, MID, ATT, ATTside y las skills (Condición, Rapidez, Técnica, Pases, Defensa, Creación, Anotación) de la **última semana registrada**. Pulsa un encabezado para ordenar. «Entreno Actual» se elige en la misma tabla (o en la vista del jugador): POS sale de él (Defensa = DEF, Rapidez = MID, Técnica = ATT; sin entreno = GK).
+- **Cuadro de arriba a la derecha:** primer entreno de la temporada, último entreno, entrenos actuales y **Velocidad de entreno** (8). Si cambias la velocidad, todo se recalcula.
+- **Vista de un jugador:** una fila por semana, la más reciente arriba, con Fecha, TEMP, SEM, EDAD, ENT. F, Entrenamiento, las dos sumas, cada skill con su **gt** (puntos acumulados desde la última subida), **Semanas por nivel** y **Acumulado**. Las fórmulas son las de tu planilla (se comprobaron fila por fila con tus datos). «Semanas por nivel» se calcula en cada subida respecto de la subida anterior de esa skill (en tu planilla esas celdas estaban escritas a mano en algunos casos). Puedes corregir el Entrenamiento y ENT. F de cualquier semana. Los colores van de más suave (valor bajo) a más fuerte (valor alto).
+- **Actualización del jueves:** al abrir la página con los datos de un jueves nuevo, se agrega **sola** la semana nueva a cada jugador, con las skills de ese día (se busca al jugador por su apellido en el plantel) y el **Entreno Actual** que tenía. Después del jueves, elige el entreno de la semana siguiente. Si un jugador no se encuentra, un aviso lo dice. Abre la página al menos una vez entre jueves y miércoles: no puede reconstruir semanas en las que no se abrió.
+- **Dónde se guardan los datos:** por ahora **solo en este navegador** (no se sincronizan con la nube). Cada navegador o dispositivo parte del mismo historial inicial y agrega las semanas nuevas por su cuenta; los cambios que hagas a mano (Entreno Actual, ENT. F, velocidad) no pasan de un dispositivo a otro. **Restablecer** borra lo guardado en este navegador y vuelve al historial inicial.
+- **Copiar:** copia la tabla visible para pegarla en una planilla.
+
+**Primera vez:** el historial inicial (hasta el 12-11-2026) viene de tu planilla en `entrenamiento-datos.json`. En tu computador, en esa carpeta, ejecuta `node cifrar-entrenamiento.mjs` (pide la contraseña de la página) y sube a la carpeta `data` del repositorio el archivo `data/training.enc.json` que se crea. Después sube `entrenamiento.html`. No subas `entrenamiento-datos.json`. De la planilla no se incluyó la tabla de planificación de la derecha del Resumen.
 
 ## Página de alineaciones
 
