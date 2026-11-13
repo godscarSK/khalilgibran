@@ -177,6 +177,7 @@ tbody tr:hover td { background-color: color-mix(in srgb, var(--accent) 7%, var(-
 .mkf { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .mkf button { font: inherit; font-weight: 800; font-size: .75rem; letter-spacing: 0; cursor: pointer; min-height: 32px; min-width: 40px; padding: 0 8px; border-radius: 999px; border: 1px solid currentColor; background: transparent; }
 .mkf button[data-m="V"] { color: #3b82f6; } .mkf button[data-m="G"] { color: #2ea35a; } .mkf button[data-m="Y"] { color: #d9a400; } .mkf button[data-m="R"] { color: #fd7e14; } .mkf button[data-m="2"] { color: #e03131; }
+.mkf button[data-m=""] { color: var(--ink); font-size: .8rem; letter-spacing: 0; padding: 0 12px; }
 .mkf button[aria-pressed="true"] { background: currentColor; }
 .mkf button[aria-pressed="true"] span { color: var(--panel); }
 th.c-chk, td.c-chk { width: 4.9rem; min-width: 4.9rem; padding-left: 4px; padding-right: 4px; text-align: center; }
@@ -280,6 +281,12 @@ dialog.dlg {
   width: min(420px, calc(100vw - 32px)); padding: 22px; border: 2px solid var(--ink); border-radius: 6px;
   background: var(--panel); color: var(--ink);
 }
+dialog.egr { width: min(900px, calc(100vw - 24px)); }
+.egr-wrap { max-height: 55vh; overflow: auto; border: 1px solid var(--line); border-radius: 4px; margin-bottom: 12px; }
+.egr-wrap table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.egr-wrap th, .egr-wrap td { padding: 5px 8px; text-align: left; border-bottom: 1px solid var(--line); }
+.egr-wrap th { position: sticky; top: 0; background: var(--head-bg); }
+.egr-wrap td.num, .egr-wrap th.num { text-align: center; }
 dialog.dlg::backdrop { background: rgba(10, 20, 30, .55); }
 dialog.dlg h2 { margin: 0 0 6px; font-family: "Barlow Condensed", "Arial Narrow", sans-serif; font-size: 2rem; line-height: 1; font-weight: 700; }
 dialog.dlg .hint { margin: 0 0 14px; color: var(--muted); font-size: .92rem; }
@@ -325,7 +332,8 @@ dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
     <div class="actions" role="group" aria-label="Acciones">
       <span class="mkf" id="mkf" role="group" aria-label="Filtrar por la marca de la columna «?»"></span>
       <button class="btn" id="stars" type="button" aria-pressed="false" title="Muestra solo a los juveniles con tres estrellas ★★★">Talentosos</button>
-      <button class="btn" id="simplify" type="button" aria-pressed="false" title="Oculta las columnas Talento, Tipo, Progreso y Regresión">Simplificar</button>
+      <button class="btn" id="simplify" type="button" aria-pressed="false" title="Oculta las columnas Tipo, Progreso y Regresión">Simplificar</button>
+      <button class="btn" id="egrBtn" type="button" title="Consulta los juveniles que ya terminaron la academia («Listo»), guardados en la nube">Egresados</button>
       <button class="btn" id="calcBtn" type="button" aria-pressed="false" title="Muestra una fila vacía para hacer cálculos; no se guarda ni se sincroniza">Calculadora</button>
       <button class="btn" id="forgetPw" type="button" hidden title="Olvidar la contraseña en este navegador">Bloquear</button>
       <button class="btn primary" id="copy" type="button" title="Copiar la tabla visible para pegarla en una planilla">CSV</button>
@@ -355,6 +363,14 @@ dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
       <button class="btn primary" id="pwOk" type="submit">Entrar</button>
     </div>
   </form>
+</dialog>
+
+<dialog id="egrDlg" class="dlg egr" aria-labelledby="egrTitle">
+  <h2 id="egrTitle">Egresados</h2>
+  <p class="hint" id="egrHint">Juveniles que llegaron a «Listo». Se guarda su nombre, la edad final, el nivel inicial, el nivel final (el que tenían al quedar «Listo») y su Progreso.</p>
+  <div class="field"><input id="egrQ" type="search" placeholder="Buscar por nombre" autocomplete="off" aria-label="Buscar egresado"></div>
+  <div class="egr-wrap"><table id="egrTable"><thead><tr><th>Nombre</th><th>Edad Final</th><th>Nivel Inicial</th><th>Nivel Final</th><th>Progreso</th><th>Fecha</th></tr></thead><tbody id="egrBody"></tbody></table></div>
+  <div class="actions"><button class="btn" id="egrCopy" type="button">Copiar</button><button class="btn primary" id="egrClose" type="button">Cerrar</button></div>
 </dialog>
 
 <noscript>Esta página necesita JavaScript para mostrar la tabla.</noscript>
@@ -700,6 +716,61 @@ function refreshProgInputs() {
 const WK_KEY = "j2000000000007";
 const ymd = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const weekKeyOf = t => { const d = new Date(t), back = (d.getDay() - 4 + 7) % 7; return ymd(new Date(d.getFullYear(), d.getMonth(), d.getDate() - back)); };
+/* ─────────────── Egresados ───────────────
+   Cuando un juvenil llega a «Listo» se guarda una vez, en una pestaña aparte de tu hoja (EGRESADOS), con: nombre, edad final, nivel inicial,
+   nivel final (el que tenía en ese momento) y Progreso. No se descarga al abrir la página: solo al pulsar «Egresados». */
+const ARCH_KEY = "juveniles:arch";
+let archSet = new Set(); try { archSet = new Set(JSON.parse(localStorage.getItem(ARCH_KEY) || "[]")); } catch {}
+const saveArchSet = () => { try { localStorage.setItem(ARCH_KEY, JSON.stringify([...archSet])); } catch {} };
+const firstItem = t => { const x = String(t || "").split(",").map(v => v.trim()).find(v => v !== ""); return x === undefined ? "" : x; };
+async function archiveListos() {
+  if (!CONFIG.estUrl || !sync.key || sync.state !== "ok") return;
+  const cand = state.players.filter(p => !p.calc && p.weeks === 0 && p.id != null && /^\d+$/.test(String(p.id)) && !archSet.has(String(p.id)));
+  if (!cand.length) return;
+  const ok = [];
+  for (const p of cand) {
+    const prog = progOf(p), ao = ageOutOf(p);
+    const rec = { n: p.name || "", a: ao != null ? ao : (p.age ?? ""), i: firstItem(prog), f: p.skill ?? "", p: prog, d: new Date(state.stamp || Date.now()).toISOString().slice(0, 10) };
+    let r;
+    try { r = await estCall({ action: "gset", pid: "e" + p.id, v: await encV(JSON.stringify(rec)), t: Date.now(), token: sync.token }); }
+    catch { return; }                                         // sin conexión: se reintenta la próxima vez
+    if (r.saved !== true) {                                    // servicio antiguo: no conoce «gset»
+      const box = document.createElement("div"); box.className = "notice";
+      box.innerHTML = `<p><strong>Egresados:</strong> para archivar a los juveniles «Listo» actualiza <code>est-sync.gs</code> (versión 6 o posterior) y publícalo como nueva versión.</p>`;
+      $("#notices").appendChild(box); return;
+    }
+    archSet.add(String(p.id)); ok.push(p.name || String(p.id));
+  }
+  saveArchSet();
+  if (ok.length) {
+    toast(`Egresados guardados: ${ok.length}.`, 6000);
+    const box = document.createElement("div"); box.className = "notice";
+    box.innerHTML = `<p><strong>Egresados:</strong> se guardaron en la nube (${esc(ok.join(", "))}). Puedes consultarlos con el botón «Egresados».</p>`;
+    $("#notices").appendChild(box);
+  }
+}
+let egrRows = [];
+function egrRender() {
+  const q = $("#egrQ").value.trim().toLowerCase();
+  const rows = egrRows.filter(r => !q || String(r.n).toLowerCase().includes(q));
+  $("#egrBody").innerHTML = rows.length ? rows.map(r => `<tr><td>${esc(r.n)}</td><td class="num">${esc(r.a)}</td><td class="num">${esc(r.i)}</td><td class="num">${esc(r.f)}</td><td>${esc(r.p)}</td><td>${esc(r.d.split("-").reverse().join("-"))}</td></tr>`).join("") : `<tr><td colspan="6">${egrRows.length ? "Sin coincidencias." : "Todavía no hay egresados guardados."}</td></tr>`;
+  $("#egrHint").dataset.n = rows.length;
+}
+async function egrOpen() {
+  const dlg = $("#egrDlg"); if (!dlg.open) dlg.showModal();
+  $("#egrBody").innerHTML = `<tr><td colspan="6">Cargando…</td></tr>`;
+  if (!CONFIG.estUrl || !sync.key) { $("#egrBody").innerHTML = `<tr><td colspan="6">No hay conexión con la nube.</td></tr>`; return; }
+  try {
+    const j = await estCall({ action: "glist" });
+    if (!Array.isArray(j.items) || (j.version || 0) < 6 && j.items.some(it => !/^e\d+$/.test(it.pid))) throw new Error("antiguo");
+    const out = [];
+    for (const it of j.items) { if (!/^e\d+$/.test(it.pid)) continue; try { out.push(JSON.parse(await decV(it.v))); } catch {} }
+    egrRows = out.sort((a, b) => String(b.d).localeCompare(String(a.d)) || String(a.n).localeCompare(String(b.n), "es"));
+    egrRender();
+  } catch (err) {
+    $("#egrBody").innerHTML = `<tr><td colspan="6">No se pudo consultar: actualiza <code>est-sync.gs</code> (versión 6 o posterior) y publícalo como nueva versión.</td></tr>`;
+  }
+}
 function autoAppend() {
   if (CONFIG.estUrl && (!sync.key || (sync.state !== "ok"))) return;   // con sincronización, solo sobre datos ya al día
   if (!state.stamp) return;
@@ -773,7 +844,6 @@ const COLS = [
   { key: "first", label: "Nivel Inicial", title: "Primer elemento de Progreso" },
   { key: "weeks", label: "Semanas Restantes", title: "Semanas que le faltan en la academia (Listo = puede ascender)" },
   { key: "weeksIn", label: "Semanas Entrenadas", title: "Semanas de entreno (weeksIn)" },
-  { key: "talent", label: "Talento", title: "Talento (talent)" },
   { key: "prog", label: "Progreso", cls: "c-prog", left: true, title: "Texto libre tuyo para cada juvenil; se sincroniza entre dispositivos" },
   { key: "treal", label: "Talento Estimado", title: "1 / pendiente de la regresión lineal de Progreso" },
   { key: "r2", label: "R2", title: "Coeficiente de determinación (R²) de la regresión lineal de Progreso" },
@@ -982,7 +1052,6 @@ async function load() {
     const missing = [];
     if (!ps.some(p => p.skill != null)) missing.push("skill");
     if (!ps.some(p => p.weeksIn != null)) missing.push("weeksIn");
-    if (!ps.some(p => p.talent != null)) missing.push("talent");
     if (!ps.some(p => p.formation != null)) missing.push("formation");
     if (!ps.some(p => p.age != null)) missing.push("edad");
     if (!ps.some(p => p.weeks != null)) missing.push("semanas restantes");
@@ -1014,6 +1083,7 @@ async function load() {
   render();
   if (estPromise) { try { await estPromise; } catch {} }
   autoAppend();
+  await archiveListos();
 }
 
 /* ─────────────── Vista ─────────────── */
@@ -1170,7 +1240,7 @@ function renderSummary() {
 }
 
 /* ─────────────── Simplificar y Calculadora ─────────────── */
-const SIMPLE_HIDE = ["talent", "prog", "reg", "progN"];
+const SIMPLE_HIDE = ["prog", "reg", "progN"];
 // En la calculadora solo quedan visibles las últimas cinco columnas (desde Progreso); Simplificar no aplica ahí.
 const CALC_SHOW = COLS.slice(COLS.findIndex(c => c.key === "prog")).map(c => c.key);
 const hiddenKeys = () => state.calc ? COLS.map(c => c.key).filter(k => !CALC_SHOW.includes(k)) : state.simple ? SIMPLE_HIDE : [];
@@ -1184,8 +1254,8 @@ function applyColVis() {
     document.querySelectorAll(`#body td:nth-child(${i + 1})`).forEach(td => { if (!td.classList.contains("empty")) { td.style.display = off ? "none" : ""; if (SEP[c.key]) td.classList.add(SEP[c.key]); } });
   });
 }
-const CALC_NUM = ["age", "skill", "weeks", "weeksIn", "talent"];
-const CALC_EDIT = ["name", "age", "skill", "weeks", "weeksIn", "talent", "prog"];
+const CALC_NUM = ["age", "skill", "weeks", "weeksIn"];
+const CALC_EDIT = ["name", "age", "skill", "weeks", "weeksIn", "prog"];
 const newCalcP = () => ({ calc: true, id: null, n: 1, name: "", age: null, skill: null, weeks: null, weeksIn: null, talent: null, formation: "", progText: "" });
 function calcRowHtml() {
   const p = state.calcP;
@@ -1363,9 +1433,18 @@ function init() {
     render();
   });
   $("#q").addEventListener("input", e => { state.q = e.target.value; render(); });
+  $("#egrBtn").addEventListener("click", egrOpen);
+  $("#egrClose").addEventListener("click", () => $("#egrDlg").close());
+  $("#egrQ").addEventListener("input", egrRender);
+  $("#egrCopy").addEventListener("click", async () => {
+    const q = $("#egrQ").value.trim().toLowerCase();
+    const rows = egrRows.filter(r => !q || String(r.n).toLowerCase().includes(q));
+    const txt = ["Nombre\tEdad Final\tNivel Inicial\tNivel Final\tProgreso\tFecha", ...rows.map(r => [r.n, r.a, r.i, r.f, r.p, r.d].join("\t"))].join("\n");
+    try { await navigator.clipboard.writeText(txt); toast("Egresados copiados"); } catch { toast("No se pudo copiar"); }
+  });
   $("#copy").addEventListener("click", copyTable);
   $("#body").addEventListener("change", ev => { const t = ev.target; if (t && t.dataset && t.dataset.chk) { setCheck(t.dataset.chk, t.value); t.dataset.v = t.value; } });
-  $("#mkf").innerHTML = [["V","▮▮▮▮","batería de 4 barras (azul)"],["G","▮▮▮▯","batería de 3 barras (verde)"],["Y","▮▮▯▯","batería de 2 barras (amarillo)"],["R","▮▯▯▯","batería de 1 barra (naranjo)"],["2","▯▯▯▯","batería vacía (rojo)"]].map(([v, l, t]) => `<button type="button" data-m="${v}" aria-pressed="false" title="Mostrar solo los juveniles con ${t} (puedes combinar varias)"><span>${l}</span></button>`).join("");
+  $("#mkf").innerHTML = [["V","▮▮▮▮","batería de 4 barras (azul)"],["G","▮▮▮▯","batería de 3 barras (verde)"],["Y","▮▮▯▯","batería de 2 barras (amarillo)"],["R","▮▯▯▯","batería de 1 barra (naranjo)"],["2","▯▯▯▯","batería vacía (rojo)"],["","Sin Asignar","sin batería asignada"]].map(([v, l, t]) => `<button type="button" data-m="${v}" aria-pressed="false" title="Mostrar solo los juveniles con ${t} (puedes combinar varias)"><span>${l}</span></button>`).join("");
   $("#mkf").addEventListener("click", ev => { const b = ev.target.closest("button[data-m]"); if (!b) return; const v = b.dataset.m; if (state.chk.has(v)) state.chk.delete(v); else state.chk.add(v); b.setAttribute("aria-pressed", String(state.chk.has(v))); render(); });
   $("#stars").addEventListener("click", () => { state.onlyStars = !state.onlyStars; $("#stars").setAttribute("aria-pressed", String(state.onlyStars)); render(); });
   $("#simplify").addEventListener("click", () => { setSimple(!state.simple); render(); });
