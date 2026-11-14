@@ -322,6 +322,8 @@ i.cl::before { content: "*"; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --n-con: #7fd35a; --n-rap: #6aaeff; --n-tec: #b69cff; --n-pas: #f0c640; --n-def: #ffa95a; --n-cre: #ff7b73; --n-ata: #b5b5b5; } }
 .ent td.nk-con { color: var(--n-con); } .ent td.nk-rap { color: var(--n-rap); } .ent td.nk-tec { color: var(--n-tec); } .ent td.nk-pas { color: var(--n-pas); }
 .ent td.nk-def { color: var(--n-def); } .ent td.nk-cre { color: var(--n-cre); } .ent td.nk-ata { color: var(--n-ata); }
+.ent th.nk-con { color: var(--n-con); } .ent th.nk-rap { color: var(--n-rap); } .ent th.nk-tec { color: var(--n-tec); } .ent th.nk-pas { color: var(--n-pas); }
+.ent th.nk-def { color: var(--n-def); } .ent th.nk-cre { color: var(--n-cre); } .ent th.nk-ata { color: var(--n-ata); }
 </style>
 </head>
 <body>
@@ -996,7 +998,7 @@ function resumenData() {
 }
 const RES_COLS = [   // [etiqueta, ayuda, clase de skill]
   ["Entreno Alineaciones", "Lo que entrena según la página Alineaciones: el entrenamiento asignado a la posición del puesto en que aparece en las alineaciones de titulares"], ["Entreno Actual", "Entrenamiento de la semana en curso. Se guarda y se usa en la próxima actualización del jueves"], ["Jugador", ""], ["Edad", ""],
-  ["Condición", "", "con"], ["Rapidez", "", "rap"], ["Técnica", "", "tec"], ["Pases", "", "pas"], ["Defensa", "", "def"], ["Creación", "", "cre"], ["Anotación", "", "ata"],
+  ["CON", "Condición", "con"], ["RAP", "Rapidez", "rap"], ["TEC", "Técnica", "tec"], ["PAS", "Pases", "pas"], ["DEF", "Defensa", "def"], ["CRE", "Creación", "cre"], ["ATT", "Anotación", "ata"],
   ["DEF", "Rapidez + Defensa"], ["DEFside", "Técnica + Pases + Creación"], ["MID", "Rapidez + Técnica + Pases + Creación"], ["ATT", "Rapidez + Técnica + Anotación"], ["ATTside", "Pases + Defensa + Creación"]
 ];
 function renderResumen() {
@@ -1004,7 +1006,7 @@ function renderResumen() {
   const { i: si, dir: sd } = view.sort || { i: 3, dir: -1 };   // por defecto: edad de mayor a menor y, a igual edad, por apellido
   rows = rows.slice().sort((a, b) => { const x = a.cells[si], y = b.cells[si]; return (typeof x === "number" && typeof y === "number" ? x - y : String(x).localeCompare(String(y), "es")) * sd || a.tr.k.localeCompare(b.tr.k, "es"); });
   const hl = new Set(si >= 11 && !view.hlOff ? [si, ...COMPOS[si - 11][1].map(i => 4 + i)] : []);   // al ordenar por una suma se resaltan las skills que entran en ella
-  const head = RES_COLS.map(([lab, tip], i) => `<th class="sortable${i === 2 ? " l" : ""}${i === 4 || i === 11 ? " sep" : ""}${hl.has(i) ? " hl" : ""}" data-sort="${i}" title="${esc(tip || "Ordenar por " + lab)}">${esc(lab)}${si === i ? `<span class="arr">${sd > 0 ? "▲" : "▼"}</span>` : ""}</th>`).join("");
+  const head = RES_COLS.map(([lab, tip], i) => `<th class="sortable${RES_COLS[i][2] ? " nk-" + RES_COLS[i][2] : ""}${i === 2 ? " l" : ""}${i === 4 || i === 11 ? " sep" : ""}${hl.has(i) ? " hl" : ""}" data-sort="${i}" title="${esc(tip ? tip + " (ordenar)" : "Ordenar por " + lab)}">${esc(lab)}${si === i ? `<span class="arr">${sd > 0 ? "▲" : "▼"}</span>` : ""}</th>`).join("");
   const body = rows.map(x => `<tr>${x.cells.map((c, i) => {
     if (i === 0) return `<td>${alChip(x.tr)}</td>`;
     if (i === 1) return `<td>${trnSelect(c, `data-plan="${esc(x.tr.k)}" aria-label="Entreno actual de ${esc(x.tr.k)}"`)}</td>`;
@@ -1076,8 +1078,10 @@ function calAt(wk) {   // temporada y semana de esa fecha, según las filas que 
 }
 function addCandidates() {
   const have = new Set(T.players.map(pidOf).filter(x => x != null));
-  return roster.players.filter(p => !have.has(String(p.pid)) && p.skills && SK_API.every(x => Number.isFinite(p.skills[x]))).sort((a, b) => a.name.localeCompare(b.name, "es"));
+  return roster.players.filter(p => !have.has(String(p.pid)) && p.skills && SK_API.every(x => Number.isFinite(p.skills[x]))).sort((a, b) => surnameFirst(a.name).localeCompare(surnameFirst(b.name), "es"));
 }
+// «Juan José Pereira» → «Pereira Juan José» (la última palabra es el apellido)
+function surnameFirst(n) { const w = String(n || "").trim().split(/\s+/); return w.length < 2 ? w.join(" ") : w[w.length - 1] + " " + w.slice(0, -1).join(" "); }
 function addPlayer(pid) {
   const p = roster.players.find(x => String(x.pid) === String(pid));
   if (!p || !roster.stamp || !T) return false;
@@ -1091,7 +1095,7 @@ function addPlayer(pid) {
 }
 function openAdd() {
   const dlg = $("#addDlg"), list = roster.stamp ? addCandidates() : [];
-  $("#addSel").innerHTML = list.map(p => `<option value="${esc(p.pid)}">${esc(p.name)}</option>`).join("");
+  $("#addSel").innerHTML = list.map(p => `<option value="${esc(p.pid)}">${esc(surnameFirst(p.name))}</option>`).join("");
   $("#addOk").disabled = !list.length;
   $("#addMsg").textContent = !roster.stamp ? "No hay datos del plantel cargados, así que no se puede agregar a nadie ahora." : (list.length ? "" : "Todos los jugadores del plantel ya están en el seguimiento.");
   dlg.showModal();
@@ -1210,7 +1214,7 @@ function init() {
     const a = e.target.closest("a[data-tab]"); if (a) { e.preventDefault(); location.hash = encodeURIComponent(a.dataset.tab); return; }
     const h = e.target.closest("th[data-sort]"); if (!h) return;
     const i = Number(h.dataset.sort);
-    const first = i >= 11 ? -1 : 1;   // las sumas parten de mayor a menor
+    const first = -1;   // el primer clic siempre ordena de mayor a menor
     view.sort = view.sort && view.sort.i === i ? (view.sort.dir === first ? { i, dir: -first } : null) : { i, dir: first };
     view.hlOff = false;
     render();
