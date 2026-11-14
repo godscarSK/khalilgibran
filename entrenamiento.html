@@ -309,10 +309,11 @@ select.trn[data-t="Condición"] { --tc: var(--t-CON); } select.trn[data-t="LESI�
 
 h1#title { font-size: clamp(1.7rem, 7.4vw, 5.5rem); }
 .ent td.sk.clean { position: relative; }
-.ent td.sk.clean::after { content: "*"; position: absolute; top: -1px; right: 4px; font-size: 1.5rem; line-height: 1; font-weight: 800; color: #e0149f; text-shadow: 0 0 2px #fff, 0 0 2px #fff, 0 0 3px #fff; }
-i.cl { display: inline-block; font-style: normal; font-size: 1.4rem; font-weight: 800; line-height: .8; color: #e0149f; vertical-align: -.2em; margin-right: 2px; }
+.ent td.sk.clean::after { content: "*"; position: absolute; top: -1px; right: 4px; font-size: 1.8rem; line-height: 1; font-weight: 700; color: #ffd400; -webkit-text-stroke: .8px #4a3900; paint-order: stroke fill; }
+i.cl { display: inline-block; font-style: normal; font-size: 1.6rem; font-weight: 700; line-height: .8; color: #ffd400; -webkit-text-stroke: .8px #4a3900; paint-order: stroke fill; vertical-align: -.2em; margin-right: 2px; }
 i.cl::before { content: "*"; }
 .ent .rm { margin-left: auto; }
+.warn { display: inline-flex; align-items: center; justify-content: center; width: 1.2rem; height: 1.2rem; border-radius: 50%; background: #d11a1a; color: #fff; font-weight: 800; font-size: .85rem; line-height: 1; cursor: help; vertical-align: middle; }
 </style>
 </head>
 <body>
@@ -718,10 +719,13 @@ function alTrn(tr) {   // → { v: "RAP" | "", tip }
   const v = alTrnMap[a.v] || "";
   return { v, tip: v ? `Según Alineaciones: ${a.where} (${a.v}) entrena ${v}` : `En Alineaciones (${a.where}, ${a.v}) esa posición no tiene un entrenamiento asignado` };
 }
+const PLAN_CODE = { Rapidez: "RAP", "Técnica": "TEC", Pases: "PAS", Defensa: "DEF", "Creación": "CRE", "Anotación": "ATT", "": "GK" };   // sin entreno = GK
+const alDiff = tr => { const t = alTrn(tr); return t.v && PLAN_CODE[tr.plan] !== t.v ? `Distinto de Entreno Actual (${tr.plan || "sin entreno"}): según Alineaciones entrena ${t.v}` : ""; };
 const alChip = tr => {
   const t = alTrn(tr), c = alTrnMap.c[t.v];
   const st = c ? (n => ` style="background:${c};color:${(0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) > 150 ? "#1b2a41" : "#fff"}"`)(parseInt(c.slice(1), 16)) : "";
-  return `<span class="atrn" data-t="${esc(t.v)}"${st} title="${esc(t.tip)}">${t.v ? esc(t.v) : "—"}</span>`;
+  const d = alDiff(tr);
+  return `<span class="atrn" data-t="${esc(t.v)}"${st} title="${esc(t.tip)}">${t.v ? esc(t.v) : "—"}</span>${d ? ` <span class="warn" title="${esc(d)}" aria-label="${esc(d)}">!</span>` : ""}`;
 };
 const COMPOS = [["DEF", [1, 4]], ["DEFside", [2, 3, 5]], ["MID", [1, 2, 3, 5]], ["ATT", [1, 2, 6]], ["ATTside", [3, 4, 5]]];   // las cinco columnas del final de la tabla de Plantel (índices de k[])
 const COMPOS_TIP = { DEF: "Rapidez + Defensa", DEFside: "Técnica + Pases + Creación", MID: "Rapidez + Técnica + Pases + Creación", ATT: "Rapidez + Técnica + Anotación", ATTside: "Pases + Defensa + Creación" };
@@ -951,6 +955,7 @@ async function load(force) {
     else notices.push({ error: true, html: `<p><strong>Todavía no hay historial de entrenamiento.</strong> Falta el archivo <code>data/training.enc.json</code>. Se crea con <code>node cifrar-entrenamiento.mjs</code> a partir de <code>entrenamiento-datos.json</code> (pasos en el README) y se sube a la carpeta <code>data</code> del repositorio.</p>` });
   }
   if (T) {
+    if (roster.players.length) { let ch = false; for (const tr of T.players) if (tr.pid == null) { const p = matchPlayer(tr); if (p) { tr.pid = p.pid; ch = true; } } if (ch) saveT(); }
     const r = autoAppend();
     if (r.added.length) notices.push({ html: `<p><strong>Actualización del jueves:</strong> se agregó la semana del ${esc(dmy(r.week))} para ${r.added.length} jugador${r.added.length === 1 ? "" : "es"}: ${esc(r.added.join(", "))}.</p><p>Si cambias el entrenamiento de la semana que viene, elígelo en «Entreno Actual».</p>` });
     if (r.missing.length) notices.push({ html: `<p><strong>No pude actualizar a:</strong> ${esc(r.missing.join(", "))}. No encontré a ese jugador (o a más de uno) en los datos del plantel, o le faltan skills. Si ya no está en el equipo, ábrelo y usa «Quitar jugador».</p>` });

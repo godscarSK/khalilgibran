@@ -321,6 +321,7 @@ select.sp { appearance: none; -webkit-appearance: none; cursor: pointer; font: i
 .subind { flex: none; width: calc(1.5rem + 58px + 7px); text-align: right; color: var(--muted); }
 .slot .no { flex: none; width: 1.5rem; text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; font-weight: 600; }
 .ent { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; border-radius: 4px; padding: 1px 2px; }
+.trwarn { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 1.2rem; height: 1.2rem; border-radius: 50%; background: #d11a1a; color: #fff; font-weight: 800; font-size: .85rem; line-height: 1; cursor: help; }
 .ent.empty .nm { flex: 1; text-align: left; color: var(--muted); font-weight: 400; }
 .ent.sel { background: var(--hl); }
 .ent.over, .plus.over, .slot.over { outline: 3px solid var(--focus); outline-offset: -3px; background: var(--hl); }
@@ -1060,17 +1061,40 @@ function applyMode() {
   document.querySelectorAll(".modebar button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.mode === state.mode)));
   $("#q").placeholder = "Buscar";
 }
+// Página Entrenamiento: lo que esa página tiene como Entreno Actual de cada jugador (se lee de lo que guarda en este navegador).
+const PLAN_CODE = { Rapidez: "RAP", "Técnica": "TEC", Pases: "PAS", Defensa: "DEF", "Creación": "CRE", "Anotación": "ATT", "": "GK" };   // sin entreno = GK, como en la página Entrenamiento
+let entPlan = new Map();   // pid → Entreno Actual
+function readEntrenamiento() {
+  entPlan = new Map();
+  try {
+    const T = JSON.parse(localStorage.getItem("entrenamiento:v1"));
+    if (!T || !Array.isArray(T.players)) return;
+    const strip = x => String(x || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    for (const tr of T.players) {
+      let pid = tr.pid != null && byPid.has(String(tr.pid)) ? String(tr.pid) : null;
+      if (pid == null) { const hits = state.players.filter(q => strip(q.last) === strip(tr.k)); if (hits.length === 1) pid = String(hits[0].pid); }
+      if (pid != null) entPlan.set(pid, tr.plan || "");
+    }
+  } catch {}
+}
+// «!» si en la posición donde está colocado el jugador se entrena algo distinto de lo que figura en la página Entrenamiento.
+function trnWarn(i, j, pid) {
+  const plan = entPlan.get(String(pid)), pos = lu[i].p[j], here = pos ? trn[pos] : "";
+  if (plan === undefined || !here || PLAN_CODE[plan] === here) return "";
+  return `<span class="trwarn" title="En la página Entrenamiento figura entrenando ${esc(plan || "nada (sin entreno)")}, pero en esta posición (${esc(pos)}) se entrena ${esc(here)}" aria-label="Entrenamiento distinto al de la página Entrenamiento">!</span>`;
+}
 function entHtml(i, j, k) {
   const L = lu[i], es = L.s[j], e = es[k], p = byPid.get(e.p);
   const tr = estPos[e.p] === "ENT" && L.p[j] ? trn[L.p[j]] || "" : "";
   const name = p ? p.label : "Jugador " + e.p;
   const chip = p ? chipHtml(p, tr) : `<span class="chip" data-pid="${esc(e.p)}"><span class="grip" aria-hidden="true">⠿</span><span class="nm">${esc(name)}</span></span>`;
   const mv = e.m !== "" ? e.m : String(entMin(es, e));
-  return `<span class="ent${state.sel === e.p ? " sel" : ""}" data-l="${i}" data-j="${j}" data-k="${k}" data-pid="${esc(e.p)}">${chip}`
+  return `<span class="ent${state.sel === e.p ? " sel" : ""}" data-l="${i}" data-j="${j}" data-k="${k}" data-pid="${esc(e.p)}">${chip}${trnWarn(i, j, e.p)}`
     + `<input class="min${e.m !== "" ? " man" : ""}" type="text" inputmode="numeric" maxlength="3" value="${mv}" data-min="${i},${j},${k}" aria-label="Minutos de ${esc(name)}" title="Minutos que jugará (si no los cambias: 90 con un jugador en el número, 45 con dos, 30 con tres)"><span class="mu" aria-hidden="true">′</span>`
     + `<span class="sp-fill"></span><button class="x" type="button" data-x="${i},${j},${k}" aria-label="Quitar a ${esc(name)} de ${esc(LINEUPS[i].name)}" title="Quitar">✕</button></span>`;
 }
 function renderSlots() {
+  readEntrenamiento();
   LINEUPS.forEach((_, i) => {
     const L = lu[i];
     $(`[data-slots="${i}"]`).innerHTML = L.s.map((es, j) => {
