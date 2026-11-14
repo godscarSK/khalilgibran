@@ -314,6 +314,7 @@ i.cl { display: inline-block; font-style: normal; font-size: 1.6rem; font-weight
 i.cl::before { content: "*"; }
 .ent .rm { margin-left: auto; }
 .warn { display: inline-flex; align-items: center; justify-content: center; width: 1.2rem; height: 1.2rem; border-radius: 50%; background: #d11a1a; color: #fff; font-weight: 800; font-size: .85rem; line-height: 1; cursor: help; vertical-align: middle; }
+.syncmsg { margin: 4px 0 0; font-size: .8rem; color: var(--muted); min-height: 1em; }
 </style>
 </head>
 <body>
@@ -336,7 +337,7 @@ i.cl::before { content: "*"; }
           <img class="logo" src="logo.png" alt="Escudo del equipo" width="300" height="300" onerror="this.hidden=true">
           <h1 id="title">ENTRENAMIENTO</h1>
         </div>
-        <p class="lede" id="lede">Historial de entrenamiento y avance de cada jugador. Se actualiza solo con los datos de cada jueves y se guarda en este navegador.</p>
+        <p class="lede" id="lede">Historial de entrenamiento y avance de cada jugador. Se actualiza solo con los datos de cada jueves y se guarda en la nube, así que es el mismo en todos tus dispositivos.</p>
       </div>
       <aside class="summary" id="summary" aria-label="Datos de la temporada" hidden></aside>
     </div>
@@ -350,12 +351,13 @@ i.cl::before { content: "*"; }
     <div class="actions" role="group" aria-label="Acciones">
       <button class="btn" id="forgetPw" type="button" hidden title="Olvidar la contraseña en este navegador">Bloquear</button>
       <button class="btn" id="add" type="button" title="Agregar a un jugador del plantel al seguimiento">Agregar jugador</button>
-      <button class="btn" id="reset" type="button" title="Borra lo guardado en este navegador y vuelve a cargar el historial original">Restablecer</button>
+      <button class="btn" id="reset" type="button" title="Vuelve al historial original, también en la nube y en tus otros dispositivos">Restablecer</button>
       <button class="btn primary" id="copy" type="button" title="Copiar la tabla visible para pegarla en una planilla">Copiar</button>
     </div>
   </section>
 
   <div id="status" role="status" aria-live="polite"></div>
+  <div id="syncMsg" class="syncmsg" role="status" aria-live="polite"></div>
   <div id="notices"></div>
   <div id="view"></div>
 
@@ -415,6 +417,7 @@ const CONFIG = {
   staticData: "data/team.json",
   encTraining: "data/training.enc.json",       // historial inicial cifrado (lo genera cifrar-entrenamiento.mjs)
   staticTraining: "data/training.json",        // alternativa sin cifrar, solo para probar
+  estUrl: (window.CANTERA_CONFIG && window.CANTERA_CONFIG.estUrl) || "",   // el mismo config.js de las otras páginas; vacío = solo en este navegador
   timeoutMs: 15000
 };
 const SKILL_KEYS = ["stamina", "pace", "technique", "passing", "keeper", "defender", "playmaker", "striker"];
@@ -673,6 +676,173 @@ function computeRows(rows, speed) {
   return out;
 }
 
+/* ─────────────── Nube (mismo servicio y misma contraseña que las demás páginas) ─────────────── */
+// Cada jugador se guarda como un registro «ent<id>» (cifrado y comprimido); un jugador quitado queda como registro «borrado».
+// Gana el cambio más reciente de cada jugador.
+const sync = { key: null, token: "", busy: false, state: "local", detail: "", jsonp: false, fetchErr: "", timer: 0 };
+const remoteT = {};
+const nextT = k => Math.max(Date.now(), (remoteT[k] || 0) + 1);
+const rkey = id => "ent" + id;
+const uniqueId = base => { let id = base, n = 2; while (T.players.some(p => p.id === id) || T.gone[id]) id = base + n++; return id; };
+function dirtyAdd(id) { if (!T.dirty.includes(id)) T.dirty.push(id); }
+function dirtyDel(id) { T.dirty = T.dirty.filter(x => x !== id); }
+function touch(tr, defer) { tr.t = nextT(rkey(tr.id)); dirtyAdd(tr.id); if (!defer) { saveT(); schedulePush(); } }
+function removePlayer(tr) {
+  T.players = T.players.filter(p => p !== tr);
+  T.gone[tr.id] = nextT(rkey(tr.id)); dirtyAdd(tr.id); saveT(); schedulePush();
+}
+function schedulePush() { clearTimeout(sync.timer); sync.timer = setTimeout(pushDirty, 700); }
+
+const SYNC_TEXT = { local: "", ok: "Entrenamiento sincronizado.", pending: "Sincronizando entrenamiento…",
+  offline: "Entrenamiento pendiente de sincronizar (sin conexión con el servicio).",
+  token: "No se pudo sincronizar: el servicio rechazó la clave. Usa la misma contraseña que en la página del plantel." };
+function setSyncState(st, detail = "") {
+  sync.state = st; sync.detail = detail;
+  const el = $("#syncMsg"); if (!el) return;
+  el.textContent = (SYNC_TEXT[st] || "") + (detail && (st === "offline" || st === "token") ? " Motivo: " + detail : "");
+}
+function explainSync(err) {
+  const m = String(err && err.message || err);
+  if (err && err.name === "AbortError") return "el servicio tardó más de 15 s en responder (inténtalo de nuevo).";
+  if (err && err.net) return `el navegador no pudo conectar con el servicio (${sync.fetchErr || "sin detalle"}). Revisa que la URL de config.js termine en /exec.`;
+  if (err && err.name === "JsonpTimeout") return "el servicio no respondió. Revisa que est-sync.gs esté publicado.";
+  if (err instanceof TypeError) return "error interno de la página: " + m;
+  if (err instanceof SyntaxError) return "el servicio no respondió datos válidos.";
+  if (/^HTTP \d+/.test(m)) return "el servicio respondió " + m + ".";
+  return "el servicio respondió: " + m;
+}
+const te = new TextEncoder();
+const hex = buf => [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
+const b64u = a => { let s = ""; for (const c of a) s += String.fromCharCode(c); return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); };
+const unb64u = t => Uint8Array.from(atob(t.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
+async function estInit(pw) {
+  const p = String(pw).normalize("NFC");
+  const km = await crypto.subtle.importKey("raw", te.encode(p), "PBKDF2", false, ["deriveKey"]);
+  sync.key = await crypto.subtle.deriveKey({ name: "PBKDF2", salt: te.encode("cantera-est-v1"), iterations: 250000, hash: "SHA-256" },
+    km, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+  sync.token = hex(await crypto.subtle.digest("SHA-256", te.encode("cantera-est-token|" + p)));
+}
+const pipeBytes = async (bytes, stream) => new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer());
+async function encRec(rec) {
+  const gz = await pipeBytes(te.encode(JSON.stringify(rec)), new CompressionStream("gzip"));
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, sync.key, gz));
+  const o = new Uint8Array(12 + ct.length); o.set(iv); o.set(ct, 12);
+  return b64u(o);
+}
+async function decRec(s) {
+  const o = unb64u(String(s));
+  const gz = new Uint8Array(await crypto.subtle.decrypt({ name: "AES-GCM", iv: o.slice(0, 12) }, sync.key, o.slice(12)));
+  return JSON.parse(new TextDecoder().decode(await pipeBytes(gz, new DecompressionStream("gzip"))));
+}
+function jsonp(u) {
+  return new Promise((res, rej) => {
+    const cb = "__ent_" + Math.random().toString(36).slice(2);
+    const el = document.createElement("script");
+    let tm;
+    const done = () => { delete window[cb]; el.remove(); clearTimeout(tm); };
+    tm = setTimeout(() => { done(); const e = new Error("sin respuesta"); e.name = "JsonpTimeout"; rej(e); }, CONFIG.timeoutMs);
+    window[cb] = d => { done(); res(d); };
+    el.onerror = () => { done(); const e = new Error("no se pudo cargar"); e.net = true; rej(e); };
+    u.searchParams.set("callback", cb);
+    el.src = u.toString();
+    document.head.appendChild(el);
+  });
+}
+async function estCall(params) {
+  const u = new URL(CONFIG.estUrl);
+  for (const [k, v] of Object.entries(params)) u.searchParams.set(k, v);
+  u.searchParams.set("_", Date.now());
+  let j = null;
+  if (!sync.jsonp) {
+    let r = null;
+    try { r = await fetchWithTimeout(u.toString()); }
+    catch (err) { if (err.name === "AbortError") throw err; sync.fetchErr = String(err.message || err); }
+    if (r) { if (!r.ok) throw new Error("HTTP " + r.status); j = await r.json(); } else sync.jsonp = true;
+  }
+  if (!j) j = await jsonp(u);
+  if (!j.ok) throw new Error(j.error || "error");
+  return j;
+}
+const recOf = p => ({ k: p.k, lay: p.lay, plan: p.plan || "", pid: p.pid == null ? null : p.pid, rows: p.rows });
+async function pushDirty() {
+  if (!CONFIG.estUrl || !sync.key || sync.busy || !T || !T.dirty.length) return;
+  sync.busy = true; setSyncState("pending");
+  let failed = null;
+  try {
+    for (const id of [...T.dirty]) {
+      const p = T.players.find(x => x.id === id), gt = T.gone[id];
+      if (!p && !gt) { dirtyDel(id); continue; }
+      const t = p ? p.t : gt, v = await encRec(p ? recOf(p) : { del: 1 });
+      if (v.length > 8000) throw new Error(`el historial de ${p ? p.k : id} es demasiado largo para guardarlo en la nube (${v.length} caracteres; el máximo es 8000)`);
+      await estCall({ action: "set", pid: rkey(id), v, t, token: sync.token });
+      remoteT[rkey(id)] = Math.max(remoteT[rkey(id)] || 0, t);
+      const now = T.players.find(x => x.id === id);
+      if ((now ? now.t : T.gone[id]) === t) dirtyDel(id);
+      saveT();
+    }
+  } catch (err) { failed = err; }
+  sync.busy = false;
+  if (failed) { setSyncState(/token/i.test(failed.message) ? "token" : "offline", explainSync(failed)); return; }
+  if (T.dirty.length) { pushDirty(); return; }
+  setSyncState("ok");
+}
+// Trae lo guardado en la nube y lo mezcla con lo local (gana el cambio más reciente de cada jugador). Devuelve cuántos registros hay en la nube.
+async function pullT() {
+  const j = await estCall({ action: "list" });
+  const seen = new Set();
+  let n = 0, changed = false;
+  for (const it of j.items || []) {
+    const m = /^ent([a-z0-9]{1,36})$/.exec(String(it.pid)); if (!m) continue;
+    const id = m[1], t = Number(it.t) || 0;
+    n++; seen.add(id); remoteT[rkey(id)] = Math.max(remoteT[rkey(id)] || 0, t);
+    const loc = T.players.find(p => p.id === id), gt = T.gone[id] || 0;
+    let rec;
+    try { rec = await decRec(it.v); }
+    catch { if (loc) { loc.t = nextT(rkey(id)); dirtyAdd(id); } else if (gt) { T.gone[id] = nextT(rkey(id)); dirtyAdd(id); } continue; }   // ilegible: se vuelve a enviar lo de este dispositivo
+    if (rec && rec.del) {
+      if (loc) { if (loc.t < t) { T.players = T.players.filter(p => p !== loc); T.gone[id] = t; dirtyDel(id); changed = true; } else if (loc.t > t) dirtyAdd(id); }
+      else if (t > gt) { T.gone[id] = t; dirtyDel(id); }
+      else if (gt > t) dirtyAdd(id);
+    } else if (rec && Array.isArray(rec.rows)) {
+      if (!loc && gt >= t) { dirtyAdd(id); continue; }              // aquí se quitó después de ese registro
+      if (!loc || t > loc.t) {
+        const np = { id, t, k: rec.k, lay: rec.lay || "ATT", plan: rec.plan || "", rows: rec.rows };
+        if (rec.pid != null) np.pid = rec.pid;
+        if (loc) T.players[T.players.indexOf(loc)] = np; else { T.players.push(np); delete T.gone[id]; }
+        dirtyDel(id); changed = true;
+      } else if (loc.t > t) dirtyAdd(id);
+    }
+  }
+  for (const p of T.players) if (!seen.has(p.id)) dirtyAdd(p.id);
+  for (const id of Object.keys(T.gone)) if (!seen.has(id)) dirtyAdd(id);
+  saveT();
+  return { n, changed };
+}
+async function syncPull() {
+  if (!CONFIG.estUrl || !sync.key || !T) return;
+  try {
+    setSyncState("pending");
+    const r = await pullT();
+    if (r.changed) { autoAppend(); saveT(); render(); }
+    if (T.dirty.length) await pushDirty(); else setSyncState("ok");
+  } catch (err) { setSyncState("offline", explainSync(err)); }
+}
+// Restablecer: vuelve al historial original, también en la nube (lo que había allí se sobrescribe).
+async function resetAll() {
+  setStatus("Restableciendo…");
+  const pw = savedPw();
+  const seed = await fetchTraining(pw, true);
+  if (!seed) { setStatus(""); toast("No encontré el historial original (data/training.enc.json); no se cambió nada."); return; }
+  const old = T ? T.players.map(p => p.id).concat(Object.keys(T.gone || {})) : [];
+  const n = normT({ players: JSON.parse(JSON.stringify(seed.players)) });
+  n.dirty = n.players.map(p => p.id);
+  for (const p of n.players) p.t = nextT(rkey(p.id));
+  for (const id of old) if (!n.players.some(p => p.id === id)) { n.gone[id] = nextT(rkey(id)); n.dirty.push(id); }
+  T = n; saveT(); location.hash = "";
+  await load(false);
+}
+
 /* ─────────────── Datos de entrenamiento ───────────────
    Historial por jugador (semana a semana). Se guarda en este navegador. La primera vez se carga desde data/training.enc.json
    (cifrado con la contraseña de la página, lo genera cifrar-entrenamiento.mjs) y después se completa solo con los datos de cada jueves. */
@@ -735,8 +905,21 @@ const weekKeyOf = t => { const d = new Date(t), back = (d.getDay() - 4 + 7) % 7;
 const dmy = s => String(s).split("-").reverse().join("-");
 const nf2 = new Intl.NumberFormat("es-CL", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const norm = s => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+const SPEED = 8;   // velocidad de entreno: fija
+const slug = s => norm(s).replace(/[^a-z0-9]+/g, "").slice(0, 30) || "j";
 function saveT() { try { localStorage.setItem(TKEY, JSON.stringify(T)); } catch {} }
-function loadT() { try { const o = JSON.parse(localStorage.getItem(TKEY)); if (o && Array.isArray(o.players) && o.players.length) return o; } catch {} return null; }
+// T = { v:2, players:[{ id, t, k, lay, plan, pid?, rows }], gone:{ id: t }, dirty:[id] }   (t = hora del último cambio; gone = jugadores quitados)
+function normT(o) {
+  const n = { v: 2, players: o.players, gone: o.gone && typeof o.gone === "object" ? o.gone : {}, dirty: Array.isArray(o.dirty) ? o.dirty : [] };
+  for (const p of n.players) {
+    if (p.id) continue;
+    const b = slug(p.k); let id = b, i = 2;
+    while (n.players.some(x => x !== p && x.id === id) || n.gone[id]) id = b + i++;
+    p.id = id; p.t = Date.now(); if (!n.dirty.includes(id)) n.dirty.push(id);
+  }
+  return n;
+}
+function loadT() { try { const o = JSON.parse(localStorage.getItem(TKEY)); if (o && Array.isArray(o.players) && (o.players.length || o.v === 2)) return normT(o); } catch {} return null; }
 function validSeed(o) { return o && Array.isArray(o.players) && o.players.every(p => p && p.k && Array.isArray(p.rows)); }
 
 /* ─────────────── Jugadores del plantel y actualización de los jueves ─────────────── */
@@ -762,9 +945,9 @@ function autoAppend() {
     const roll = last.s >= 13;
     const s = roll ? 1 : last.s + 1, t = roll ? last.t + 1 : last.t;
     tr.rows.push({ d: wk, t, s, a: Number.isFinite(p.age) ? p.age : (s === 13 ? last.a + 1 : last.a), e: false, f: tr.plan || "", k });
-    res.added.push(tr.k); changed = true;
+    res.added.push(tr.k); changed = true; touch(tr, true);
   }
-  if (changed) saveT();
+  if (changed) { saveT(); schedulePush(); }
   return res;
 }
 
@@ -773,7 +956,7 @@ const view = { tab: "Resumen", sort: null };   // sort: { i, dir }
 const tabOf = () => { const h = decodeURIComponent(location.hash.slice(1)); return h && T && T.players.some(p => p.k === h) ? h : "Resumen"; };
 const scaleP = (v, a, b) => b > a ? Math.round((v - a) / (b - a) * 100) : 0;
 const trnSelect = (val, attrs) => `<select class="trn" data-t="${esc(val)}" ${attrs}><option value=""${val === "" ? " selected" : ""}>—</option>${TRN_OPTS.map(o => `<option${o === val ? " selected" : ""}>${o}</option>`).join("")}</select>`;
-const calcOf = tr => computeRows(tr.rows, T.speed);
+const calcOf = tr => computeRows(tr.rows, SPEED);
 
 function renderSummaryBox() {
   const rows = T.players.flatMap(p => p.rows);
@@ -787,7 +970,7 @@ function renderSummaryBox() {
     <dt>Primer entreno temp.</dt><dd>${esc(dmy(first))}</dd>
     <dt>Último entreno</dt><dd>${esc(dmy(last))}</dd>
     <dt>Entrenos actuales</dt><dd>${weeks}</dd>
-    <dt><label for="spd">Velocidad de entreno</label></dt><dd><input class="spd" id="spd" type="number" min="1" max="40" step="1" value="${T.speed}" aria-label="Velocidad de entreno"></dd>
+    <dt>Velocidad de entreno</dt><dd>${SPEED}</dd>
   </dl>`;
   box.hidden = false;
 }
@@ -889,8 +1072,9 @@ function addPlayer(pid) {
   const wk = weekKeyOf(roster.stamp), cal = calAt(wk) || { t: 1, s: 1 };
   const last = p.name.trim().split(/\s+/).pop();
   const key = T.players.some(x => norm(x.k) === norm(last)) ? p.name.trim() : last;
-  T.players.push({ k: key, lay: "ATT", plan: "", pid: p.pid, rows: [{ d: wk, t: cal.t, s: cal.s, a: Number.isFinite(p.age) ? p.age : 0, e: false, f: "", k: SK_API.map(x => p.skills[x]) }] });
-  saveT(); location.hash = encodeURIComponent(key); render();
+  const np = { id: uniqueId(slug(key)), t: 0, k: key, lay: "ATT", plan: "", pid: p.pid, rows: [{ d: wk, t: cal.t, s: cal.s, a: Number.isFinite(p.age) ? p.age : 0, e: false, f: "", k: SK_API.map(x => p.skills[x]) }] };
+  T.players.push(np); touch(np);
+  location.hash = encodeURIComponent(key); render();
   return true;
 }
 function openAdd() {
@@ -948,10 +1132,20 @@ async function load(force) {
     notices.push({ error: true, html: `<p><strong>No encontré los datos del plantel</strong> (<code>data/team.enc.json</code>), así que no se puede agregar la semana nueva. Se muestra el historial guardado.</p>` });
   }
   T = loadT();
+  if (CONFIG.estUrl && pw) {
+    try {
+      if (!sync.key) await estInit(pw);
+      const had = !!T;
+      if (!T) T = { v: 2, players: [], gone: {}, dirty: [] };
+      const r = await pullT();
+      if (!had && !r.n) T = null;              // no hay nada ni aquí ni en la nube: se parte del historial original
+      else saveT();
+    } catch (err) { setSyncState("offline", explainSync(err)); }
+  }
   if (!T) {
     if (!pw) { try { pw = savedPw(); } catch {} }
     const seed = await fetchTraining(pw, force);
-    if (seed) { T = { speed: seed.speed || 8, players: seed.players }; saveT(); }
+    if (seed) { T = normT({ players: seed.players }); saveT(); }
     else notices.push({ error: true, html: `<p><strong>Todavía no hay historial de entrenamiento.</strong> Falta el archivo <code>data/training.enc.json</code>. Se crea con <code>node cifrar-entrenamiento.mjs</code> a partir de <code>entrenamiento-datos.json</code> (pasos en el README) y se sube a la carpeta <code>data</code> del repositorio.</p>` });
   }
   if (T) {
@@ -962,6 +1156,7 @@ async function load(force) {
   }
   setNotices(notices); setStatus("");
   render();
+  if (T && T.dirty.length) pushDirty(); else if (T && sync.key) setSyncState(sync.state === "offline" ? "offline" : "ok");
 }
 
 /* ─────────────── Modo claro y oscuro ─────────────── */
@@ -993,7 +1188,7 @@ function init() {
     const rm = e.target.closest("button[data-rm]");
     if (rm) {
       const tr = T.players.find(p => p.k === rm.dataset.rm);
-      if (tr && confirm(`¿Quitar a ${tr.k} del seguimiento? Se borra su historial de este navegador (Restablecer vuelve al historial original).`)) { T.players = T.players.filter(p => p !== tr); saveT(); location.hash = ""; render(); }
+      if (tr && confirm(`¿Quitar a ${tr.k} del seguimiento? Se borra su historial en todos tus dispositivos (Restablecer vuelve al historial original).`)) { removePlayer(tr); location.hash = ""; render(); }
       return;
     }
     const a = e.target.closest("a[data-tab]"); if (a) { e.preventDefault(); location.hash = encodeURIComponent(a.dataset.tab); return; }
@@ -1004,24 +1199,22 @@ function init() {
   });
   $("#view").addEventListener("change", e => {
     const t = e.target; if (!T) return;
-    if (t.dataset.plan != null) { const tr = T.players.find(p => p.k === t.dataset.plan); if (tr) { tr.plan = t.value; saveT(); setTimeout(render, 0); } }
-    else if (t.dataset.rf != null) { const tr = T.players.find(p => p.k === view.tab); if (tr) { tr.rows[Number(t.dataset.rf)].f = t.value; saveT(); setTimeout(render, 0); } }
-    else if (t.dataset.ef != null) { const tr = T.players.find(p => p.k === view.tab); if (tr) { tr.rows[Number(t.dataset.ef)].e = t.checked; saveT(); setTimeout(render, 0); } }
-  });
-  $("#summary").addEventListener("change", e => {
-    if (e.target.id !== "spd" || !T) return;
-    const v = Math.round(Number(e.target.value));
-    if (Number.isFinite(v) && v >= 1 && v <= 40) { T.speed = v; saveT(); setTimeout(render, 0); } else e.target.value = T.speed;
+    if (t.dataset.plan != null) { const tr = T.players.find(p => p.k === t.dataset.plan); if (tr) { tr.plan = t.value; touch(tr); setTimeout(render, 0); } }
+    else if (t.dataset.rf != null) { const tr = T.players.find(p => p.k === view.tab); if (tr) { tr.rows[Number(t.dataset.rf)].f = t.value; touch(tr); setTimeout(render, 0); } }
+    else if (t.dataset.ef != null) { const tr = T.players.find(p => p.k === view.tab); if (tr) { tr.rows[Number(t.dataset.ef)].e = t.checked; touch(tr); setTimeout(render, 0); } }
   });
   $("#copy").addEventListener("click", copyView);
   $("#add").addEventListener("click", openAdd);
   $("#addCancel").addEventListener("click", () => $("#addDlg").close());
   $("#addForm").addEventListener("submit", ev => { ev.preventDefault(); const v = $("#addSel").value; $("#addDlg").close(); if (v) addPlayer(v); });
-  window.addEventListener("focus", () => { if (T) render(); });   // al volver de la página Alineaciones, se lee de nuevo
+  window.addEventListener("focus", () => { if (T) render(); });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) syncPull(); });
+  window.addEventListener("online", () => { sync.jsonp = false; syncPull(); });   // al volver de la página Alineaciones, se lee de nuevo
   $("#reset").addEventListener("click", async () => {
-    if (!confirm("Esto borra los cambios hechos en este navegador (jugadores agregados o quitados incluidos) y vuelve a cargar el historial original del archivo, más la semana actual. ¿Continuar?")) return;
-    try { localStorage.removeItem(TKEY); } catch {}
-    T = null; await load(true);
+    if (!confirm("Esto borra TODOS los cambios de Entrenamiento (jugadores agregados o quitados incluidos), también los guardados en la nube y en tus otros dispositivos, y vuelve al historial original del archivo más la semana actual. No se puede deshacer. ¿Continuar?")) return;
+    const w = prompt("Para confirmar, escribe RESTABLECER:");
+    if (w == null || w.trim().toUpperCase() !== "RESTABLECER") { toast("Restablecer cancelado: no se cambió nada."); return; }
+    await resetAll();
   });
   $("#pwForm").addEventListener("submit", ev => {
     ev.preventDefault();
