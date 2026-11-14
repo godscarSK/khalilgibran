@@ -286,28 +286,32 @@ select.trn[data-t="Pases"] { --tc: var(--t-PAS); } select.trn[data-t="Defensa"] 
 select.trn[data-t="Creación"] { --tc: var(--t-CRE); } select.trn[data-t="Anotación"] { --tc: var(--t-ATT); }
 select.trn[data-t="Condición"] { --tc: var(--t-CON); } select.trn[data-t="LESIÓN"] { --tc: var(--t-LES); }
 .ent input[type="checkbox"] { width: 1.1rem; height: 1.1rem; cursor: pointer; accent-color: var(--accent); vertical-align: middle; }
-.ptg { display: inline-block; min-width: 3rem; padding: 0 10px; border-radius: 999px; font-weight: 700; border: 1px solid var(--line); }
-.ptg[data-v="DEF"] { background: #bfe3c4; border-color: #4fa862; } .ptg[data-v="MID"] { background: #e3b0bf; border-color: #b03a5a; }
-.ptg[data-v="ATT"] { background: #b5c3e6; border-color: #4a63b5; } .ptg[data-v="GK"] { background: #fbefc2; border-color: #c9a227; }
-.ptg[data-v="???"] { background: #b7e1cd; color: #c00; border-color: #4aa37a; }
-:root[data-theme="dark"] .ptg[data-v] { color: #e6edf1; }
-:root[data-theme="dark"] .ptg[data-v="DEF"] { background: #1b4a28; } :root[data-theme="dark"] .ptg[data-v="MID"] { background: #4a1626; }
-:root[data-theme="dark"] .ptg[data-v="ATT"] { background: #172447; } :root[data-theme="dark"] .ptg[data-v="GK"] { background: #4a3f12; }
-:root[data-theme="dark"] .ptg[data-v="???"] { background: #1d3d31; color: #ff8a82; }
+.atrn { display: inline-block; min-width: 3.2rem; padding: 0 10px; border-radius: 999px; font-weight: 700; border: 1px solid var(--line); text-align: center; color: var(--ink); }
+.atrn[data-t=""] { color: var(--muted); font-weight: 400; }
+.atrn[data-t="RAP"] { background: #bfe6fa; border-color: #4aa8d8; } .atrn[data-t="TEC"] { background: #dccbf5; border-color: #8a62c9; }
+.atrn[data-t="PAS"] { background: #f8cfe1; border-color: #d65a95; } .atrn[data-t="GK"] { background: #f7ecb0; border-color: #c9a227; }
+.atrn[data-t="DEF"] { background: #fbd5ae; border-color: #e08a2b; } .atrn[data-t="CRE"] { background: #f5b8b4; border-color: #d0362f; }
+.atrn[data-t="ATT"] { background: #d9dde0; border-color: #8a959d; }
+:root[data-theme="dark"] .atrn[data-t]:not([data-t=""]) { color: #e6edf1; }
+:root[data-theme="dark"] .atrn[data-t="RAP"] { background: #17435a; } :root[data-theme="dark"] .atrn[data-t="TEC"] { background: #3b2a5c; }
+:root[data-theme="dark"] .atrn[data-t="PAS"] { background: #5a2440; } :root[data-theme="dark"] .atrn[data-t="GK"] { background: #4d4412; }
+:root[data-theme="dark"] .atrn[data-t="DEF"] { background: #5a3a12; } :root[data-theme="dark"] .atrn[data-t="CRE"] { background: #5a1a17; }
+:root[data-theme="dark"] .atrn[data-t="ATT"] { background: #3a4248; }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .ptg[data-v] { color: #e6edf1; }
-  :root:not([data-theme="light"]) .ptg[data-v="DEF"] { background: #1b4a28; } :root:not([data-theme="light"]) .ptg[data-v="MID"] { background: #4a1626; }
-  :root:not([data-theme="light"]) .ptg[data-v="ATT"] { background: #172447; } :root:not([data-theme="light"]) .ptg[data-v="GK"] { background: #4a3f12; }
-  :root:not([data-theme="light"]) .ptg[data-v="???"] { background: #1d3d31; color: #ff8a82; }
+  :root:not([data-theme="light"]) .atrn[data-t]:not([data-t=""]) { color: #e6edf1; }
+  :root:not([data-theme="light"]) .atrn[data-t="RAP"] { background: #17435a; } :root:not([data-theme="light"]) .atrn[data-t="TEC"] { background: #3b2a5c; }
+  :root:not([data-theme="light"]) .atrn[data-t="PAS"] { background: #5a2440; } :root:not([data-theme="light"]) .atrn[data-t="GK"] { background: #4d4412; }
+  :root:not([data-theme="light"]) .atrn[data-t="DEF"] { background: #5a3a12; } :root:not([data-theme="light"]) .atrn[data-t="CRE"] { background: #5a1a17; }
+  :root:not([data-theme="light"]) .atrn[data-t="ATT"] { background: #3a4248; }
 }
 .pn { font-weight: 700; text-align: left; }
 .agecell { background: color-mix(in srgb, #57bb8a calc(var(--p, 0) * 0.55%), var(--panel)); }
 
 h1#title { font-size: clamp(1.7rem, 7.4vw, 5.5rem); }
 .ent td.sk.clean { position: relative; }
-.ent td.sk.clean::after { content: ""; position: absolute; top: 4px; right: 4px; width: 8px; height: 8px; border-radius: 50%; background: #ff1fc8; box-shadow: 0 0 0 1.5px #fff, 0 0 0 2.5px #1b1b1b; }
-i.cl { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #ff1fc8; box-shadow: 0 0 0 1.5px #fff, 0 0 0 2.5px #1b1b1b; vertical-align: baseline; margin-right: 3px; }
-.ptg.alt { border-style: dashed; opacity: .85; }
+.ent td.sk.clean::after { content: "*"; position: absolute; top: -1px; right: 4px; font-size: 1.5rem; line-height: 1; font-weight: 800; color: #e0149f; text-shadow: 0 0 2px #fff, 0 0 2px #fff, 0 0 3px #fff; }
+i.cl { display: inline-block; font-style: normal; font-size: 1.4rem; font-weight: 800; line-height: .8; color: #e0149f; vertical-align: -.2em; margin-right: 2px; }
+i.cl::before { content: "*"; }
 .ent .rm { margin-left: auto; }
 </style>
 </head>
@@ -360,11 +364,11 @@ i.cl { display: inline-block; width: 9px; height: 9px; border-radius: 50%; backg
       <thead><tr><th>Columna</th><th>Qué es</th></tr></thead>
       <tbody>
         <tr><td>gt</td><td>Puntos de entrenamiento acumulados desde la última subida de esa skill. Cada semana suma la Velocidad de entreno (8) si la skill fue la entrenada, 2 si además está marcada ENT. F, 1 si no se entrenó y 0 en LESIÓN. Vuelve a 0 cuando la skill sube.</td></tr>
-        <tr><td>Subida Limpia</td><td>Subida de skill que ocurre sin que se haya entrenado esa skill. Se marca con un punto <i class="cl"></i> en la esquina del nivel.</td></tr>
+        <tr><td>Subida Limpia</td><td>Subida de skill que ocurre sin que se haya entrenado esa skill. Se marca con un asterisco <i class="cl"></i> en la esquina del nivel.</td></tr>
         <tr><td>Talento por skill</td><td>Solo en RAP, TEC, PAS, DEF y CRE, en cada subida. Es (acumulado en esa subida − acumulado en el nivel de partida) ÷ Velocidad ÷ niveles entre ambos. El nivel de partida depende de las Subidas Limpias de los niveles L−2, L−1 y L (L = nivel nuevo): [1] si ninguna fue limpia, entre L−3 y L (tres cambios; por ejemplo, de 7 a 8: del nivel 5 al 8); [2] si L fue limpia y L−1 no, entre L−2 y L (dos cambios); [3] si L no fue limpia y L−2 sí, entre L−2 y L (dos cambios); [4] si L−1 y L fueron limpias, entre L−1 y L (un cambio). En cualquier otro caso, o si falta historial, la casilla queda vacía. Al pasar el cursor por la casilla se ve entre qué niveles se calculó.</td></tr>
         <tr><td>Sumas</td><td>DEF = Rapidez + Defensa; DEFside = Técnica + Pases + Creación; MID = Rapidez + Técnica + Pases + Creación; ATT = Rapidez + Técnica + Anotación; ATTside = Pases + Defensa + Creación.</td></tr>
         <tr><td>Acumulado</td><td>Los mismos puntos, pero sin volver a 0 nunca (desde la primera semana registrada).</td></tr>
-        <tr><td>POS</td><td>Posición del jugador en las alineaciones de titulares de la página Alineaciones (la primera en que aparece), leída de lo que esa página guarda en este navegador. Si no aparece en ninguna (insignia con borde punteado), sale de su Entreno Actual: Defensa = DEF, Rapidez = MID, Técnica = ATT; sin entreno = GK.</td></tr>
+        <tr><td>Entreno Alineaciones</td><td>Lo que entrena el jugador según la página Alineaciones: el entrenamiento asignado a la posición del puesto en que aparece en las alineaciones de titulares (la primera en que esté). Se lee de lo que esa página guarda en este navegador. Si no aparece en ninguna, o esa posición no tiene entrenamiento asignado, muestra —.</td></tr>
       </tbody>
     </table>
     <p>La semana nueva se agrega sola al abrir la página después de la actualización del jueves, con las skills de ese día y el Entreno Actual que tenía cada jugador. Abre la página al menos una vez por semana (de jueves a miércoles); no puede reconstruir semanas en las que no se abrió.</p>
@@ -678,14 +682,15 @@ const SK_COLS = [   // orden de k[]: CON RAP TEC PAS DEF CRE ATT
 ];
 const SK_API = ["stamina", "pace", "technique", "passing", "defender", "playmaker", "striker"];   // mismo orden que k[]
 const TRN_OPTS = ["Rapidez", "Técnica", "Pases", "Creación", "Defensa", "Anotación", "Condición", "LESIÓN"];
-const POS_OF = { Defensa: "DEF", Rapidez: "MID", Técnica: "ATT" };   // como en la tabla ENTRENO ACTUAL de tu planilla; sin entreno = GK
-const posOf = plan => plan === "" ? "GK" : (POS_OF[plan] || "???");
-/* Posición en la página Alineaciones: lee lo que esa página guarda en este navegador (las alineaciones de titulares). */
+/* Entreno según la página Alineaciones: lee lo que esa página guarda en este navegador (alineaciones de titulares y «Entrenamiento por posición»).
+   El jugador entrena lo que tenga asignado la posición del puesto en que aparece (la primera alineación donde esté). */
 const AL_NAMES = ["Copa Internacional", "Liga 1", "Copa/Amistoso", "Liga 2"];
 const AL_DEFAULT = ["GK", "DEF", "DEF", "DEF", "DEF", "MID", "MID", "MID", "MID", "ATT", "ATT"];
-let alPos = new Map();   // pid → { v: "DEF", where: "Liga 1, puesto 3" }
+const AL_TRN = ["RAP", "TEC", "PAS", "GK", "DEF", "CRE", "ATT"];
+let alPos = new Map();   // pid → { v: "DEF" (posición del puesto), where: "Liga 1, puesto 3" }
+let alTrnMap = { GK: "", DEF: "", MID: "", ATT: "", c: {} };
 function readAlineaciones() {
-  alPos = new Map();
+  alPos = new Map(); alTrnMap = { GK: "", DEF: "", MID: "", ATT: "", c: {} };
   try {
     const lin = JSON.parse(localStorage.getItem("equipo:lineups")) || {};
     AL_NAMES.forEach((name, i) => {
@@ -698,15 +703,26 @@ function readAlineaciones() {
         if (/^\d+$/.test(pid) && ps[j] && !alPos.has(pid)) alPos.set(pid, { v: ps[j], where: `${name}, puesto ${j + 1}` });
       }));
     });
+    const te = lin["j2000000000009"], o = te && JSON.parse(te.v);
+    if (o) {
+      const OLD = { MID: "CRE", ANO: "ATT" };
+      for (const pos of ["GK", "DEF", "MID", "ATT"]) { const v = OLD[o[pos]] || o[pos]; alTrnMap[pos] = AL_TRN.includes(v) ? v : ""; }
+      if (o.c && typeof o.c === "object") for (const k of AL_TRN) if (/^#[0-9a-f]{6}$/i.test(o.c[k] || "")) alTrnMap.c[k] = o.c[k].toLowerCase();
+    }
   } catch {}
 }
 const pidOf = tr => { if (tr.pid != null) return String(tr.pid); const p = roster.players.length ? matchPlayer(tr) : null; return p ? String(p.pid) : null; };
-function posInfo(tr) {   // → { v, alt, tip }
+function alTrn(tr) {   // → { v: "RAP" | "", tip }
   const pid = pidOf(tr), a = pid != null ? alPos.get(pid) : null;
-  if (a) return { v: a.v, alt: false, tip: `Según Alineaciones (${a.where})` };
-  return { v: posOf(tr.plan), alt: true, tip: "No aparece en las alineaciones de titulares de la página Alineaciones: se muestra la posición que corresponde a su Entreno Actual" };
+  if (!a) return { v: "", tip: "No aparece en las alineaciones de titulares de la página Alineaciones" };
+  const v = alTrnMap[a.v] || "";
+  return { v, tip: v ? `Según Alineaciones: ${a.where} (${a.v}) entrena ${v}` : `En Alineaciones (${a.where}, ${a.v}) esa posición no tiene un entrenamiento asignado` };
 }
-const ptg = tr => { const p = posInfo(tr); return `<span class="ptg${p.alt ? " alt" : ""}" data-v="${esc(p.v)}" title="${esc(p.tip)}">${esc(p.v)}</span>`; };
+const alChip = tr => {
+  const t = alTrn(tr), c = alTrnMap.c[t.v];
+  const st = c ? (n => ` style="background:${c};color:${(0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) > 150 ? "#1b2a41" : "#fff"}"`)(parseInt(c.slice(1), 16)) : "";
+  return `<span class="atrn" data-t="${esc(t.v)}"${st} title="${esc(t.tip)}">${t.v ? esc(t.v) : "—"}</span>`;
+};
 const COMPOS = [["DEF", [1, 4]], ["DEFside", [2, 3, 5]], ["MID", [1, 2, 3, 5]], ["ATT", [1, 2, 6]], ["ATTside", [3, 4, 5]]];   // las cinco columnas del final de la tabla de Plantel (índices de k[])
 const COMPOS_TIP = { DEF: "Rapidez + Defensa", DEFside: "Técnica + Pases + Creación", MID: "Rapidez + Técnica + Pases + Creación", ATT: "Rapidez + Técnica + Anotación", ATTside: "Pases + Defensa + Creación" };
 let T = null;   // { speed, players: [{ k, lay, plan, pid?, rows: [...] }] }
@@ -773,28 +789,29 @@ function renderSummaryBox() {
 }
 
 function renderTabs() {
-  $("#tabs").innerHTML = ["Resumen", ...T.players.map(p => p.k)].map(k => `<button type="button" data-tab="${esc(k)}" aria-pressed="${k === view.tab}">${esc(k)}</button>`).join("");
+  $("#tabs").innerHTML = ["Resumen", ...T.players.map(p => p.k).sort((a, b) => a.localeCompare(b, "es"))].map(k => `<button type="button" data-tab="${esc(k)}" aria-pressed="${k === view.tab}">${esc(k)}</button>`).join("");
 }
 
 function resumenData() {
   return T.players.map(tr => {
     const r = tr.rows[tr.rows.length - 1]; if (!r) return null;
     const k = r.k, sum = a => a.reduce((x, i) => x + k[i], 0);
-    return { tr, r, cells: [posInfo(tr).v, tr.plan, tr.k, r.a, sum([1, 4]), sum([2, 3, 5]), sum([1, 2, 3, 5]), sum([1, 2, 6]), sum([3, 4, 5]), k[0], k[1], k[2], k[3], k[4], k[5], k[6]] };
+    return { tr, r, cells: [alTrn(tr).v, tr.plan, tr.k, r.a, sum([1, 4]), sum([2, 3, 5]), sum([1, 2, 3, 5]), sum([1, 2, 6]), sum([3, 4, 5]), k[0], k[1], k[2], k[3], k[4], k[5], k[6]] };
   }).filter(Boolean);
 }
 const RES_COLS = [   // [etiqueta, ayuda, clase de skill]
-  ["POS", "Posición del jugador en las alineaciones de la página Alineaciones. Si no está en ninguna (borde punteado), la que corresponde a su Entreno Actual (Defensa = DEF, Rapidez = MID, Técnica = ATT)"], ["Entreno Actual", "Entrenamiento de la semana en curso. Se guarda y se usa en la próxima actualización del jueves"], ["Jugador", ""], ["Edad", ""],
+  ["Entreno Alineaciones", "Lo que entrena según la página Alineaciones: el entrenamiento asignado a la posición del puesto en que aparece en las alineaciones de titulares"], ["Entreno Actual", "Entrenamiento de la semana en curso. Se guarda y se usa en la próxima actualización del jueves"], ["Jugador", ""], ["Edad", ""],
   ["DEF", "Rapidez + Defensa"], ["DEFside", "Técnica + Pases + Creación"], ["MID", "Rapidez + Técnica + Pases + Creación"], ["ATT", "Rapidez + Técnica + Anotación"], ["ATTside", "Pases + Defensa + Creación"],
   ["Condición", "", "con"], ["Rapidez", "", "rap"], ["Técnica", "", "tec"], ["Pases", "", "pas"], ["Defensa", "", "def"], ["Creación", "", "cre"], ["Anotación", "", "ata"]
 ];
 function renderResumen() {
   let rows = resumenData();
-  if (view.sort) { const { i, dir } = view.sort; rows = rows.slice().sort((a, b) => { const x = a.cells[i], y = b.cells[i]; return (typeof x === "number" && typeof y === "number" ? x - y : String(x).localeCompare(String(y), "es")) * dir; }); }
+  const { i: si, dir: sd } = view.sort || { i: 3, dir: -1 };   // por defecto: edad de mayor a menor y, a igual edad, por apellido
+  rows = rows.slice().sort((a, b) => { const x = a.cells[si], y = b.cells[si]; return (typeof x === "number" && typeof y === "number" ? x - y : String(x).localeCompare(String(y), "es")) * sd || a.tr.k.localeCompare(b.tr.k, "es"); });
   const mm = RES_COLS.map((_, i) => { const v = rows.map(x => x.cells[i]).filter(Number.isFinite); return [Math.min(...v), Math.max(...v)]; });
-  const head = RES_COLS.map(([lab, tip], i) => `<th class="sortable${i === 2 ? " l" : ""}${i === 9 ? " sep" : ""}" data-sort="${i}" title="${esc(tip || "Ordenar por " + lab)}">${esc(lab)}${view.sort && view.sort.i === i ? `<span class="arr">${view.sort.dir > 0 ? "▲" : "▼"}</span>` : ""}</th>`).join("");
+  const head = RES_COLS.map(([lab, tip], i) => `<th class="sortable${i === 2 ? " l" : ""}${i === 9 ? " sep" : ""}" data-sort="${i}" title="${esc(tip || "Ordenar por " + lab)}">${esc(lab)}${si === i ? `<span class="arr">${sd > 0 ? "▲" : "▼"}</span>` : ""}</th>`).join("");
   const body = rows.map(x => `<tr>${x.cells.map((c, i) => {
-    if (i === 0) return `<td>${ptg(x.tr)}</td>`;
+    if (i === 0) return `<td>${alChip(x.tr)}</td>`;
     if (i === 1) return `<td>${trnSelect(c, `data-plan="${esc(x.tr.k)}" aria-label="Entreno actual de ${esc(x.tr.k)}"`)}</td>`;
     if (i === 2) return `<td class="pn l"><a href="#${encodeURIComponent(c)}" data-tab="${esc(c)}">${esc(c)}</a></td>`;
     const p = scaleP(c, mm[i][0], mm[i][1]);
@@ -802,7 +819,7 @@ function renderResumen() {
     if (i >= 9) return `<td class="sk sk-${RES_COLS[i][2]}${i === 9 ? " sep" : ""}" style="--p:${p}">${c}</td>`;
     return `<td class="sum">${c}</td>`;
   }).join("")}</tr>`).join("");
-  return `<div class="view-title"><h2>Resumen</h2><span class="lbl">Última semana registrada: ${esc(dmy(T.players.map(p => p.rows[p.rows.length - 1].d).sort().pop()))}. Pulsa un encabezado para ordenar.</span></div>
+  return `<div class="view-title"><h2>Resumen</h2><span class="lbl">Última semana registrada: ${esc(dmy(T.players.map(p => p.rows[p.rows.length - 1].d).sort().pop()))}. Orden: edad de mayor a menor y luego apellido. Pulsa un encabezado para ordenar por otra columna.</span></div>
     <div class="tablewrap ent"><table id="tbl"><thead><tr class="cols">${head}</tr></thead><tbody>${body}</tbody></table></div>`;
 }
 
@@ -831,7 +848,7 @@ function renderPlayer(tr) {
     c.cum.forEach((v, i) => cells.push(`<td class="gt${i === 0 ? " sep" : ""}">${v}</td>`));
     rowsHtml.push(`<tr${n === lastIdx ? ' class="newest"' : ""}>${cells.join("")}</tr>`);
   }
-  return `<div class="view-title"><h2>${esc(tr.k)}</h2>${ptg(tr)}
+  return `<div class="view-title"><h2>${esc(tr.k)}</h2><span class="lbl">Entreno Alineaciones ${alChip(tr)}</span>
       <label class="lbl">Entreno actual ${trnSelect(tr.plan, `data-plan="${esc(tr.k)}" aria-label="Entreno actual de ${esc(tr.k)}"`)}</label>
       <span class="lbl">${tr.rows.length} semanas · última: ${esc(dmy(last.d))} · ${last.a} años</span>
       <span class="lbl"><i class="cl"></i> Subida Limpia</span>
