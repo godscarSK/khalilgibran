@@ -315,6 +315,7 @@ i.cl::before { content: "*"; }
 .ent .rm { margin-left: auto; }
 .warn { display: inline-flex; align-items: center; justify-content: center; width: 1.2rem; height: 1.2rem; border-radius: 50%; background: #d11a1a; color: #fff; font-weight: 800; font-size: .85rem; line-height: 1; cursor: help; vertical-align: middle; }
 .syncmsg { margin: 4px 0 0; font-size: .8rem; color: var(--muted); min-height: 1em; }
+.ent td.tal { font-weight: 700; background: color-mix(in srgb, var(--hh) 62%, var(--panel)); }
 </style>
 </head>
 <body>
@@ -368,7 +369,7 @@ i.cl::before { content: "*"; }
       <tbody>
         <tr><td>gt</td><td>Puntos de entrenamiento acumulados desde la última subida de esa skill. Cada semana suma la Velocidad de entreno (8) si la skill fue la entrenada, 2 si además está marcada ENT. F, 1 si no se entrenó y 0 en LESIÓN. Vuelve a 0 cuando la skill sube.</td></tr>
         <tr><td>Subida Limpia</td><td>Subida de skill que ocurre sin que se haya entrenado esa skill. Se marca con un asterisco <i class="cl"></i> en la esquina del nivel.</td></tr>
-        <tr><td>Talento por skill</td><td>Solo en RAP, TEC, PAS, DEF y CRE, en cada subida. Es (acumulado en esa subida − acumulado en el nivel de partida) ÷ Velocidad ÷ niveles entre ambos. El nivel de partida depende de las Subidas Limpias de los niveles L−2, L−1 y L (L = nivel nuevo): [1] si ninguna fue limpia, entre L−3 y L (tres cambios; por ejemplo, de 7 a 8: del nivel 5 al 8); [2] si L fue limpia y L−1 no, entre L−2 y L (dos cambios); [3] si L no fue limpia y L−2 sí, entre L−2 y L (dos cambios); [4] si L−1 y L fueron limpias, entre L−1 y L (un cambio). En cualquier otro caso, o si falta historial, la casilla queda vacía. Al pasar el cursor por la casilla se ve entre qué niveles se calculó.</td></tr>
+        <tr><td>Talento por skill</td><td>En RAP, TEC, PAS, DEF, CRE y ATT, en cada subida. Las casillas con valor se pintan con el color de la skill. Es (acumulado en esa subida − acumulado en el nivel de partida) ÷ Velocidad ÷ niveles entre ambos. El nivel de partida depende de las Subidas Limpias de los niveles L−2, L−1 y L (L = nivel nuevo): [1] si ninguna fue limpia, entre L−3 y L (tres cambios; por ejemplo, de 7 a 8: del nivel 5 al 8); [2] si L fue limpia y L−1 no, entre L−2 y L (dos cambios); [3] si L no fue limpia y L−2 sí, entre L−2 y L (dos cambios); [4] si L−1 y L fueron limpias, entre L−1 y L (un cambio). En cualquier otro caso, o si falta historial, la casilla queda vacía. Al pasar el cursor por la casilla se ve entre qué niveles se calculó.</td></tr>
         <tr><td>Sumas</td><td>DEF = Rapidez + Defensa; DEFside = Técnica + Pases + Creación; MID = Rapidez + Técnica + Pases + Creación; ATT = Rapidez + Técnica + Anotación; ATTside = Pases + Defensa + Creación.</td></tr>
         <tr><td>Acumulado</td><td>Los mismos puntos, pero sin volver a 0 nunca (desde la primera semana registrada).</td></tr>
         <tr><td>Entreno Alineaciones</td><td>Lo que entrena el jugador según la página Alineaciones: el entrenamiento asignado a la posición del puesto en que aparece en las alineaciones de titulares (la primera en que esté). Se lee de lo que esa página guarda en este navegador. Si no aparece en ninguna, o esa posición no tiene entrenamiento asignado, muestra —.</td></tr>
@@ -653,14 +654,14 @@ function computeRows(rows, speed) {
     // Subida Limpia: la skill subió esa semana sin haber sido la entrenada.
     const clean = r.k.map((v, i) => !!prev && v > prev.k[i] && r.f !== TRN[i]);
     if (prev) r.k.forEach((v, i) => { for (let x = prev.k[i] + 1; x <= v; x++) arrival[i][x] = { row: n, clean: clean[i] }; });
-    // Talento por skill (solo RAP…CRE). Según las Subidas Limpias de los niveles L-2, L-1 y L (L = nivel nuevo):
+    // Talento por skill (RAP…ATT). Según las Subidas Limpias de los niveles L-2, L-1 y L (L = nivel nuevo):
     //  · L-1 y L limpias                       → entre el nivel L-1 y L (1 cambio)
     //  · L limpia y L-1 no                     → entre el nivel L-2 y L (2 cambios)
     //  · L no limpia y L-2 limpia              → entre el nivel L-2 y L (2 cambios)
     //  · ninguna de L-2, L-1 y L limpia        → entre el nivel L-3 y L (3 cambios)
     //  · cualquier otro caso o falta historial → vacío
-    const tw = [null, null, null, null, null];
-    for (let i = 1; i <= 5; i++) {
+    const tw = [null, null, null, null, null, null];
+    for (let i = 1; i <= 6; i++) {
       if (!prev || !(r.k[i] > prev.k[i])) continue;
       const a = arrival[i], L = r.k[i], c0 = a[L].clean, a1 = a[L - 1], a2 = a[L - 2];
       let m = 0;
@@ -983,7 +984,8 @@ function resumenData() {
   return T.players.map(tr => {
     const r = tr.rows[tr.rows.length - 1]; if (!r) return null;
     const k = r.k, sum = a => a.reduce((x, i) => x + k[i], 0);
-    return { tr, r, cells: [alTrn(tr).v, tr.plan, tr.k, r.a, sum([1, 4]), sum([2, 3, 5]), sum([1, 2, 3, 5]), sum([1, 2, 6]), sum([3, 4, 5]), k[0], k[1], k[2], k[3], k[4], k[5], k[6]] };
+    const pk = tr.rows.length > 1 ? tr.rows[tr.rows.length - 2].k : null;
+    return { tr, r, pk, cells: [alTrn(tr).v, tr.plan, tr.k, r.a, sum([1, 4]), sum([2, 3, 5]), sum([1, 2, 3, 5]), sum([1, 2, 6]), sum([3, 4, 5]), k[0], k[1], k[2], k[3], k[4], k[5], k[6]] };
   }).filter(Boolean);
 }
 const RES_COLS = [   // [etiqueta, ayuda, clase de skill]
@@ -995,31 +997,35 @@ function renderResumen() {
   let rows = resumenData();
   const { i: si, dir: sd } = view.sort || { i: 3, dir: -1 };   // por defecto: edad de mayor a menor y, a igual edad, por apellido
   rows = rows.slice().sort((a, b) => { const x = a.cells[si], y = b.cells[si]; return (typeof x === "number" && typeof y === "number" ? x - y : String(x).localeCompare(String(y), "es")) * sd || a.tr.k.localeCompare(b.tr.k, "es"); });
-  const mm = RES_COLS.map((_, i) => { const v = rows.map(x => x.cells[i]).filter(Number.isFinite); return [Math.min(...v), Math.max(...v)]; });
-  const head = RES_COLS.map(([lab, tip], i) => `<th class="sortable${i === 2 ? " l" : ""}${i === 9 ? " sep" : ""}" data-sort="${i}" title="${esc(tip || "Ordenar por " + lab)}">${esc(lab)}${si === i ? `<span class="arr">${sd > 0 ? "▲" : "▼"}</span>` : ""}</th>`).join("");
+  const hl = new Set(si >= 4 && si <= 8 ? [si, ...COMPOS[si - 4][1].map(i => 9 + i)] : []);   // al ordenar por una suma se resaltan las skills que entran en ella
+  const head = RES_COLS.map(([lab, tip], i) => `<th class="sortable${i === 2 ? " l" : ""}${i === 9 ? " sep" : ""}${hl.has(i) ? " hl" : ""}" data-sort="${i}" title="${esc(tip || "Ordenar por " + lab)}">${esc(lab)}${si === i ? `<span class="arr">${sd > 0 ? "▲" : "▼"}</span>` : ""}</th>`).join("");
   const body = rows.map(x => `<tr>${x.cells.map((c, i) => {
     if (i === 0) return `<td>${alChip(x.tr)}</td>`;
     if (i === 1) return `<td>${trnSelect(c, `data-plan="${esc(x.tr.k)}" aria-label="Entreno actual de ${esc(x.tr.k)}"`)}</td>`;
     if (i === 2) return `<td class="pn l"><a href="#${encodeURIComponent(c)}" data-tab="${esc(c)}">${esc(c)}</a></td>`;
-    const p = scaleP(c, mm[i][0], mm[i][1]);
-    if (i === 3) return `<td class="agecell" style="--p:${p}">${c}</td>`;
-    if (i >= 9) return `<td class="sk sk-${RES_COLS[i][2]}${i === 9 ? " sep" : ""}" style="--p:${p}">${c}</td>`;
-    return `<td class="sum">${c}</td>`;
+    const h = hl.has(i) ? " hl" : "";
+    if (i === 3) return `<td class="${h.trim()}">${c}</td>`;
+    if (i >= 9) {
+      const b = x.pk ? x.pk[i - 9] : null;
+      const mark = b != null && b !== c ? (c > b ? ` <span class="chg up" title="Subió: antes ${b}" aria-label="subió, antes ${b}">▲</span>` : ` <span class="chg down" title="Bajó: antes ${b}" aria-label="bajó, antes ${b}">▼</span>`) : "";
+      return `<td class="sum${i === 9 ? " sep" : ""}${h}">${c}${mark}</td>`;
+    }
+    return `<td class="sum${h}">${c}</td>`;
   }).join("")}</tr>`).join("");
   return `<div class="view-title"><h2>Resumen</h2><span class="lbl">Última semana registrada: ${esc(dmy(T.players.map(p => p.rows[p.rows.length - 1].d).sort().pop()))}. Orden: edad de mayor a menor y luego apellido. Pulsa un encabezado para ordenar por otra columna.</span></div>
     <div class="tablewrap ent"><table id="tbl"><thead><tr class="cols">${head}</tr></thead><tbody>${body}</tbody></table></div>`;
 }
 
-const PL_GROUPS = () => [["Semana", 4, ""], ["Entrenamiento", 2, "sep"], ["Skills y avance (gt)", 14, "sep"], ["Sumas", 5, "sep"], ["Talento por skill", 5, "sep"], ["Acumulado", 6, "sep"]];
+const PL_GROUPS = () => [["Semana", 4, ""], ["Entrenamiento", 2, "sep"], ["Skills y avance (gt)", 14, "sep"], ["Sumas", 5, "sep"], ["Talento por skill", 6, "sep"], ["Acumulado", 6, "sep"]];
 function renderPlayer(tr) {
   const o = calcOf(tr);
   const lastIdx = tr.rows.length - 1, last = tr.rows[lastIdx];
   const mm = SK_COLS.map((_, i) => { const v = tr.rows.map(r => r.k[i]); return [Math.min(...v), Math.max(...v)]; });
   const groups = PL_GROUPS().map(([n, c, s]) => `<th colspan="${c}" class="${s}">${n}</th>`).join("");
   const cols = ["Fecha", "TEMP", "SEM", "EDAD", "ENT. F", "Entrenamiento", ...SK_COLS.flatMap(s => [s.lab, "gt"]),
-    ...COMPOS.map(s => s[0]), "RAP", "TEC", "PAS", "DEF", "CRE", ...SK_COLS.slice(1).map(s => s.full)];
+    ...COMPOS.map(s => s[0]), "RAP", "TEC", "PAS", "DEF", "CRE", "ATT", ...SK_COLS.slice(1).map(s => s.full)];
   const tips = { ...COMPOS_TIP, "ENT. F": "Si está marcada, la skill entrenada suma 2 en lugar de la Velocidad de entreno", gt: "Puntos de entrenamiento acumulados desde la última subida de la skill: suma la Velocidad de entreno si se entrenó, 2 con ENT. F, 1 si no se entrenó y 0 en LESIÓN. Vuelve a 0 cuando la skill sube" };
-  const sepAt = new Set([4, 6, 20, 25, 30]);
+  const sepAt = new Set([4, 6, 20, 25, 31]);
   const th = cols.map((c, i) => `<th class="${i === 0 ? "fc " : ""}${sepAt.has(i) ? "sep" : ""}" title="${esc(tips[c] || "")}">${esc(c)}</th>`).join("");
   const rowsHtml = [];
   for (let n = lastIdx; n >= 0; n--) {
@@ -1031,7 +1037,7 @@ function renderPlayer(tr) {
       cells.push(`<td class="sk sk-${s.id}${i === 0 ? " sep" : ""}${c.clean[i] ? " clean" : ""}" style="--p:${scaleP(r.k[i], mm[i][0], mm[i][1])}"${c.clean[i] ? ' title="Subida Limpia: subió sin haber sido entrenada"' : ""}>${r.k[i]}</td><td class="gt">${c.gt[i]}</td>`);
     });
     COMPOS.forEach(([, idx], j) => cells.push(`<td class="sum${j === 0 ? " sep" : ""}">${idx.reduce((x, i) => x + r.k[i], 0)}</td>`));
-    c.tw.forEach((t, i) => cells.push(`<td class="${i === 0 ? "sep" : ""}"${t ? ` title="Niveles ${t.from} → ${t.to} (${t.m} ${t.m === 1 ? "cambio" : "cambios"})"` : ""}>${t ? nf2.format(t.v) : ""}</td>`));
+    c.tw.forEach((t, i) => cells.push(`<td class="${i === 0 ? "sep" : ""}${t ? " tal sk-" + SK_COLS[i + 1].id : ""}"${t ? ` title="Niveles ${t.from} → ${t.to} (${t.m} ${t.m === 1 ? "cambio" : "cambios"})"` : ""}>${t ? nf2.format(t.v) : ""}</td>`));
     c.cum.forEach((v, i) => cells.push(`<td class="gt${i === 0 ? " sep" : ""}">${v}</td>`));
     rowsHtml.push(`<tr${n === lastIdx ? ' class="newest"' : ""}>${cells.join("")}</tr>`);
   }
