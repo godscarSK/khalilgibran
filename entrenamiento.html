@@ -404,11 +404,20 @@ button.btn.danger { color: #b3261e; border-color: #b3261e; }
   </form>
 </dialog>
 
+<dialog id="cloudDlg" class="dlg" aria-labelledby="cloudTitle">
+  <h2 id="cloudTitle">¿Guardar en la nube?</h2>
+  <p class="hint">¿Quieres guardar el entrenamiento de <b id="cloudName"></b> en la nube? Si eliges «No», solo queda en este dispositivo, no se sube nada y no aparece en tus otros dispositivos.</p>
+  <div class="actions">
+    <button class="btn" id="cloudCancel" type="button">Cancelar</button>
+    <button class="btn" id="cloudNo" type="button">No, solo en este dispositivo</button>
+    <button class="btn primary" id="cloudYes" type="button">Sí, guardar en la nube</button>
+  </div>
+</dialog>
 <dialog id="addDlg" class="dlg" aria-labelledby="addTitle">
   <form id="addForm">
     <h2 id="addTitle">Agregar jugador</h2>
     <label class="field">Lista
-      <select id="addSrc" aria-label="Lista"><option value="r">Jugadores del plantel</option><option value="h">Historial guardado (fuera del seguimiento)</option></select>
+      <select id="addSrc" aria-label="Lista"><option value="e">Entrenables</option><option value="r">Plantel</option><option value="h">Registro Histórico</option></select>
     </label>
     <p class="hint" id="addHint"></p>
     <label class="field">Jugador
@@ -697,12 +706,20 @@ function computeRows(rows, speed) {
 // Gana el cambio más reciente de cada jugador.
 const sync = { key: null, token: "", busy: false, state: "local", detail: "", jsonp: false, fetchErr: "", timer: 0 };
 const remoteT = {};
+const estCloud = {};   // pid → { v, t } marcas del plantel traídas de la nube (solo lectura)
+async function decEst(s) { if (!s) return ""; const o = unb64u(String(s)); return new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv: o.slice(0, 12) }, sync.key, o.slice(12))); }
+function estMark(pid) {   // marca del plantel (GK, DEF, MID, ATT, ENT, EXT) del jugador: la más reciente entre este navegador y la nube
+  let loc = null; try { const e = JSON.parse(localStorage.getItem("equipo:est")); loc = e && e[pid]; } catch {}
+  const c = estCloud[pid];
+  const x = c && (!loc || c.t > loc.t) ? c : loc;
+  return x && typeof x.v === "string" ? x.v : "";
+}
 const nextT = k => Math.max(Date.now(), (remoteT[k] || 0) + 1);
 const rkey = id => "ent" + id;
 const uniqueId = base => { let id = base, n = 2; while (T.players.some(p => p.id === id) || T.gone[id]) id = base + n++; return id; };
 function dirtyAdd(id) { if (!T.dirty.includes(id)) T.dirty.push(id); }
 function dirtyDel(id) { T.dirty = T.dirty.filter(x => x !== id); }
-function touch(tr, defer) { tr.t = nextT(rkey(tr.id)); dirtyAdd(tr.id); if (!defer) { saveT(); schedulePush(); } }
+function touch(tr, defer) { tr.t = nextT(rkey(tr.id)); if (tr.local) { if (!defer) saveT(); return; } dirtyAdd(tr.id); if (!defer) { saveT(); schedulePush(); } }   // local: solo en este dispositivo, no se sube
 function removePlayer(tr) {
   T.players = T.players.filter(p => p !== tr);
   T.gone[tr.id] = nextT(rkey(tr.id)); dirtyAdd(tr.id); saveT(); schedulePush();
@@ -809,6 +826,7 @@ async function pullT() {
   const seen = new Set();
   let n = 0, changed = false;
   for (const it of j.items || []) {
+    if (/^\d+$/.test(String(it.pid))) { try { const v = await decEst(it.v), t = Number(it.t) || 0; if (!estCloud[it.pid] || estCloud[it.pid].t < t) estCloud[it.pid] = { v, t }; } catch {} continue; }   // marcas ENT/GK/… del plantel (solo lectura)
     const m = /^ent([a-z0-9]{1,36})$/.exec(String(it.pid)); if (!m) continue;
     const id = m[1], t = Number(it.t) || 0;
     n++; seen.add(id); remoteT[rkey(id)] = Math.max(remoteT[rkey(id)] || 0, t);
@@ -831,7 +849,7 @@ async function pullT() {
       } else if (loc.t > t) dirtyAdd(id);
     }
   }
-  for (const p of T.players) if (!seen.has(p.id)) dirtyAdd(p.id);
+  for (const p of T.players) if (!seen.has(p.id) && !p.local) dirtyAdd(p.id);
   for (const id of Object.keys(T.gone)) if (!seen.has(id)) dirtyAdd(id);
   saveT();
   return { n, changed };
@@ -851,12 +869,13 @@ async function resetAll() {
   const pw = savedPw();
   const seed = await fetchTraining(pw, true);
   if (!seed) { setStatus(""); toast("No encontré el historial original (data/training.enc.json); no se cambió nada."); return; }
-  const old = T ? T.players.map(p => p.id).concat(Object.keys(T.gone || {})) : [];
+  const old = T ? T.players.filter(p => !p.local).map(p => p.id).concat(Object.keys(T.gone || {})) : [];
+  const loc = T ? T.players.filter(p => p.local) : [];
   const n = normT({ players: JSON.parse(JSON.stringify(seed.players)) });
   n.dirty = n.players.map(p => p.id);
   for (const p of n.players) p.t = nextT(rkey(p.id));
   for (const id of old) if (!n.players.some(p => p.id === id)) { n.gone[id] = nextT(rkey(id)); n.dirty.push(id); }
-  T = n; saveT(); location.hash = "";
+  n.players.push(...loc); T = n; saveT(); location.hash = "";
   await load(false);
 }
 
@@ -984,10 +1003,16 @@ function renderSummaryBox() {
   const first = rows.filter(r => r.t === tmax && r.s === 1).map(r => r.d).sort()[0] || rows.filter(r => r.t === tmax).map(r => r.d).sort()[0];
   const last = rows.map(r => r.d).sort().pop();
   const weeks = Math.round((Date.parse(last) - Date.parse(first)) / 604800000) + 1;
+  const fin = new Date(Date.parse(first) + 12 * 604800000).toISOString().slice(0, 10);   // 12 semanas después del primer entreno
+  let rises = 0;
+  for (const p of live()) { const n = p.rows.length; if (n > 1 && p.rows[n - 1].d === last) for (let i = 0; i < 7; i++) if (p.rows[n - 1].k[i] > p.rows[n - 2].k[i]) rises++; }
   box.innerHTML = `<dl>
-    <dt>Primer entreno temp.</dt><dd>${esc(dmy(first))}</dd>
-    <dt>Último entreno</dt><dd>${esc(dmy(last))}</dd>
-    <dt>Entrenos actuales</dt><dd>${weeks}</dd>
+    <dt>Primer Entreno</dt><dd>${esc(dmy(first))}</dd>
+    <dt>Entreno Actual</dt><dd>${esc(dmy(last))}</dd>
+    <dt>Entreno Final</dt><dd>${esc(dmy(fin))}</dd>
+    <dt>Entrenos Temporada</dt><dd>${weeks}</dd>
+    <dt>Jugadores Entrenando</dt><dd>${live().length}</dd>
+    <dt title="Skills que subieron en la última actualización del jueves">Subidas Semana Actual</dt><dd>${rises}</dd>
     <dt>Velocidad de entreno</dt><dd>${SPEED}</dd>
   </dl>`;
   box.hidden = false;
@@ -1085,18 +1110,19 @@ function calAt(wk) {   // temporada y semana de esa fecha, según las filas que 
   while (s < 1) { s += 13; t--; }
   return { t, s };
 }
-function addCandidates() {
+function addCandidates(onlyEnt) {
   const have = new Set(live().map(pidOf).filter(x => x != null));
-  return roster.players.filter(p => !have.has(String(p.pid)) && p.skills && SK_API.every(x => Number.isFinite(p.skills[x]))).sort((a, b) => surnameFirst(a.name).localeCompare(surnameFirst(b.name), "es"));
+  return roster.players.filter(p => !have.has(String(p.pid)) && p.skills && SK_API.every(x => Number.isFinite(p.skills[x])) && (!onlyEnt || estMark(String(p.pid)) === "ENT")).sort((a, b) => surnameFirst(a.name).localeCompare(surnameFirst(b.name), "es"));
 }
 // «Juan José Pereira» → «Pereira Juan José» (la última palabra es el apellido)
 function surnameFirst(n) { const w = String(n || "").trim().split(/\s+/); return w.length < 2 ? w.join(" ") : w[w.length - 1] + " " + w.slice(0, -1).join(" "); }
+let pendingAdd = null;
 function restorePlayer(tr) {
   tr.arch = false; touch(tr, true); autoAppend(); saveT(); schedulePush();
   location.hash = encodeURIComponent(tr.k); render();
 }
-function archived() { return T.players.filter(p => p.arch).sort((a, b) => a.k.localeCompare(b.k, "es")); }
-function addPlayer(pid) {
+function archived() { return T.players.filter(p => p.arch && !p.local).sort((a, b) => a.k.localeCompare(b.k, "es")); }
+function addPlayer(pid, cloud = true) {
   const p = roster.players.find(x => String(x.pid) === String(pid));
   if (!p || !roster.stamp || !T) return false;
   const wk = weekKeyOf(roster.stamp), cal = calAt(wk) || { t: 1, s: 1 };
@@ -1104,18 +1130,18 @@ function addPlayer(pid) {
   if (old) { restorePlayer(old); return true; }
   const last = p.name.trim().split(/\s+/).pop();
   const key = T.players.some(x => norm(x.k) === norm(last)) ? p.name.trim() : last;
-  const np = { id: uniqueId(slug(key)), t: 0, k: key, lay: "ATT", plan: "", pid: p.pid, rows: [{ d: wk, t: cal.t, s: cal.s, a: Number.isFinite(p.age) ? p.age : 0, e: false, f: "", k: SK_API.map(x => p.skills[x]) }] };
+  const np = { id: cloud ? uniqueId(slug(key)) : uniqueId("l-" + slug(key)), ...(cloud ? {} : { local: true }), t: 0, k: key, lay: "ATT", plan: "", pid: p.pid, rows: [{ d: wk, t: cal.t, s: cal.s, a: Number.isFinite(p.age) ? p.age : 0, e: false, f: "", k: SK_API.map(x => p.skills[x]) }] };
   T.players.push(np); touch(np);
   location.hash = encodeURIComponent(key); render();
   return true;
 }
 function fillAdd() {
-  const hist = $("#addSrc").value === "h", ok = $("#addOk"), del = $("#addDel");
+  const src = $("#addSrc").value, hist = src === "h", ok = $("#addOk"), del = $("#addDel");
   del.hidden = !hist;
   ok.textContent = hist ? "Recuperar" : "Agregar";
   $("#addHint").textContent = hist
     ? "Jugadores que quitaste del seguimiento y cuyo historial sigue guardado en la nube. «Recuperar» los vuelve a mostrar; «Eliminar registro» borra su historial para siempre."
-    : "Elige a un jugador del plantel. Su historial parte con las skills de la última actualización del jueves y se completa solo cada semana.";
+    : (src === "e" ? "Jugadores del plantel con la marca ENT de la página Plantel que aún no están en el seguimiento. " : "Todo el plantel. ") + "Su historial parte con las skills de la última actualización del jueves y se completa solo cada semana.";
   let list, msg = "";
   if (hist) {
     list = archived();
@@ -1123,14 +1149,14 @@ function fillAdd() {
     $("#addSel").innerHTML = list.map(p => `<option value="${esc(p.id)}">${esc(surnameFirst(p.k))} · ${p.rows.length} semanas · última ${esc(dmy(p.rows[p.rows.length - 1].d))}${p.pid != null && inRoster.has(String(p.pid)) ? " · está en el plantel" : ""}</option>`).join("");
     if (!list.length) msg = "No hay jugadores con historial guardado fuera del seguimiento.";
   } else {
-    list = roster.stamp ? addCandidates() : [];
+    list = roster.stamp ? addCandidates(src === "e") : [];
     $("#addSel").innerHTML = list.map(p => `<option value="${esc(p.pid)}">${esc(surnameFirst(p.name))}</option>`).join("");
-    msg = !roster.stamp ? "No hay datos del plantel cargados, así que no se puede agregar a nadie ahora." : (list.length ? "" : "Todos los jugadores del plantel ya están en el seguimiento.");
+    msg = !roster.stamp ? "No hay datos del plantel cargados, así que no se puede agregar a nadie ahora." : (list.length ? "" : src === "e" ? "No hay jugadores con la marca ENT que falten en el seguimiento." : "Todos los jugadores del plantel ya están en el seguimiento.");
   }
   ok.disabled = !list.length; del.disabled = !list.length; $("#addMsg").textContent = msg;
 }
 function openAdd() {
-  $("#addSrc").value = "r"; fillAdd();
+  $("#addSrc").value = "e"; fillAdd();
   $("#addDlg").showModal();
 }
 
@@ -1241,7 +1267,8 @@ function init() {
     const rm = e.target.closest("button[data-rm]");
     if (rm) {
       const tr = live().find(p => p.k === rm.dataset.rm);
-      if (tr && confirm(`¿Quitar a ${tr.k} del seguimiento?\n\nSu historial se conserva en la nube: puedes recuperarlo o eliminarlo en «Agregar jugador» → «Historial guardado».`)) { tr.arch = true; touch(tr); location.hash = ""; render(); }
+      if (tr && tr.local) { if (confirm(`¿Quitar a ${tr.k} de este dispositivo?\n\nSolo estaba guardado aquí (no en la nube), así que su historial se pierde.`)) { T.players = T.players.filter(p => p !== tr); saveT(); location.hash = ""; render(); } }
+    else if (tr && confirm(`¿Quitar a ${tr.k} del seguimiento?\n\nSu historial se conserva en la nube: puedes recuperarlo o eliminarlo en «Agregar jugador» → «Registro Histórico».`)) { tr.arch = true; touch(tr); location.hash = ""; render(); }
       return;
     }
     const a = e.target.closest("a[data-tab]"); if (a) { e.preventDefault(); location.hash = encodeURIComponent(a.dataset.tab); return; }
@@ -1264,8 +1291,13 @@ function init() {
   $("#addSrc").addEventListener("change", fillAdd);
   $("#addForm").addEventListener("submit", ev => {
     ev.preventDefault(); const v = $("#addSel").value; $("#addDlg").close(); if (!v) return;
-    if ($("#addSrc").value === "h") { const tr = T.players.find(p => p.id === v); if (tr) restorePlayer(tr); } else addPlayer(v);
+    if ($("#addSrc").value === "h") { const tr = T.players.find(p => p.id === v); if (tr) restorePlayer(tr); return; }
+    const pl = roster.players.find(x => String(x.pid) === String(v)); pendingAdd = v;
+    $("#cloudName").textContent = pl ? surnameFirst(pl.name) : "este jugador"; $("#cloudDlg").showModal();
   });
+  $("#cloudYes").addEventListener("click", () => { $("#cloudDlg").close(); if (pendingAdd) addPlayer(pendingAdd, true); pendingAdd = null; });
+  $("#cloudNo").addEventListener("click", () => { $("#cloudDlg").close(); if (pendingAdd) addPlayer(pendingAdd, false); pendingAdd = null; });
+  $("#cloudCancel").addEventListener("click", () => { $("#cloudDlg").close(); pendingAdd = null; });
   $("#addDel").addEventListener("click", () => {
     const tr = T.players.find(p => p.id === $("#addSel").value); if (!tr) return;
     if (!confirm(`¿Eliminar para siempre el registro de ${tr.k}?\n\nSe borran sus ${tr.rows.length} semanas de historial de la nube y de todos tus dispositivos. No se puede deshacer.`)) return;
