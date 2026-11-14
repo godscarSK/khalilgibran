@@ -1003,7 +1003,7 @@ function renderResumen() {
   let rows = resumenData();
   const { i: si, dir: sd } = view.sort || { i: 3, dir: -1 };   // por defecto: edad de mayor a menor y, a igual edad, por apellido
   rows = rows.slice().sort((a, b) => { const x = a.cells[si], y = b.cells[si]; return (typeof x === "number" && typeof y === "number" ? x - y : String(x).localeCompare(String(y), "es")) * sd || a.tr.k.localeCompare(b.tr.k, "es"); });
-  const hl = new Set(si >= 11 ? [si, ...COMPOS[si - 11][1].map(i => 4 + i)] : []);   // al ordenar por una suma se resaltan las skills que entran en ella
+  const hl = new Set(si >= 11 && !view.hlOff ? [si, ...COMPOS[si - 11][1].map(i => 4 + i)] : []);   // al ordenar por una suma se resaltan las skills que entran en ella
   const head = RES_COLS.map(([lab, tip], i) => `<th class="sortable${i === 2 ? " l" : ""}${i === 4 || i === 11 ? " sep" : ""}${hl.has(i) ? " hl" : ""}" data-sort="${i}" title="${esc(tip || "Ordenar por " + lab)}">${esc(lab)}${si === i ? `<span class="arr">${sd > 0 ? "▲" : "▼"}</span>` : ""}</th>`).join("");
   const body = rows.map(x => `<tr>${x.cells.map((c, i) => {
     if (i === 0) return `<td>${alChip(x.tr)}</td>`;
@@ -1195,6 +1195,10 @@ function init() {
   $("#nav").addEventListener("change", e => { location.href = e.target.value; });
   window.addEventListener("pageshow", () => { $("#nav").value = "entrenamiento.html"; });
   window.addEventListener("hashchange", () => render());
+  document.addEventListener("click", e => {   // un clic fuera de la tabla quita el resaltado de las columnas de la suma
+    if (view.hlOff || !view.sort || view.sort.i < 11 || view.tab !== "Resumen" || e.target.closest("#tbl") || !e.target.isConnected) return;
+    view.hlOff = true; render();
+  });
   $("#tabs").addEventListener("click", e => { const b = e.target.closest("button[data-tab]"); if (!b) return; location.hash = b.dataset.tab === "Resumen" ? "" : encodeURIComponent(b.dataset.tab); if (b.dataset.tab === "Resumen") render(); });
   $("#view").addEventListener("click", e => {
     const rm = e.target.closest("button[data-rm]");
@@ -1206,7 +1210,9 @@ function init() {
     const a = e.target.closest("a[data-tab]"); if (a) { e.preventDefault(); location.hash = encodeURIComponent(a.dataset.tab); return; }
     const h = e.target.closest("th[data-sort]"); if (!h) return;
     const i = Number(h.dataset.sort);
-    view.sort = view.sort && view.sort.i === i ? (view.sort.dir === 1 ? { i, dir: -1 } : null) : { i, dir: 1 };
+    const first = i >= 11 ? -1 : 1;   // las sumas parten de mayor a menor
+    view.sort = view.sort && view.sort.i === i ? (view.sort.dir === first ? { i, dir: -first } : null) : { i, dir: first };
+    view.hlOff = false;
     render();
   });
   $("#view").addEventListener("change", e => {
