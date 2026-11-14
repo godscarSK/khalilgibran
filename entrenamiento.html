@@ -324,6 +324,9 @@ i.cl::before { content: "*"; }
 .ent td.nk-def { color: var(--n-def); } .ent td.nk-cre { color: var(--n-cre); } .ent td.nk-ata { color: var(--n-ata); }
 .ent th.nk-con { color: var(--n-con); } .ent th.nk-rap { color: var(--n-rap); } .ent th.nk-tec { color: var(--n-tec); } .ent th.nk-pas { color: var(--n-pas); }
 .ent th.nk-def { color: var(--n-def); } .ent th.nk-cre { color: var(--n-cre); } .ent th.nk-ata { color: var(--n-ata); }
+button.btn.danger { color: #b3261e; border-color: #b3261e; }
+:root[data-theme="dark"] button.btn.danger { color: #ff8a80; border-color: #ff8a80; }
+.dlg .actions [hidden] { display: none; }
 </style>
 </head>
 <body>
@@ -404,12 +407,16 @@ i.cl::before { content: "*"; }
 <dialog id="addDlg" class="dlg" aria-labelledby="addTitle">
   <form id="addForm">
     <h2 id="addTitle">Agregar jugador</h2>
-    <p class="hint">Elige a un jugador del plantel. Su historial parte con las skills de la última actualización del jueves y se completa solo cada semana.</p>
+    <label class="field">Lista
+      <select id="addSrc" aria-label="Lista"><option value="r">Jugadores del plantel</option><option value="h">Historial guardado (fuera del seguimiento)</option></select>
+    </label>
+    <p class="hint" id="addHint"></p>
     <label class="field">Jugador
       <select id="addSel" aria-label="Jugador"></select>
     </label>
     <p class="msg" id="addMsg" role="status"></p>
     <div class="actions">
+      <button class="btn danger" id="addDel" type="button" hidden>Eliminar registro</button>
       <button class="btn" id="addCancel" type="button">Cancelar</button>
       <button class="btn primary" id="addOk" type="submit">Agregar</button>
     </div>
@@ -773,7 +780,7 @@ async function estCall(params) {
   if (!j.ok) throw new Error(j.error || "error");
   return j;
 }
-const recOf = p => ({ k: p.k, lay: p.lay, plan: p.plan || "", pid: p.pid == null ? null : p.pid, rows: p.rows });
+const recOf = p => ({ k: p.k, lay: p.lay, plan: p.plan || "", pid: p.pid == null ? null : p.pid, rows: p.rows, ...(p.arch ? { arch: 1 } : {}) });
 async function pushDirty() {
   if (!CONFIG.estUrl || !sync.key || sync.busy || !T || !T.dirty.length) return;
   sync.busy = true; setSyncState("pending");
@@ -818,6 +825,7 @@ async function pullT() {
       if (!loc || t > loc.t) {
         const np = { id, t, k: rec.k, lay: rec.lay || "ATT", plan: rec.plan || "", rows: rec.rows };
         if (rec.pid != null) np.pid = rec.pid;
+        if (rec.arch) np.arch = true;
         if (loc) T.players[T.players.indexOf(loc)] = np; else { T.players.push(np); delete T.gone[id]; }
         dirtyDel(id); changed = true;
       } else if (loc.t > t) dirtyAdd(id);
@@ -944,7 +952,7 @@ function autoAppend() {
   if (!roster.players.length || !roster.stamp || !T) return res;
   const wk = weekKeyOf(roster.stamp); res.week = wk;
   let changed = false;
-  for (const tr of T.players) {
+  for (const tr of live()) {
     const last = tr.rows[tr.rows.length - 1];
     if (last && last.d >= wk) continue;   // esa semana ya está
     const p = matchPlayer(tr);
@@ -962,13 +970,14 @@ function autoAppend() {
 
 /* ─────────────── Vistas ─────────────── */
 const view = { tab: "Resumen", sort: null };   // sort: { i, dir }
-const tabOf = () => { const h = decodeURIComponent(location.hash.slice(1)); return h && T && T.players.some(p => p.k === h) ? h : "Resumen"; };
+const live = () => T.players.filter(p => !p.arch);
+const tabOf = () => { const h = decodeURIComponent(location.hash.slice(1)); return h && T && live().some(p => p.k === h) ? h : "Resumen"; };
 const scaleP = (v, a, b) => b > a ? Math.round((v - a) / (b - a) * 100) : 0;
 const trnSelect = (val, attrs) => `<select class="trn" data-t="${esc(val)}" ${attrs}><option value=""${val === "" ? " selected" : ""}>—</option>${TRN_OPTS.map(o => `<option${o === val ? " selected" : ""}>${o}</option>`).join("")}</select>`;
 const calcOf = tr => computeRows(tr.rows, SPEED);
 
 function renderSummaryBox() {
-  const rows = T.players.flatMap(p => p.rows);
+  const rows = live().flatMap(p => p.rows);
   const box = $("#summary");
   if (!rows.length) { box.hidden = true; return; }
   const tmax = Math.max(...rows.map(r => r.t));
@@ -985,11 +994,11 @@ function renderSummaryBox() {
 }
 
 function renderTabs() {
-  $("#tabs").innerHTML = ["Resumen", ...T.players.map(p => p.k).sort((a, b) => a.localeCompare(b, "es"))].map(k => `<button type="button" data-tab="${esc(k)}" aria-pressed="${k === view.tab}">${esc(k)}</button>`).join("");
+  $("#tabs").innerHTML = ["Resumen", ...live().map(p => p.k).sort((a, b) => a.localeCompare(b, "es"))].map(k => `<button type="button" data-tab="${esc(k)}" aria-pressed="${k === view.tab}">${esc(k)}</button>`).join("");
 }
 
 function resumenData() {
-  return T.players.map(tr => {
+  return live().map(tr => {
     const r = tr.rows[tr.rows.length - 1]; if (!r) return null;
     const k = r.k, sum = a => a.reduce((x, i) => x + k[i], 0);
     const pk = tr.rows.length > 1 ? tr.rows[tr.rows.length - 2].k : null;
@@ -1020,7 +1029,7 @@ function renderResumen() {
     }
     return `<td class="sum${i === 11 ? " sep" : ""}${h}">${c}</td>`;
   }).join("")}</tr>`).join("");
-  return `<div class="view-title"><h2>Resumen</h2><span class="lbl">Última semana registrada: ${esc(dmy(T.players.map(p => p.rows[p.rows.length - 1].d).sort().pop()))}. Orden: edad de mayor a menor y luego apellido. Pulsa un encabezado para ordenar por otra columna.</span></div>
+  return `<div class="view-title"><h2>Resumen</h2><span class="lbl">Última semana registrada: ${esc(dmy(live().map(p => p.rows[p.rows.length - 1].d).sort().pop()))}. Orden: edad de mayor a menor y luego apellido. Pulsa un encabezado para ordenar por otra columna.</span></div>
     <div class="tablewrap ent"><table id="tbl"><thead><tr class="cols">${head}</tr></thead><tbody>${body}</tbody></table></div>`;
 }
 
@@ -1062,14 +1071,14 @@ function render() {
   if (!T) { $("#view").innerHTML = ""; $("#summary").hidden = true; $("#tabs").innerHTML = ""; return; }
   view.tab = tabOf();
   renderSummaryBox(); renderTabs();
-  const tr = T.players.find(p => p.k === view.tab);
+  const tr = live().find(p => p.k === view.tab);
   $("#view").innerHTML = tr ? renderPlayer(tr) : renderResumen();
   const g = document.querySelector("tr.grp th"); if (g) $("#tbl").style.setProperty("--grp-h", g.getBoundingClientRect().height + "px");
 }
 
 /* ─────────────── Agregar y quitar jugadores ─────────────── */
 function calAt(wk) {   // temporada y semana de esa fecha, según las filas que ya hay
-  const ref = T.players.flatMap(p => p.rows).sort((a, b) => a.d < b.d ? -1 : 1).pop();
+  const ref = live().flatMap(p => p.rows).sort((a, b) => a.d < b.d ? -1 : 1).pop();
   if (!ref) return null;
   let s = ref.s + Math.round((Date.parse(wk) - Date.parse(ref.d)) / 604800000), t = ref.t;
   while (s > 13) { s -= 13; t++; }
@@ -1077,15 +1086,22 @@ function calAt(wk) {   // temporada y semana de esa fecha, según las filas que 
   return { t, s };
 }
 function addCandidates() {
-  const have = new Set(T.players.map(pidOf).filter(x => x != null));
+  const have = new Set(live().map(pidOf).filter(x => x != null));
   return roster.players.filter(p => !have.has(String(p.pid)) && p.skills && SK_API.every(x => Number.isFinite(p.skills[x]))).sort((a, b) => surnameFirst(a.name).localeCompare(surnameFirst(b.name), "es"));
 }
 // «Juan José Pereira» → «Pereira Juan José» (la última palabra es el apellido)
 function surnameFirst(n) { const w = String(n || "").trim().split(/\s+/); return w.length < 2 ? w.join(" ") : w[w.length - 1] + " " + w.slice(0, -1).join(" "); }
+function restorePlayer(tr) {
+  tr.arch = false; touch(tr, true); autoAppend(); saveT(); schedulePush();
+  location.hash = encodeURIComponent(tr.k); render();
+}
+function archived() { return T.players.filter(p => p.arch).sort((a, b) => a.k.localeCompare(b.k, "es")); }
 function addPlayer(pid) {
   const p = roster.players.find(x => String(x.pid) === String(pid));
   if (!p || !roster.stamp || !T) return false;
   const wk = weekKeyOf(roster.stamp), cal = calAt(wk) || { t: 1, s: 1 };
+  const old = T.players.find(x => x.arch && x.pid != null && String(x.pid) === String(p.pid));
+  if (old) { restorePlayer(old); return true; }
   const last = p.name.trim().split(/\s+/).pop();
   const key = T.players.some(x => norm(x.k) === norm(last)) ? p.name.trim() : last;
   const np = { id: uniqueId(slug(key)), t: 0, k: key, lay: "ATT", plan: "", pid: p.pid, rows: [{ d: wk, t: cal.t, s: cal.s, a: Number.isFinite(p.age) ? p.age : 0, e: false, f: "", k: SK_API.map(x => p.skills[x]) }] };
@@ -1093,12 +1109,29 @@ function addPlayer(pid) {
   location.hash = encodeURIComponent(key); render();
   return true;
 }
+function fillAdd() {
+  const hist = $("#addSrc").value === "h", ok = $("#addOk"), del = $("#addDel");
+  del.hidden = !hist;
+  ok.textContent = hist ? "Recuperar" : "Agregar";
+  $("#addHint").textContent = hist
+    ? "Jugadores que quitaste del seguimiento y cuyo historial sigue guardado en la nube. «Recuperar» los vuelve a mostrar; «Eliminar registro» borra su historial para siempre."
+    : "Elige a un jugador del plantel. Su historial parte con las skills de la última actualización del jueves y se completa solo cada semana.";
+  let list, msg = "";
+  if (hist) {
+    list = archived();
+    const inRoster = new Set(roster.players.map(p => String(p.pid)));
+    $("#addSel").innerHTML = list.map(p => `<option value="${esc(p.id)}">${esc(surnameFirst(p.k))} · ${p.rows.length} semanas · última ${esc(dmy(p.rows[p.rows.length - 1].d))}${p.pid != null && inRoster.has(String(p.pid)) ? " · está en el plantel" : ""}</option>`).join("");
+    if (!list.length) msg = "No hay jugadores con historial guardado fuera del seguimiento.";
+  } else {
+    list = roster.stamp ? addCandidates() : [];
+    $("#addSel").innerHTML = list.map(p => `<option value="${esc(p.pid)}">${esc(surnameFirst(p.name))}</option>`).join("");
+    msg = !roster.stamp ? "No hay datos del plantel cargados, así que no se puede agregar a nadie ahora." : (list.length ? "" : "Todos los jugadores del plantel ya están en el seguimiento.");
+  }
+  ok.disabled = !list.length; del.disabled = !list.length; $("#addMsg").textContent = msg;
+}
 function openAdd() {
-  const dlg = $("#addDlg"), list = roster.stamp ? addCandidates() : [];
-  $("#addSel").innerHTML = list.map(p => `<option value="${esc(p.pid)}">${esc(surnameFirst(p.name))}</option>`).join("");
-  $("#addOk").disabled = !list.length;
-  $("#addMsg").textContent = !roster.stamp ? "No hay datos del plantel cargados, así que no se puede agregar a nadie ahora." : (list.length ? "" : "Todos los jugadores del plantel ya están en el seguimiento.");
-  dlg.showModal();
+  $("#addSrc").value = "r"; fillAdd();
+  $("#addDlg").showModal();
 }
 
 /* ─────────────── Copiar la vista ─────────────── */
@@ -1165,7 +1198,7 @@ async function load(force) {
     else notices.push({ error: true, html: `<p><strong>Todavía no hay historial de entrenamiento.</strong> Falta el archivo <code>data/training.enc.json</code>. Se crea con <code>node cifrar-entrenamiento.mjs</code> a partir de <code>entrenamiento-datos.json</code> (pasos en el README) y se sube a la carpeta <code>data</code> del repositorio.</p>` });
   }
   if (T) {
-    if (roster.players.length) { let ch = false; for (const tr of T.players) if (tr.pid == null) { const p = matchPlayer(tr); if (p) { tr.pid = p.pid; ch = true; } } if (ch) saveT(); }
+    if (roster.players.length) { let ch = false; for (const tr of live()) if (tr.pid == null) { const p = matchPlayer(tr); if (p) { tr.pid = p.pid; ch = true; } } if (ch) saveT(); }
     const r = autoAppend();
     if (r.added.length) notices.push({ html: `<p><strong>Actualización del jueves:</strong> se agregó la semana del ${esc(dmy(r.week))} para ${r.added.length} jugador${r.added.length === 1 ? "" : "es"}: ${esc(r.added.join(", "))}.</p><p>Si cambias el entrenamiento de la semana que viene, elígelo en «Entreno Actual».</p>` });
     if (r.missing.length) notices.push({ html: `<p><strong>No pude actualizar a:</strong> ${esc(r.missing.join(", "))}. No encontré a ese jugador (o a más de uno) en los datos del plantel, o le faltan skills. Si ya no está en el equipo, ábrelo y usa «Quitar jugador».</p>` });
@@ -1207,8 +1240,8 @@ function init() {
   $("#view").addEventListener("click", e => {
     const rm = e.target.closest("button[data-rm]");
     if (rm) {
-      const tr = T.players.find(p => p.k === rm.dataset.rm);
-      if (tr && confirm(`¿Quitar a ${tr.k} del seguimiento? Se borra su historial en todos tus dispositivos (Restablecer vuelve al historial original).`)) { removePlayer(tr); location.hash = ""; render(); }
+      const tr = live().find(p => p.k === rm.dataset.rm);
+      if (tr && confirm(`¿Quitar a ${tr.k} del seguimiento?\n\nSu historial se conserva en la nube: puedes recuperarlo o eliminarlo en «Agregar jugador» → «Historial guardado».`)) { tr.arch = true; touch(tr); location.hash = ""; render(); }
       return;
     }
     const a = e.target.closest("a[data-tab]"); if (a) { e.preventDefault(); location.hash = encodeURIComponent(a.dataset.tab); return; }
@@ -1221,14 +1254,23 @@ function init() {
   });
   $("#view").addEventListener("change", e => {
     const t = e.target; if (!T) return;
-    if (t.dataset.plan != null) { const tr = T.players.find(p => p.k === t.dataset.plan); if (tr) { tr.plan = t.value; touch(tr); setTimeout(render, 0); } }
-    else if (t.dataset.rf != null) { const tr = T.players.find(p => p.k === view.tab); if (tr) { tr.rows[Number(t.dataset.rf)].f = t.value; touch(tr); setTimeout(render, 0); } }
-    else if (t.dataset.ef != null) { const tr = T.players.find(p => p.k === view.tab); if (tr) { tr.rows[Number(t.dataset.ef)].e = t.checked; touch(tr); setTimeout(render, 0); } }
+    if (t.dataset.plan != null) { const tr = live().find(p => p.k === t.dataset.plan); if (tr) { tr.plan = t.value; touch(tr); setTimeout(render, 0); } }
+    else if (t.dataset.rf != null) { const tr = live().find(p => p.k === view.tab); if (tr) { tr.rows[Number(t.dataset.rf)].f = t.value; touch(tr); setTimeout(render, 0); } }
+    else if (t.dataset.ef != null) { const tr = live().find(p => p.k === view.tab); if (tr) { tr.rows[Number(t.dataset.ef)].e = t.checked; touch(tr); setTimeout(render, 0); } }
   });
   $("#copy").addEventListener("click", copyView);
   $("#add").addEventListener("click", openAdd);
   $("#addCancel").addEventListener("click", () => $("#addDlg").close());
-  $("#addForm").addEventListener("submit", ev => { ev.preventDefault(); const v = $("#addSel").value; $("#addDlg").close(); if (v) addPlayer(v); });
+  $("#addSrc").addEventListener("change", fillAdd);
+  $("#addForm").addEventListener("submit", ev => {
+    ev.preventDefault(); const v = $("#addSel").value; $("#addDlg").close(); if (!v) return;
+    if ($("#addSrc").value === "h") { const tr = T.players.find(p => p.id === v); if (tr) restorePlayer(tr); } else addPlayer(v);
+  });
+  $("#addDel").addEventListener("click", () => {
+    const tr = T.players.find(p => p.id === $("#addSel").value); if (!tr) return;
+    if (!confirm(`¿Eliminar para siempre el registro de ${tr.k}?\n\nSe borran sus ${tr.rows.length} semanas de historial de la nube y de todos tus dispositivos. No se puede deshacer.`)) return;
+    removePlayer(tr); fillAdd(); toast(`Se eliminó el registro de ${tr.k}.`);
+  });
   window.addEventListener("focus", () => { if (T) render(); });
   document.addEventListener("visibilitychange", () => { if (!document.hidden) syncPull(); });
   window.addEventListener("online", () => { sync.jsonp = false; syncPull(); });   // al volver de la página Alineaciones, se lee de nuevo

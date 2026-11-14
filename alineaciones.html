@@ -1071,6 +1071,7 @@ function readEntrenamiento() {
     if (!T || !Array.isArray(T.players)) return;
     const strip = x => String(x || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
     for (const tr of T.players) {
+      if (tr.arch) continue;
       let pid = tr.pid != null && byPid.has(String(tr.pid)) ? String(tr.pid) : null;
       if (pid == null) { const hits = state.players.filter(q => strip(q.last) === strip(tr.k)); if (hits.length === 1) pid = String(hits[0].pid); }
       if (pid != null) entPlan.set(pid, tr.plan || "");
