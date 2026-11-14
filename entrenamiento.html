@@ -305,8 +305,10 @@ select.trn[data-t="Condición"] { --tc: var(--t-CON); } select.trn[data-t="LESI�
 
 h1#title { font-size: clamp(1.7rem, 7.4vw, 5.5rem); }
 .ent td.sk.clean { position: relative; }
-.ent td.sk.clean::after { content: ""; position: absolute; top: 3px; right: 3px; width: 7px; height: 7px; border-radius: 50%; background: var(--ink); box-shadow: 0 0 0 1.5px var(--panel); }
-i.cl { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--ink); box-shadow: 0 0 0 1.5px var(--panel); vertical-align: baseline; margin-right: 3px; }
+.ent td.sk.clean::after { content: ""; position: absolute; top: 4px; right: 4px; width: 8px; height: 8px; border-radius: 50%; background: #ff1fc8; box-shadow: 0 0 0 1.5px #fff, 0 0 0 2.5px #1b1b1b; }
+i.cl { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #ff1fc8; box-shadow: 0 0 0 1.5px #fff, 0 0 0 2.5px #1b1b1b; vertical-align: baseline; margin-right: 3px; }
+.ptg.alt { border-style: dashed; opacity: .85; }
+.ent .rm { margin-left: auto; }
 </style>
 </head>
 <body>
@@ -342,6 +344,7 @@ i.cl { display: inline-block; width: 9px; height: 9px; border-radius: 50%; backg
     </div>
     <div class="actions" role="group" aria-label="Acciones">
       <button class="btn" id="forgetPw" type="button" hidden title="Olvidar la contraseña en este navegador">Bloquear</button>
+      <button class="btn" id="add" type="button" title="Agregar a un jugador del plantel al seguimiento">Agregar jugador</button>
       <button class="btn" id="reset" type="button" title="Borra lo guardado en este navegador y vuelve a cargar el historial original">Restablecer</button>
       <button class="btn primary" id="copy" type="button" title="Copiar la tabla visible para pegarla en una planilla">Copiar</button>
     </div>
@@ -358,10 +361,10 @@ i.cl { display: inline-block; width: 9px; height: 9px; border-radius: 50%; backg
       <tbody>
         <tr><td>gt</td><td>Puntos de entrenamiento acumulados desde la última subida de esa skill. Cada semana suma la Velocidad de entreno (8) si la skill fue la entrenada, 2 si además está marcada ENT. F, 1 si no se entrenó y 0 en LESIÓN. Vuelve a 0 cuando la skill sube.</td></tr>
         <tr><td>Subida Limpia</td><td>Subida de skill que ocurre sin que se haya entrenado esa skill. Se marca con un punto <i class="cl"></i> en la esquina del nivel.</td></tr>
-        <tr><td>Talento por skill</td><td>Solo en RAP, TEC, PAS, DEF y CRE, en cada subida. Es (acumulado en esa subida − acumulado en el nivel de partida) ÷ Velocidad ÷ niveles entre ambos. El nivel de partida depende de las Subidas Limpias de los niveles L−2, L−1 y L (L = nivel nuevo): [1] si ninguna fue limpia, se aplica entre L−3 y L (tres cambios; por ejemplo, de 7 a 8: del nivel 5 al 8); [2] si entre L−1 y L solo una fue limpia, entre L−2 y L (dos cambios; del 6 al 8); [3] si L−1 y L fueron limpias, entre L−1 y L. En cualquier otro caso, o si falta historial, la casilla queda vacía. Al pasar el cursor por la casilla se ve entre qué niveles se calculó.</td></tr>
+        <tr><td>Talento por skill</td><td>Solo en RAP, TEC, PAS, DEF y CRE, en cada subida. Es (acumulado en esa subida − acumulado en el nivel de partida) ÷ Velocidad ÷ niveles entre ambos. El nivel de partida depende de las Subidas Limpias de los niveles L−2, L−1 y L (L = nivel nuevo): [1] si ninguna fue limpia, entre L−3 y L (tres cambios; por ejemplo, de 7 a 8: del nivel 5 al 8); [2] si L fue limpia y L−1 no, entre L−2 y L (dos cambios); [3] si L no fue limpia y L−2 sí, entre L−2 y L (dos cambios); [4] si L−1 y L fueron limpias, entre L−1 y L (un cambio). En cualquier otro caso, o si falta historial, la casilla queda vacía. Al pasar el cursor por la casilla se ve entre qué niveles se calculó.</td></tr>
         <tr><td>Sumas</td><td>DEF = Rapidez + Defensa; DEFside = Técnica + Pases + Creación; MID = Rapidez + Técnica + Pases + Creación; ATT = Rapidez + Técnica + Anotación; ATTside = Pases + Defensa + Creación.</td></tr>
         <tr><td>Acumulado</td><td>Los mismos puntos, pero sin volver a 0 nunca (desde la primera semana registrada).</td></tr>
-        <tr><td>POS</td><td>Sale del Entreno Actual: Defensa = DEF, Rapidez = MID, Técnica = ATT; sin entreno = GK.</td></tr>
+        <tr><td>POS</td><td>Posición del jugador en las alineaciones de titulares de la página Alineaciones (la primera en que aparece), leída de lo que esa página guarda en este navegador. Si no aparece en ninguna (insignia con borde punteado), sale de su Entreno Actual: Defensa = DEF, Rapidez = MID, Técnica = ATT; sin entreno = GK.</td></tr>
       </tbody>
     </table>
     <p>La semana nueva se agrega sola al abrir la página después de la actualización del jueves, con las skills de ese día y el Entreno Actual que tenía cada jugador. Abre la página al menos una vez por semana (de jueves a miércoles); no puede reconstruir semanas en las que no se abrió.</p>
@@ -378,6 +381,21 @@ i.cl { display: inline-block; width: 9px; height: 9px; border-radius: 50%; backg
     <p class="msg" id="pwMsg" role="alert"></p>
     <div class="actions">
       <button class="btn primary" id="pwOk" type="submit">Entrar</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="addDlg" class="dlg" aria-labelledby="addTitle">
+  <form id="addForm">
+    <h2 id="addTitle">Agregar jugador</h2>
+    <p class="hint">Elige a un jugador del plantel. Su historial parte con las skills de la última actualización del jueves y se completa solo cada semana.</p>
+    <label class="field">Jugador
+      <select id="addSel" aria-label="Jugador"></select>
+    </label>
+    <p class="msg" id="addMsg" role="status"></p>
+    <div class="actions">
+      <button class="btn" id="addCancel" type="button">Cancelar</button>
+      <button class="btn primary" id="addOk" type="submit">Agregar</button>
     </div>
   </form>
 </dialog>
@@ -628,9 +646,10 @@ function computeRows(rows, speed) {
     const clean = r.k.map((v, i) => !!prev && v > prev.k[i] && r.f !== TRN[i]);
     if (prev) r.k.forEach((v, i) => { for (let x = prev.k[i] + 1; x <= v; x++) arrival[i][x] = { row: n, clean: clean[i] }; });
     // Talento por skill (solo RAP…CRE). Según las Subidas Limpias de los niveles L-2, L-1 y L (L = nivel nuevo):
-    //  · L-1 y L limpias                   → entre el nivel L-1 y L (1 cambio)
-    //  · solo una de L-1 y L limpia        → entre el nivel L-2 y L (2 cambios)
-    //  · ninguna de L-2, L-1 y L limpia    → entre el nivel L-3 y L (3 cambios)
+    //  · L-1 y L limpias                       → entre el nivel L-1 y L (1 cambio)
+    //  · L limpia y L-1 no                     → entre el nivel L-2 y L (2 cambios)
+    //  · L no limpia y L-2 limpia              → entre el nivel L-2 y L (2 cambios)
+    //  · ninguna de L-2, L-1 y L limpia        → entre el nivel L-3 y L (3 cambios)
     //  · cualquier otro caso o falta historial → vacío
     const tw = [null, null, null, null, null];
     for (let i = 1; i <= 5; i++) {
@@ -638,7 +657,8 @@ function computeRows(rows, speed) {
       const a = arrival[i], L = r.k[i], c0 = a[L].clean, a1 = a[L - 1], a2 = a[L - 2];
       let m = 0;
       if (a1 && a1.clean && c0) m = 1;
-      else if (a1 && (a1.clean !== c0)) m = 2;
+      else if (a1 && !a1.clean && c0) m = 2;
+      else if (a2 && a2.clean && !c0) m = 2;
       else if (a1 && a2 && !a1.clean && !c0 && !a2.clean) m = 3;
       const ref = m ? a[L - m] : null;
       if (ref && ref.row < n) tw[i - 1] = { v: (cum[i - 1] - out[ref.row].cum[i - 1]) / speed / m, m, from: L - m, to: L };
@@ -660,6 +680,33 @@ const SK_API = ["stamina", "pace", "technique", "passing", "defender", "playmake
 const TRN_OPTS = ["Rapidez", "Técnica", "Pases", "Creación", "Defensa", "Anotación", "Condición", "LESIÓN"];
 const POS_OF = { Defensa: "DEF", Rapidez: "MID", Técnica: "ATT" };   // como en la tabla ENTRENO ACTUAL de tu planilla; sin entreno = GK
 const posOf = plan => plan === "" ? "GK" : (POS_OF[plan] || "???");
+/* Posición en la página Alineaciones: lee lo que esa página guarda en este navegador (las alineaciones de titulares). */
+const AL_NAMES = ["Copa Internacional", "Liga 1", "Copa/Amistoso", "Liga 2"];
+const AL_DEFAULT = ["GK", "DEF", "DEF", "DEF", "DEF", "MID", "MID", "MID", "MID", "ATT", "ATT"];
+let alPos = new Map();   // pid → { v: "DEF", where: "Liga 1, puesto 3" }
+function readAlineaciones() {
+  alPos = new Map();
+  try {
+    const lin = JSON.parse(localStorage.getItem("equipo:lineups")) || {};
+    AL_NAMES.forEach((name, i) => {
+      const e = lin["j2" + String(i + 1).padStart(12, "0")]; if (!e) return;
+      const o = JSON.parse(e.v);
+      let ps = o && typeof o.p === "string" ? o.p.split(",").map(x => x.trim()) : null;
+      if (!ps || ps.length < 11 || ps.some(x => x !== "" && !["GK", "DEF", "MID", "ATT"].includes(x))) ps = AL_DEFAULT;
+      String((o && o.s) || "").split(",").slice(0, 11).forEach((txt, j) => txt.split("+").forEach(t => {
+        const pid = t.trim().split(":")[0].trim();
+        if (/^\d+$/.test(pid) && ps[j] && !alPos.has(pid)) alPos.set(pid, { v: ps[j], where: `${name}, puesto ${j + 1}` });
+      }));
+    });
+  } catch {}
+}
+const pidOf = tr => { if (tr.pid != null) return String(tr.pid); const p = roster.players.length ? matchPlayer(tr) : null; return p ? String(p.pid) : null; };
+function posInfo(tr) {   // → { v, alt, tip }
+  const pid = pidOf(tr), a = pid != null ? alPos.get(pid) : null;
+  if (a) return { v: a.v, alt: false, tip: `Según Alineaciones (${a.where})` };
+  return { v: posOf(tr.plan), alt: true, tip: "No aparece en las alineaciones de titulares de la página Alineaciones: se muestra la posición que corresponde a su Entreno Actual" };
+}
+const ptg = tr => { const p = posInfo(tr); return `<span class="ptg${p.alt ? " alt" : ""}" data-v="${esc(p.v)}" title="${esc(p.tip)}">${esc(p.v)}</span>`; };
 const COMPOS = [["DEF", [1, 4]], ["DEFside", [2, 3, 5]], ["MID", [1, 2, 3, 5]], ["ATT", [1, 2, 6]], ["ATTside", [3, 4, 5]]];   // las cinco columnas del final de la tabla de Plantel (índices de k[])
 const COMPOS_TIP = { DEF: "Rapidez + Defensa", DEFside: "Técnica + Pases + Creación", MID: "Rapidez + Técnica + Pases + Creación", ATT: "Rapidez + Técnica + Anotación", ATTside: "Pases + Defensa + Creación" };
 let T = null;   // { speed, players: [{ k, lay, plan, pid?, rows: [...] }] }
@@ -733,11 +780,11 @@ function resumenData() {
   return T.players.map(tr => {
     const r = tr.rows[tr.rows.length - 1]; if (!r) return null;
     const k = r.k, sum = a => a.reduce((x, i) => x + k[i], 0);
-    return { tr, r, cells: [posOf(tr.plan), tr.plan, tr.k, r.a, sum([1, 4]), sum([2, 3, 5]), sum([1, 2, 3, 5]), sum([1, 2, 6]), sum([3, 4, 5]), k[0], k[1], k[2], k[3], k[4], k[5], k[6]] };
+    return { tr, r, cells: [posInfo(tr).v, tr.plan, tr.k, r.a, sum([1, 4]), sum([2, 3, 5]), sum([1, 2, 3, 5]), sum([1, 2, 6]), sum([3, 4, 5]), k[0], k[1], k[2], k[3], k[4], k[5], k[6]] };
   }).filter(Boolean);
 }
 const RES_COLS = [   // [etiqueta, ayuda, clase de skill]
-  ["POS", "Posición según el entreno actual (Defensa = DEF, Rapidez = MID, Técnica = ATT)"], ["Entreno Actual", "Entrenamiento de la semana en curso. Se guarda y se usa en la próxima actualización del jueves"], ["Jugador", ""], ["Edad", ""],
+  ["POS", "Posición del jugador en las alineaciones de la página Alineaciones. Si no está en ninguna (borde punteado), la que corresponde a su Entreno Actual (Defensa = DEF, Rapidez = MID, Técnica = ATT)"], ["Entreno Actual", "Entrenamiento de la semana en curso. Se guarda y se usa en la próxima actualización del jueves"], ["Jugador", ""], ["Edad", ""],
   ["DEF", "Rapidez + Defensa"], ["DEFside", "Técnica + Pases + Creación"], ["MID", "Rapidez + Técnica + Pases + Creación"], ["ATT", "Rapidez + Técnica + Anotación"], ["ATTside", "Pases + Defensa + Creación"],
   ["Condición", "", "con"], ["Rapidez", "", "rap"], ["Técnica", "", "tec"], ["Pases", "", "pas"], ["Defensa", "", "def"], ["Creación", "", "cre"], ["Anotación", "", "ata"]
 ];
@@ -747,7 +794,7 @@ function renderResumen() {
   const mm = RES_COLS.map((_, i) => { const v = rows.map(x => x.cells[i]).filter(Number.isFinite); return [Math.min(...v), Math.max(...v)]; });
   const head = RES_COLS.map(([lab, tip], i) => `<th class="sortable${i === 2 ? " l" : ""}${i === 9 ? " sep" : ""}" data-sort="${i}" title="${esc(tip || "Ordenar por " + lab)}">${esc(lab)}${view.sort && view.sort.i === i ? `<span class="arr">${view.sort.dir > 0 ? "▲" : "▼"}</span>` : ""}</th>`).join("");
   const body = rows.map(x => `<tr>${x.cells.map((c, i) => {
-    if (i === 0) return `<td><span class="ptg" data-v="${esc(c)}">${esc(c)}</span></td>`;
+    if (i === 0) return `<td>${ptg(x.tr)}</td>`;
     if (i === 1) return `<td>${trnSelect(c, `data-plan="${esc(x.tr.k)}" aria-label="Entreno actual de ${esc(x.tr.k)}"`)}</td>`;
     if (i === 2) return `<td class="pn l"><a href="#${encodeURIComponent(c)}" data-tab="${esc(c)}">${esc(c)}</a></td>`;
     const p = scaleP(c, mm[i][0], mm[i][1]);
@@ -784,20 +831,53 @@ function renderPlayer(tr) {
     c.cum.forEach((v, i) => cells.push(`<td class="gt${i === 0 ? " sep" : ""}">${v}</td>`));
     rowsHtml.push(`<tr${n === lastIdx ? ' class="newest"' : ""}>${cells.join("")}</tr>`);
   }
-  return `<div class="view-title"><h2>${esc(tr.k)}</h2><span class="ptg" data-v="${esc(posOf(tr.plan))}">${esc(posOf(tr.plan))}</span>
+  return `<div class="view-title"><h2>${esc(tr.k)}</h2>${ptg(tr)}
       <label class="lbl">Entreno actual ${trnSelect(tr.plan, `data-plan="${esc(tr.k)}" aria-label="Entreno actual de ${esc(tr.k)}"`)}</label>
       <span class="lbl">${tr.rows.length} semanas · última: ${esc(dmy(last.d))} · ${last.a} años</span>
-      <span class="lbl"><i class="cl"></i> Subida Limpia</span></div>
+      <span class="lbl"><i class="cl"></i> Subida Limpia</span>
+      <button class="btn rm" type="button" data-rm="${esc(tr.k)}" title="Quitar a este jugador del seguimiento (por ejemplo, si lo vendiste)">Quitar jugador</button></div>
     <div class="tablewrap ent"><table id="tbl"><thead class="two"><tr class="grp">${groups}</tr><tr class="cols">${th}</tr></thead><tbody>${rowsHtml.join("")}</tbody></table></div>`;
 }
 
 function render() {
+  readAlineaciones();
   if (!T) { $("#view").innerHTML = ""; $("#summary").hidden = true; $("#tabs").innerHTML = ""; return; }
   view.tab = tabOf();
   renderSummaryBox(); renderTabs();
   const tr = T.players.find(p => p.k === view.tab);
   $("#view").innerHTML = tr ? renderPlayer(tr) : renderResumen();
   const g = document.querySelector("tr.grp th"); if (g) $("#tbl").style.setProperty("--grp-h", g.getBoundingClientRect().height + "px");
+}
+
+/* ─────────────── Agregar y quitar jugadores ─────────────── */
+function calAt(wk) {   // temporada y semana de esa fecha, según las filas que ya hay
+  const ref = T.players.flatMap(p => p.rows).sort((a, b) => a.d < b.d ? -1 : 1).pop();
+  if (!ref) return null;
+  let s = ref.s + Math.round((Date.parse(wk) - Date.parse(ref.d)) / 604800000), t = ref.t;
+  while (s > 13) { s -= 13; t++; }
+  while (s < 1) { s += 13; t--; }
+  return { t, s };
+}
+function addCandidates() {
+  const have = new Set(T.players.map(pidOf).filter(x => x != null));
+  return roster.players.filter(p => !have.has(String(p.pid)) && p.skills && SK_API.every(x => Number.isFinite(p.skills[x]))).sort((a, b) => a.name.localeCompare(b.name, "es"));
+}
+function addPlayer(pid) {
+  const p = roster.players.find(x => String(x.pid) === String(pid));
+  if (!p || !roster.stamp || !T) return false;
+  const wk = weekKeyOf(roster.stamp), cal = calAt(wk) || { t: 1, s: 1 };
+  const last = p.name.trim().split(/\s+/).pop();
+  const key = T.players.some(x => norm(x.k) === norm(last)) ? p.name.trim() : last;
+  T.players.push({ k: key, lay: "ATT", plan: "", pid: p.pid, rows: [{ d: wk, t: cal.t, s: cal.s, a: Number.isFinite(p.age) ? p.age : 0, e: false, f: "", k: SK_API.map(x => p.skills[x]) }] });
+  saveT(); location.hash = encodeURIComponent(key); render();
+  return true;
+}
+function openAdd() {
+  const dlg = $("#addDlg"), list = roster.stamp ? addCandidates() : [];
+  $("#addSel").innerHTML = list.map(p => `<option value="${esc(p.pid)}">${esc(p.name)}</option>`).join("");
+  $("#addOk").disabled = !list.length;
+  $("#addMsg").textContent = !roster.stamp ? "No hay datos del plantel cargados, así que no se puede agregar a nadie ahora." : (list.length ? "" : "Todos los jugadores del plantel ya están en el seguimiento.");
+  dlg.showModal();
 }
 
 /* ─────────────── Copiar la vista ─────────────── */
@@ -856,7 +936,7 @@ async function load(force) {
   if (T) {
     const r = autoAppend();
     if (r.added.length) notices.push({ html: `<p><strong>Actualización del jueves:</strong> se agregó la semana del ${esc(dmy(r.week))} para ${r.added.length} jugador${r.added.length === 1 ? "" : "es"}: ${esc(r.added.join(", "))}.</p><p>Si cambias el entrenamiento de la semana que viene, elígelo en «Entreno Actual».</p>` });
-    if (r.missing.length) notices.push({ html: `<p><strong>No pude actualizar a:</strong> ${esc(r.missing.join(", "))}. No encontré a ese jugador (o a más de uno) en los datos del plantel, o le faltan skills.</p>` });
+    if (r.missing.length) notices.push({ html: `<p><strong>No pude actualizar a:</strong> ${esc(r.missing.join(", "))}. No encontré a ese jugador (o a más de uno) en los datos del plantel, o le faltan skills. Si ya no está en el equipo, ábrelo y usa «Quitar jugador».</p>` });
   }
   setNotices(notices); setStatus("");
   render();
@@ -888,6 +968,12 @@ function init() {
   window.addEventListener("hashchange", () => render());
   $("#tabs").addEventListener("click", e => { const b = e.target.closest("button[data-tab]"); if (!b) return; location.hash = b.dataset.tab === "Resumen" ? "" : encodeURIComponent(b.dataset.tab); if (b.dataset.tab === "Resumen") render(); });
   $("#view").addEventListener("click", e => {
+    const rm = e.target.closest("button[data-rm]");
+    if (rm) {
+      const tr = T.players.find(p => p.k === rm.dataset.rm);
+      if (tr && confirm(`¿Quitar a ${tr.k} del seguimiento? Se borra su historial de este navegador (Restablecer vuelve al historial original).`)) { T.players = T.players.filter(p => p !== tr); saveT(); location.hash = ""; render(); }
+      return;
+    }
     const a = e.target.closest("a[data-tab]"); if (a) { e.preventDefault(); location.hash = encodeURIComponent(a.dataset.tab); return; }
     const h = e.target.closest("th[data-sort]"); if (!h) return;
     const i = Number(h.dataset.sort);
@@ -906,8 +992,12 @@ function init() {
     if (Number.isFinite(v) && v >= 1 && v <= 40) { T.speed = v; saveT(); setTimeout(render, 0); } else e.target.value = T.speed;
   });
   $("#copy").addEventListener("click", copyView);
+  $("#add").addEventListener("click", openAdd);
+  $("#addCancel").addEventListener("click", () => $("#addDlg").close());
+  $("#addForm").addEventListener("submit", ev => { ev.preventDefault(); const v = $("#addSel").value; $("#addDlg").close(); if (v) addPlayer(v); });
+  window.addEventListener("focus", () => { if (T) render(); });   // al volver de la página Alineaciones, se lee de nuevo
   $("#reset").addEventListener("click", async () => {
-    if (!confirm("Esto borra los cambios hechos en este navegador y vuelve a cargar el historial original del archivo (y vuelve a agregar la semana actual). ¿Continuar?")) return;
+    if (!confirm("Esto borra los cambios hechos en este navegador (jugadores agregados o quitados incluidos) y vuelve a cargar el historial original del archivo, más la semana actual. ¿Continuar?")) return;
     try { localStorage.removeItem(TKEY); } catch {}
     T = null; await load(true);
   });
