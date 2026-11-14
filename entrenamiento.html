@@ -316,6 +316,12 @@ i.cl::before { content: "*"; }
 .warn { display: inline-flex; align-items: center; justify-content: center; width: 1.2rem; height: 1.2rem; border-radius: 50%; background: #d11a1a; color: #fff; font-weight: 800; font-size: .85rem; line-height: 1; cursor: help; vertical-align: middle; }
 .syncmsg { margin: 4px 0 0; font-size: .8rem; color: var(--muted); min-height: 1em; }
 .ent td.tal { font-weight: 700; background: color-mix(in srgb, var(--hh) 62%, var(--panel)); }
+/* números de la tabla Resumen: un color fijo por skill */
+:root { --n-con: #2e6b17; --n-rap: #1155cc; --n-tec: #7a4fd1; --n-pas: #a87800; --n-def: #c96f12; --n-cre: #cc2f2f; --n-ata: #666666; }
+:root[data-theme="dark"] { --n-con: #7fd35a; --n-rap: #6aaeff; --n-tec: #b69cff; --n-pas: #f0c640; --n-def: #ffa95a; --n-cre: #ff7b73; --n-ata: #b5b5b5; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --n-con: #7fd35a; --n-rap: #6aaeff; --n-tec: #b69cff; --n-pas: #f0c640; --n-def: #ffa95a; --n-cre: #ff7b73; --n-ata: #b5b5b5; } }
+.ent td.nk-con { color: var(--n-con); } .ent td.nk-rap { color: var(--n-rap); } .ent td.nk-tec { color: var(--n-tec); } .ent td.nk-pas { color: var(--n-pas); }
+.ent td.nk-def { color: var(--n-def); } .ent td.nk-cre { color: var(--n-cre); } .ent td.nk-ata { color: var(--n-ata); }
 </style>
 </head>
 <body>
@@ -985,32 +991,32 @@ function resumenData() {
     const r = tr.rows[tr.rows.length - 1]; if (!r) return null;
     const k = r.k, sum = a => a.reduce((x, i) => x + k[i], 0);
     const pk = tr.rows.length > 1 ? tr.rows[tr.rows.length - 2].k : null;
-    return { tr, r, pk, cells: [alTrn(tr).v, tr.plan, tr.k, r.a, sum([1, 4]), sum([2, 3, 5]), sum([1, 2, 3, 5]), sum([1, 2, 6]), sum([3, 4, 5]), k[0], k[1], k[2], k[3], k[4], k[5], k[6]] };
+    return { tr, r, pk, cells: [alTrn(tr).v, tr.plan, tr.k, r.a, k[0], k[1], k[2], k[3], k[4], k[5], k[6], sum([1, 4]), sum([2, 3, 5]), sum([1, 2, 3, 5]), sum([1, 2, 6]), sum([3, 4, 5])] };
   }).filter(Boolean);
 }
 const RES_COLS = [   // [etiqueta, ayuda, clase de skill]
   ["Entreno Alineaciones", "Lo que entrena según la página Alineaciones: el entrenamiento asignado a la posición del puesto en que aparece en las alineaciones de titulares"], ["Entreno Actual", "Entrenamiento de la semana en curso. Se guarda y se usa en la próxima actualización del jueves"], ["Jugador", ""], ["Edad", ""],
-  ["DEF", "Rapidez + Defensa"], ["DEFside", "Técnica + Pases + Creación"], ["MID", "Rapidez + Técnica + Pases + Creación"], ["ATT", "Rapidez + Técnica + Anotación"], ["ATTside", "Pases + Defensa + Creación"],
-  ["Condición", "", "con"], ["Rapidez", "", "rap"], ["Técnica", "", "tec"], ["Pases", "", "pas"], ["Defensa", "", "def"], ["Creación", "", "cre"], ["Anotación", "", "ata"]
+  ["Condición", "", "con"], ["Rapidez", "", "rap"], ["Técnica", "", "tec"], ["Pases", "", "pas"], ["Defensa", "", "def"], ["Creación", "", "cre"], ["Anotación", "", "ata"],
+  ["DEF", "Rapidez + Defensa"], ["DEFside", "Técnica + Pases + Creación"], ["MID", "Rapidez + Técnica + Pases + Creación"], ["ATT", "Rapidez + Técnica + Anotación"], ["ATTside", "Pases + Defensa + Creación"]
 ];
 function renderResumen() {
   let rows = resumenData();
   const { i: si, dir: sd } = view.sort || { i: 3, dir: -1 };   // por defecto: edad de mayor a menor y, a igual edad, por apellido
   rows = rows.slice().sort((a, b) => { const x = a.cells[si], y = b.cells[si]; return (typeof x === "number" && typeof y === "number" ? x - y : String(x).localeCompare(String(y), "es")) * sd || a.tr.k.localeCompare(b.tr.k, "es"); });
-  const hl = new Set(si >= 4 && si <= 8 ? [si, ...COMPOS[si - 4][1].map(i => 9 + i)] : []);   // al ordenar por una suma se resaltan las skills que entran en ella
-  const head = RES_COLS.map(([lab, tip], i) => `<th class="sortable${i === 2 ? " l" : ""}${i === 9 ? " sep" : ""}${hl.has(i) ? " hl" : ""}" data-sort="${i}" title="${esc(tip || "Ordenar por " + lab)}">${esc(lab)}${si === i ? `<span class="arr">${sd > 0 ? "▲" : "▼"}</span>` : ""}</th>`).join("");
+  const hl = new Set(si >= 11 ? [si, ...COMPOS[si - 11][1].map(i => 4 + i)] : []);   // al ordenar por una suma se resaltan las skills que entran en ella
+  const head = RES_COLS.map(([lab, tip], i) => `<th class="sortable${i === 2 ? " l" : ""}${i === 4 || i === 11 ? " sep" : ""}${hl.has(i) ? " hl" : ""}" data-sort="${i}" title="${esc(tip || "Ordenar por " + lab)}">${esc(lab)}${si === i ? `<span class="arr">${sd > 0 ? "▲" : "▼"}</span>` : ""}</th>`).join("");
   const body = rows.map(x => `<tr>${x.cells.map((c, i) => {
     if (i === 0) return `<td>${alChip(x.tr)}</td>`;
     if (i === 1) return `<td>${trnSelect(c, `data-plan="${esc(x.tr.k)}" aria-label="Entreno actual de ${esc(x.tr.k)}"`)}</td>`;
     if (i === 2) return `<td class="pn l"><a href="#${encodeURIComponent(c)}" data-tab="${esc(c)}">${esc(c)}</a></td>`;
     const h = hl.has(i) ? " hl" : "";
     if (i === 3) return `<td class="${h.trim()}">${c}</td>`;
-    if (i >= 9) {
-      const b = x.pk ? x.pk[i - 9] : null;
+    if (i >= 4 && i <= 10) {
+      const b = x.pk ? x.pk[i - 4] : null;
       const mark = b != null && b !== c ? (c > b ? ` <span class="chg up" title="Subió: antes ${b}" aria-label="subió, antes ${b}">▲</span>` : ` <span class="chg down" title="Bajó: antes ${b}" aria-label="bajó, antes ${b}">▼</span>`) : "";
-      return `<td class="sum${i === 9 ? " sep" : ""}${h}">${c}${mark}</td>`;
+      return `<td class="sum nk-${RES_COLS[i][2]}${i === 4 ? " sep" : ""}${h}">${c}${mark}</td>`;
     }
-    return `<td class="sum${h}">${c}</td>`;
+    return `<td class="sum${i === 11 ? " sep" : ""}${h}">${c}</td>`;
   }).join("")}</tr>`).join("");
   return `<div class="view-title"><h2>Resumen</h2><span class="lbl">Última semana registrada: ${esc(dmy(T.players.map(p => p.rows[p.rows.length - 1].d).sort().pop()))}. Orden: edad de mayor a menor y luego apellido. Pulsa un encabezado para ordenar por otra columna.</span></div>
     <div class="tablewrap ent"><table id="tbl"><thead><tr class="cols">${head}</tr></thead><tbody>${body}</tbody></table></div>`;
