@@ -403,20 +403,20 @@ details.tm > summary { cursor: pointer; font-weight: 700; }
 .restoggles { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 12px; }
 .restoggles .btn.rt { border-width: 2px; opacity: .65; }
 .restoggles .btn.rt[aria-pressed="true"] { opacity: 1; font-weight: 800; }
-.restoggles .btn.rt.r1 { border-color: #3b78c9; } .restoggles .btn.rt.r2 { border-color: #cdae1f; } .restoggles .btn.rt.r3 { border-color: #9a58c4; }
-.restoggles .btn.rt.r1[aria-pressed="true"] { background: #e3edfb; } .restoggles .btn.rt.r2[aria-pressed="true"] { background: #faedaa; } .restoggles .btn.rt.r3[aria-pressed="true"] { background: #f3e8fa; }
+.restoggles .btn.rt.r1 { border-color: #3b78c9; } .restoggles .btn.rt.r2 { border-color: #d6679a; } .restoggles .btn.rt.r3 { border-color: #9a58c4; }
+.restoggles .btn.rt.r1[aria-pressed="true"] { background: #e3edfb; } .restoggles .btn.rt.r2[aria-pressed="true"] { background: #fbd5e5; } .restoggles .btn.rt.r3[aria-pressed="true"] { background: #f3e8fa; }
 section.rtab { margin: 0 0 16px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; }
 section.rtab.r1 { --panel: #e9f1fc; --zebra: #dde9f8; background: #e9f1fc; border-color: #9ab8e3; }
-section.rtab.r2 { --panel: #fdf6d6; --zebra: #f8eeb4; background: #fdf6d6; border-color: #dcc65a; }
+section.rtab.r2 { --panel: #fdeaf2; --zebra: #f9d8e7; background: #fdeaf2; border-color: #e5a2c0; }
 section.rtab.r3 { --panel: #f5ecfb; --zebra: #ebdcf6; background: #f5ecfb; border-color: #c6a0e0; }
-:root[data-theme="dark"] .restoggles .btn.rt.r1[aria-pressed="true"] { background: #1c2a3f; } :root[data-theme="dark"] .restoggles .btn.rt.r2[aria-pressed="true"] { background: #3a3318; } :root[data-theme="dark"] .restoggles .btn.rt.r3[aria-pressed="true"] { background: #2c2238; }
+:root[data-theme="dark"] .restoggles .btn.rt.r1[aria-pressed="true"] { background: #1c2a3f; } :root[data-theme="dark"] .restoggles .btn.rt.r2[aria-pressed="true"] { background: #3d1f2e; } :root[data-theme="dark"] .restoggles .btn.rt.r3[aria-pressed="true"] { background: #2c2238; }
 :root[data-theme="dark"] section.rtab.r1 { --panel: #1b2a3e; --zebra: #223450; background: #1b2a3e; border-color: #35557f; }
-:root[data-theme="dark"] section.rtab.r2 { --panel: #38311a; --zebra: #453c1e; background: #38311a; border-color: #8a7628; }
+:root[data-theme="dark"] section.rtab.r2 { --panel: #3a1d2b; --zebra: #48243a; background: #3a1d2b; border-color: #8c3d63; }
 :root[data-theme="dark"] section.rtab.r3 { --panel: #2b2237; --zebra: #382c48; background: #2b2237; border-color: #6a4d86; }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .restoggles .btn.rt.r1[aria-pressed="true"] { background: #1c2a3f; } :root:not([data-theme="light"]) .restoggles .btn.rt.r2[aria-pressed="true"] { background: #3a3318; } :root:not([data-theme="light"]) .restoggles .btn.rt.r3[aria-pressed="true"] { background: #2c2238; }
+  :root:not([data-theme="light"]) .restoggles .btn.rt.r1[aria-pressed="true"] { background: #1c2a3f; } :root:not([data-theme="light"]) .restoggles .btn.rt.r2[aria-pressed="true"] { background: #3d1f2e; } :root:not([data-theme="light"]) .restoggles .btn.rt.r3[aria-pressed="true"] { background: #2c2238; }
   :root:not([data-theme="light"]) section.rtab.r1 { --panel: #1b2a3e; --zebra: #223450; background: #1b2a3e; border-color: #35557f; }
-  :root:not([data-theme="light"]) section.rtab.r2 { --panel: #38311a; --zebra: #453c1e; background: #38311a; border-color: #8a7628; }
+  :root:not([data-theme="light"]) section.rtab.r2 { --panel: #3a1d2b; --zebra: #48243a; background: #3a1d2b; border-color: #8c3d63; }
   :root:not([data-theme="light"]) section.rtab.r3 { --panel: #2b2237; --zebra: #382c48; background: #2b2237; border-color: #6a4d86; }
 }
 section.rtab .view-title { margin-top: 0; }
@@ -470,6 +470,8 @@ select.pp { appearance: none; -webkit-appearance: none; font: 700 .9rem/1.2 inhe
 select.pp:hover { background-color: #6d4733; }
 select.pp:focus-visible { outline: 2px solid #c9935f; outline-offset: 2px; }
 select.pp option { background: #fffaf4; color: #3d2415; }
+
+.planwrap .btn.mini { padding: 0 5px; min-height: 0; line-height: 1.4; font-size: .8rem; }
 </style>
 </head>
 <body>
@@ -1321,8 +1323,8 @@ function planHtml(tr) {
     const cells = [`<td class="vc"><input class="ed sv" type="text" maxlength="14" autocomplete="off" data-sv="${esc(w.d)}" value="${esc(sv[w.d] || "")}" aria-label="Venta ${esc(dmy(w.d))}"><span class="mus">M$</span></td>`, `<td class="fc sep${k ? "" : " now"}" title="${esc(dmy(w.d))}${k ? "" : " · Entreno Actual"}">${esc(dmys(w.d))}</td>`, `<td class="${sn(t)}">${t}</td>`, `<td class="${sn(t)}" data-cp>${s}</td>`, `<td class="${sn(t)}" data-cp>${age}</td>`,
       `<td class="sep">${planSel(w, k, `data-pf="${k}" aria-label="Entrenamiento ${esc(dmy(w.d))}"`)}</td>`];
     SK_COLS.forEach((sk, i) => cells.push(`<td data-cp class="sum nk-${sk.id}${i === 0 ? " sep" : ""}${p.rise[i] ? " rise" : ""}">${p.lvl[i]}${p.rise[i] ? ' <span class="chg up" title="Se estima que sube esta semana">▲</span>' : ""}</td><td class="gt gtk${i === 6 ? " last" : ""}">${p.gt[i]}</td>`));
-    ppIdx(tr).forEach((j, q) => cells.push(`<td data-cp class="sum${q === 0 ? " sep" : ""}">${COMPOS[j][1].reduce((x, i) => x + p.lvl[i], 0)}</td>`));
-    cells.push(`<td class="sep cpc"><button class="btn" type="button" data-cprow title="Copiar SEM, EDAD, las siete skills y las sumas de esta fila">Copiar</button></td>`);
+    ppIdx(tr).forEach((j, q) => cells.push(`<td class="sum${q === 0 ? " sep" : ""}">${COMPOS[j][1].reduce((x, i) => x + p.lvl[i], 0)}</td>`));
+    cells.push(`<td class="sep cpc"><button class="btn mini" type="button" data-cprow title="Copiar SEM, EDAD, CON, RAP, TEC, PAS, DEF, CRE y ATT de esta fila" aria-label="Copiar datos de esta fila">⧉</button></td>`);
     return `<tr>${cells.join("")}</tr>`;
   }).reverse().join("");   // la semana actual (Entreno Actual) queda abajo, justo encima del historial
   const tal = pj.ti.map(x => {
@@ -1561,7 +1563,7 @@ async function copyText(text) {
 }
 let toastTimer = 0;
 function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 2200); }
-function copyRow(row) {   // copia de la fila de planificación solo: SEM, EDAD, CON…ATT y las Sumas visibles
+function copyRow(row) {   // copia de la fila de planificación: SEM, EDAD y CON…ATT (9 datos)
   const cells = [...row.querySelectorAll("td[data-cp]")].map(c => c.textContent.replace(/[▲▼]/g, "").trim());
   copyText(cells.join("\t")).then(() => toast("Fila copiada"));
 }
