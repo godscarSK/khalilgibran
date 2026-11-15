@@ -376,6 +376,8 @@ details.tm > summary { cursor: pointer; font-weight: 700; }
 .ent.dense input.ed.d { width: 8.4em; }
 .ent.dense td .chg { font-size: .8em; }
 .ent.dense.nocum table { font-size: min(.95rem, max(.58rem, calc((100vw - 56px) / 88))); }
+.ent td.gtk, .ent th.gtk { border-right: 1px solid color-mix(in srgb, var(--ink) 28%, var(--line)); }
+.ent td.gtk.last, .ent th.gtk.last { border-right: 0; }
 </style>
 </head>
 <body>
@@ -1186,14 +1188,15 @@ function planHtml(tr) {
   const last = tr.rows[tr.rows.length - 1], eff = planEff(tr), pj = projectPlayer(tr, eff);
   const groups = [["Semana", 3, ""], ["Entrenamiento", 1, "sep"], ["Skills y avance (gt)", 14, "sep"], ...(view.hideCum ? [] : [["Acumulado", 6, "sep"]])].map(([n, c, s]) => `<th colspan="${c}" class="${s}">${n}</th>`).join("");
   const cols = ["Fecha", "TEMP", "SEM", "Entrenamiento", ...SK_COLS.flatMap(s => [s.lab, "gt"]), ...(view.hideCum ? [] : ["RAP", "TEC", "PAS", "DEF", "CRE", "ATT"])], sepAt = new Set([3, 4, 18]);
-  const th = cols.map((c, i) => `<th class="${i === 0 ? "fc " : ""}${sepAt.has(i) ? "sep" : ""}">${esc(c)}</th>`).join("");
+  const skh = i => i >= 4 && i <= 17 ? ((i - 4) % 2 ? " gtk" + (i === 17 ? " last" : "") : " nk-" + SK_COLS[(i - 4) / 2].id) : "";
+  const th = cols.map((c, i) => `<th class="${i === 0 ? "fc " : ""}${sepAt.has(i) ? "sep" : ""}${skh(i)}">${esc(c)}</th>`).join("");
   let s = last.s, t = last.t;
   const body = eff.map((w, k) => {
     if (++s > 13) { s = 1; t++; }
     const p = pj.weeks[k], prev = k ? pj.weeks[k - 1] : null;
     const cells = [`<td class="fc${k ? "" : " now"}" title="${esc(dmy(w.d))}${k ? "" : " · Entreno Actual"}">${esc(dmys(w.d))}</td>`, `<td>${t}</td>`, `<td>${s}</td>`,
       `<td class="sep">${planSel(w, k, `data-pf="${k}" aria-label="Entrenamiento ${esc(dmy(w.d))}"`)}</td>`];
-    SK_COLS.forEach((sk, i) => cells.push(`<td class="sum nk-${sk.id}${i === 0 ? " sep" : ""}${p.rise[i] ? " rise" : ""}">${p.lvl[i]}${p.rise[i] ? ' <span class="chg up" title="Se estima que sube esta semana">▲</span>' : ""}</td><td class="gt">${p.gt[i]}</td>`));
+    SK_COLS.forEach((sk, i) => cells.push(`<td class="sum nk-${sk.id}${i === 0 ? " sep" : ""}${p.rise[i] ? " rise" : ""}">${p.lvl[i]}${p.rise[i] ? ' <span class="chg up" title="Se estima que sube esta semana">▲</span>' : ""}</td><td class="gt gtk${i === 6 ? " last" : ""}">${p.gt[i]}</td>`));
     if (!view.hideCum) p.cum.forEach((v, i) => cells.push(`<td class="gt${i === 0 ? " sep" : ""}">${v}</td>`));
     return `<tr>${cells.join("")}</tr>`;
   }).reverse().join("");   // la semana actual (Entreno Actual) queda abajo, justo encima del historial
@@ -1239,7 +1242,8 @@ function renderPlayer(tr) {
     ...COMPOS.map(s => s[0]), "RAP", "TEC", "PAS", "DEF", "CRE", "ATT", ...(view.hideCum ? [] : ["RAP", "TEC", "PAS", "DEF", "CRE", "ATT"])];
   const tips = { ...COMPOS_TIP, "ENT. F": "Si está marcada, la skill entrenada suma 2 en lugar de la Velocidad de entreno", gt: "Puntos de entrenamiento acumulados desde la última subida de la skill: suma la Velocidad de entreno si se entrenó, 2 con ENT. F, 1 si no se entrenó y 0 en LESIÓN. Vuelve a 0 cuando la skill sube" };
   const sepAt = new Set([4, 6, 20, 25, 31]);
-  const th = cols.map((c, i) => `<th class="${i === 0 ? "fc " : ""}${sepAt.has(i) ? "sep" : ""}" title="${esc(tips[c] || "")}">${esc(c)}</th>`).join("");
+  const skh = i => i >= 6 && i <= 19 ? ((i - 6) % 2 ? " gtk" + (i === 19 ? " last" : "") : " nk-" + SK_COLS[(i - 6) / 2].id) : "";
+  const th = cols.map((c, i) => `<th class="${i === 0 ? "fc " : ""}${sepAt.has(i) ? "sep" : ""}${skh(i)}" title="${esc(tips[c] || "")}">${esc(c)}</th>`).join("");
   const rowsHtml = [];
   for (let n = lastIdx; n >= 0; n--) {
     const r = rowsSrc[n], c = o[n];
@@ -1250,8 +1254,8 @@ function renderPlayer(tr) {
       `<td class="sep"><input type="checkbox" data-ef="${n}" aria-label="ENT. F ${esc(dmy(r.d))}"${r.e ? " checked" : ""}></td>`,
       `<td>${trnSelect(r.f, `data-rf="${n}" aria-label="Entrenamiento ${esc(dmy(r.d))}"`)}</td>`];
     SK_COLS.forEach((s, i) => {
-      if (ed) { const gv = ed.gtIn[n + ":" + i]; cells.push(`<td class="sk${i === 0 ? " sep" : ""}">${ni(n, "k", r.k[i], 0, 30, i)}</td><td class="gt">${ni(n, "g", gv != null ? gv : c.gt[i], 0, 999, i)}</td>`); return; }
-      cells.push(`<td class="sk sk-${s.id}${i === 0 ? " sep" : ""}${c.clean[i] ? " clean" : ""}" style="--p:${scaleP(r.k[i], mm[i][0], mm[i][1])}"${c.clean[i] ? ' title="Subida Limpia: subió sin haber sido entrenada"' : ""}>${r.k[i]}</td><td class="gt">${c.gt[i]}</td>`);
+      if (ed) { const gv = ed.gtIn[n + ":" + i]; cells.push(`<td class="sk${i === 0 ? " sep" : ""}">${ni(n, "k", r.k[i], 0, 30, i)}</td><td class="gt gtk${i === 6 ? " last" : ""}">${ni(n, "g", gv != null ? gv : c.gt[i], 0, 999, i)}</td>`); return; }
+      cells.push(`<td class="sk sk-${s.id}${i === 0 ? " sep" : ""}${c.clean[i] ? " clean" : ""}" style="--p:${scaleP(r.k[i], mm[i][0], mm[i][1])}"${c.clean[i] ? ' title="Subida Limpia: subió sin haber sido entrenada"' : ""}>${r.k[i]}</td><td class="gt gtk${i === 6 ? " last" : ""}">${c.gt[i]}</td>`);
     });
     COMPOS.forEach(([, idx], j) => cells.push(`<td class="sum${j === 0 ? " sep" : ""}">${idx.reduce((x, i) => x + r.k[i], 0)}</td>`));
     c.tw.forEach((t, i) => cells.push(`<td class="${i === 0 ? "sep" : ""}${t ? " tal sk-" + SK_COLS[i + 1].id : ""}"${t ? ` title="Niveles ${t.from} → ${t.to} (${t.m} ${t.m === 1 ? "cambio" : "cambios"})"` : ""}>${t ? nf2.format(t.v) : ""}</td>`));
