@@ -406,16 +406,16 @@ details.tm > summary { cursor: pointer; font-weight: 700; }
 .restoggles .btn.rt.r1 { border-color: #3b78c9; } .restoggles .btn.rt.r2 { border-color: #d6679a; } .restoggles .btn.rt.r3 { border-color: #9a58c4; }
 .restoggles .btn.rt.r1[aria-pressed="true"] { background: #e3edfb; } .restoggles .btn.rt.r2[aria-pressed="true"] { background: #fbd5e5; } .restoggles .btn.rt.r3[aria-pressed="true"] { background: #f3e8fa; }
 section.rtab { margin: 0 0 16px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; }
-section.rtab.r1 { --panel: #e9f1fc; --zebra: #dde9f8; background: #e9f1fc; border-color: #9ab8e3; }
+section.rtab.r1 { border: 2px solid #6f9ee0; background: var(--panel); }
 section.rtab.r2 { border: 2px solid #e58bb3; }
 section.rtab.r3 { --panel: #f5ecfb; --zebra: #ebdcf6; background: #f5ecfb; border-color: #c6a0e0; }
 :root[data-theme="dark"] .restoggles .btn.rt.r1[aria-pressed="true"] { background: #1c2a3f; } :root[data-theme="dark"] .restoggles .btn.rt.r2[aria-pressed="true"] { background: #3d1f2e; } :root[data-theme="dark"] .restoggles .btn.rt.r3[aria-pressed="true"] { background: #2c2238; }
-:root[data-theme="dark"] section.rtab.r1 { --panel: #1b2a3e; --zebra: #223450; background: #1b2a3e; border-color: #35557f; }
+:root[data-theme="dark"] section.rtab.r1 { border-color: #3f6aa8; }
 :root[data-theme="dark"] section.rtab.r2 { border-color: #b8527f; }
 :root[data-theme="dark"] section.rtab.r3 { --panel: #2b2237; --zebra: #382c48; background: #2b2237; border-color: #6a4d86; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .restoggles .btn.rt.r1[aria-pressed="true"] { background: #1c2a3f; } :root:not([data-theme="light"]) .restoggles .btn.rt.r2[aria-pressed="true"] { background: #3d1f2e; } :root:not([data-theme="light"]) .restoggles .btn.rt.r3[aria-pressed="true"] { background: #2c2238; }
-  :root:not([data-theme="light"]) section.rtab.r1 { --panel: #1b2a3e; --zebra: #223450; background: #1b2a3e; border-color: #35557f; }
+  :root:not([data-theme="light"]) section.rtab.r1 { border-color: #3f6aa8; }
   :root:not([data-theme="light"]) section.rtab.r2 { border-color: #b8527f; }
   :root:not([data-theme="light"]) section.rtab.r3 { --panel: #2b2237; --zebra: #382c48; background: #2b2237; border-color: #6a4d86; }
 }
@@ -477,6 +477,13 @@ select.pp option { background: #fffaf4; color: #3d2415; }
 .planwrap, #teamPlan { border-color: #e58bb3; }
 :root[data-theme="dark"] #planTbl th, :root[data-theme="dark"] #planTbl td, :root[data-theme="dark"] #teamPlan th, :root[data-theme="dark"] #teamPlan td { border-color: #8c3d63; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) #planTbl th, :root:not([data-theme="light"]) #planTbl td, :root:not([data-theme="light"]) #teamPlan th, :root:not([data-theme="light"]) #teamPlan td { border-color: #8c3d63; } }
+
+/* Tabla Resumen: bordes de celdas azules y flechas flotantes (los números quedan alineados) */
+section.rtab.r1 table th, section.rtab.r1 table td { border-color: #9dbdea; }
+:root[data-theme="dark"] section.rtab.r1 table th, :root[data-theme="dark"] section.rtab.r1 table td { border-color: #3f6aa8; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) section.rtab.r1 table th, :root:not([data-theme="light"]) section.rtab.r1 table td { border-color: #3f6aa8; } }
+section.rtab.r1 td.sum { position: relative; }
+section.rtab.r1 td.sum .chg { position: absolute; right: 3px; top: 50%; transform: translateY(-50%); font-size: .7em; line-height: 1; }
 </style>
 </head>
 <body>

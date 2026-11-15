@@ -217,3 +217,5 @@ Qué tener en cuenta:
 **Ajuste:** las Tablas de Planificación (individual y Resumen) vuelven a los colores por defecto y solo su borde es rosado.
 
 **Ajuste:** los bordes de las celdas de las Tablas de Planificación (individual y Resumen) son rosados.
+
+**Ajuste:** en la Tabla Resumen las flechas de subida/bajada flotan a la derecha del número (los números quedan alineados), el fondo es el por defecto y los bordes de la tabla y de las celdas son azules.
