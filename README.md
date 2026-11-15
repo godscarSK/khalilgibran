@@ -193,3 +193,5 @@ Qué tener en cuenta:
 **Talento para la proyección:** la proyección usa el **último** Talento por skill calculado (el más actual, en las mismas unidades de la columna «Talento por skill» × velocidad). En «Talento por skill para la proyección» (bajo la tabla) puedes ingresar a mano el talento de RAP a ATT. Reglas: si la skill aún no tiene talento calculado, se usa el manual; cuando ya hay uno calculado, el manual **no se usa** y aparece con una marca «!»; si el último talento calculado tiene **más de 13 semanas**, se da prioridad al manual (si lo hay). Sin ningún dato, la skill no se proyecta. Es solo una estimación.
 
 **Planificación del equipo:** en la pestaña Resumen, una tabla con lo que entrenará cada jugador en las próximas 13 semanas (editable ahí mismo) y, abajo, cuántos jugadores entrenan cada skill en cada semana, para repartir la carga.
+
+**Ocultar Acumulado:** el botón «Ocultar/Mostrar Acumulado» (en la vista de cada jugador) quita la sección Acumulado de la tabla de entrenamiento y de la de planificación a la vez; al ocultarla, la letra de las tablas aumenta un poco porque hay menos columnas. Tu elección se recuerda en este navegador.

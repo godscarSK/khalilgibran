@@ -375,6 +375,7 @@ details.tm > summary { cursor: pointer; font-weight: 700; }
 .ent.dense input.ed { width: 2.7em; padding: 1px 2px; }
 .ent.dense input.ed.d { width: 8.4em; }
 .ent.dense td .chg { font-size: .8em; }
+.ent.dense.nocum table { font-size: min(.95rem, max(.58rem, calc((100vw - 56px) / 88))); }
 </style>
 </head>
 <body>
@@ -1055,7 +1056,7 @@ function autoAppend() {
 }
 
 /* ─────────────── Vistas ─────────────── */
-const view = { tab: "Resumen", sort: null, ed: null, showPlan: (() => { try { return localStorage.getItem("entrenamiento:showplan") !== "0"; } catch { return true; } })() };   // ed: borrador del Modo Edición
+const view = { tab: "Resumen", sort: null, ed: null, hideCum: (() => { try { return localStorage.getItem("entrenamiento:hidecum") === "1"; } catch { return false; } })(), showPlan: (() => { try { return localStorage.getItem("entrenamiento:showplan") !== "0"; } catch { return true; } })() };   // ed: borrador del Modo Edición
 const addDays = (iso, n) => { const [y, mo, d] = iso.split("-").map(Number); return ymd(new Date(y, mo - 1, d + n)); };
 const PLAN_WEEKS = 13;   // sort: { i, dir }
 const live = () => T.players.filter(p => !p.arch);
@@ -1183,8 +1184,8 @@ function projectPlayer(tr, eff) {
 const fmtTal = v => v == null ? "" : nf2.format(v);
 function planHtml(tr) {
   const last = tr.rows[tr.rows.length - 1], eff = planEff(tr), pj = projectPlayer(tr, eff);
-  const groups = [["Semana", 3, ""], ["Entrenamiento", 1, "sep"], ["Skills y avance (gt)", 14, "sep"], ["Acumulado", 6, "sep"]].map(([n, c, s]) => `<th colspan="${c}" class="${s}">${n}</th>`).join("");
-  const cols = ["Fecha", "TEMP", "SEM", "Entrenamiento", ...SK_COLS.flatMap(s => [s.lab, "gt"]), "RAP", "TEC", "PAS", "DEF", "CRE", "ATT"], sepAt = new Set([3, 4, 18]);
+  const groups = [["Semana", 3, ""], ["Entrenamiento", 1, "sep"], ["Skills y avance (gt)", 14, "sep"], ...(view.hideCum ? [] : [["Acumulado", 6, "sep"]])].map(([n, c, s]) => `<th colspan="${c}" class="${s}">${n}</th>`).join("");
+  const cols = ["Fecha", "TEMP", "SEM", "Entrenamiento", ...SK_COLS.flatMap(s => [s.lab, "gt"]), ...(view.hideCum ? [] : ["RAP", "TEC", "PAS", "DEF", "CRE", "ATT"])], sepAt = new Set([3, 4, 18]);
   const th = cols.map((c, i) => `<th class="${i === 0 ? "fc " : ""}${sepAt.has(i) ? "sep" : ""}">${esc(c)}</th>`).join("");
   let s = last.s, t = last.t;
   const body = eff.map((w, k) => {
@@ -1193,7 +1194,7 @@ function planHtml(tr) {
     const cells = [`<td class="fc${k ? "" : " now"}" title="${esc(dmy(w.d))}${k ? "" : " · Entreno Actual"}">${esc(dmys(w.d))}</td>`, `<td>${t}</td>`, `<td>${s}</td>`,
       `<td class="sep">${planSel(w, k, `data-pf="${k}" aria-label="Entrenamiento ${esc(dmy(w.d))}"`)}</td>`];
     SK_COLS.forEach((sk, i) => cells.push(`<td class="sum nk-${sk.id}${i === 0 ? " sep" : ""}${p.rise[i] ? " rise" : ""}">${p.lvl[i]}${p.rise[i] ? ' <span class="chg up" title="Se estima que sube esta semana">▲</span>' : ""}</td><td class="gt">${p.gt[i]}</td>`));
-    p.cum.forEach((v, i) => cells.push(`<td class="gt${i === 0 ? " sep" : ""}">${v}</td>`));
+    if (!view.hideCum) p.cum.forEach((v, i) => cells.push(`<td class="gt${i === 0 ? " sep" : ""}">${v}</td>`));
     return `<tr>${cells.join("")}</tr>`;
   }).reverse().join("");   // la semana actual (Entreno Actual) queda abajo, justo encima del historial
   const tal = pj.ti.map(x => {
@@ -1208,7 +1209,7 @@ function planHtml(tr) {
       <button class="btn" type="button" data-plact="pattern" title="Por ejemplo: RAP 3, TEC 2 se repite hasta completar las 13 semanas">Patrón…</button>
       <button class="btn" type="button" data-plact="copy" title="Copia esta planificación a otros jugadores">Copiar a otros jugadores…</button>
       <button class="btn" type="button" data-plact="clear" title="Deja las semanas 2 a 13 sin definir">Limpiar</button></div>
-    <div class="tablewrap ent dense planwrap"><table id="planTbl"><thead class="two"><tr class="grp">${groups}</tr><tr class="cols">${th}</tr></thead><tbody>${body}</tbody></table></div>
+    <div class="tablewrap ent dense planwrap${view.hideCum ? " nocum" : ""}"><table id="planTbl"><thead class="two"><tr class="grp">${groups}</tr><tr class="cols">${th}</tr></thead><tbody>${body}</tbody></table></div>
     <details class="tm"${pj.ti.some(x => x.manual != null || x.use === null) ? " open" : ""}><summary>Talento por skill para la proyección</summary>
       <p class="hint">La proyección usa el último Talento por skill calculado (el más actual, en las mismas unidades de la columna «Talento por skill»: semanas de entreno por nivel). Si una skill aún no tiene uno, puedes ingresarlo a mano. Cuando ya hay un talento calculado, el valor manual no se usa y aparece con «!». Si el último calculado tiene más de 13 semanas, se da prioridad al manual (si lo hay).</p>
       <div class="tmgrid">${tal}</div></details></section>`;
@@ -1233,9 +1234,9 @@ function renderPlayer(tr) {
   const lastIdx = rowsSrc.length - 1, last = tr.rows[tr.rows.length - 1];
   const mm = SK_COLS.map((_, i) => { const v = rowsSrc.map(r => r.k[i]); return [Math.min(...v), Math.max(...v)]; });
   const ni = (n, f, v, mn, mx, i) => `<input class="ed" type="number" inputmode="numeric" step="1" min="${mn}" max="${mx}" data-ed="${n}|${f}${i != null ? "|" + i : ""}" value="${esc(v)}" aria-label="${esc(f)} fila ${n + 1}">`;
-  const groups = PL_GROUPS().map(([n, c, s]) => `<th colspan="${c}" class="${s}">${n}</th>`).join("");
+  const groups = PL_GROUPS().slice(0, view.hideCum ? -1 : 6).map(([n, c, s]) => `<th colspan="${c}" class="${s}">${n}</th>`).join("");
   const cols = ["Fecha", "TEMP", "SEM", "EDAD", "ENT. F", "Entrenamiento", ...SK_COLS.flatMap(s => [s.lab, "gt"]),
-    ...COMPOS.map(s => s[0]), "RAP", "TEC", "PAS", "DEF", "CRE", "ATT", "RAP", "TEC", "PAS", "DEF", "CRE", "ATT"];
+    ...COMPOS.map(s => s[0]), "RAP", "TEC", "PAS", "DEF", "CRE", "ATT", ...(view.hideCum ? [] : ["RAP", "TEC", "PAS", "DEF", "CRE", "ATT"])];
   const tips = { ...COMPOS_TIP, "ENT. F": "Si está marcada, la skill entrenada suma 2 en lugar de la Velocidad de entreno", gt: "Puntos de entrenamiento acumulados desde la última subida de la skill: suma la Velocidad de entreno si se entrenó, 2 con ENT. F, 1 si no se entrenó y 0 en LESIÓN. Vuelve a 0 cuando la skill sube" };
   const sepAt = new Set([4, 6, 20, 25, 31]);
   const th = cols.map((c, i) => `<th class="${i === 0 ? "fc " : ""}${sepAt.has(i) ? "sep" : ""}" title="${esc(tips[c] || "")}">${esc(c)}</th>`).join("");
@@ -1254,22 +1255,23 @@ function renderPlayer(tr) {
     });
     COMPOS.forEach(([, idx], j) => cells.push(`<td class="sum${j === 0 ? " sep" : ""}">${idx.reduce((x, i) => x + r.k[i], 0)}</td>`));
     c.tw.forEach((t, i) => cells.push(`<td class="${i === 0 ? "sep" : ""}${t ? " tal sk-" + SK_COLS[i + 1].id : ""}"${t ? ` title="Niveles ${t.from} → ${t.to} (${t.m} ${t.m === 1 ? "cambio" : "cambios"})"` : ""}>${t ? nf2.format(t.v) : ""}</td>`));
-    c.cum.forEach((v, i) => cells.push(`<td class="gt${i === 0 ? " sep" : ""}">${v}</td>`));
+    if (!view.hideCum) c.cum.forEach((v, i) => cells.push(`<td class="gt${i === 0 ? " sep" : ""}">${v}</td>`));
     rowsHtml.push(`<tr${n === lastIdx ? ' class="newest"' : ""}>${cells.join("")}</tr>`);
   }
   const edBtns = ed
     ? `<button class="btn primary" type="button" data-edsave>Guardar cambios</button><button class="btn" type="button" data-edcancel>Cancelar</button><span class="lbl" id="edMsg" role="status"></span>`
     : `<button class="btn" type="button" data-edon title="Cambiar a mano cualquier celda de la tabla (con botón para guardar)">Modo Edición</button>`;
+  const cumBtn = `<button class="btn" type="button" data-cumbtn aria-pressed="${!view.hideCum}" title="Muestra u oculta la sección Acumulado en la tabla de entrenamiento y en la de planificación">${view.hideCum ? "Mostrar" : "Ocultar"} Acumulado</button>`;
   const planBtn = `<button class="btn" type="button" data-planbtn aria-pressed="${view.showPlan}">${view.showPlan ? "Ocultar" : "Mostrar"} planificación</button>`;
   return `<div class="view-title"><h2>${esc(tr.k)}</h2><span class="lbl">Entreno Alineaciones ${alChip(tr)}</span>
       <label class="lbl">Entreno actual ${trnSelect(tr.plan, `data-plan="${esc(tr.k)}" aria-label="Entreno actual de ${esc(tr.k)}"`)}</label>
       <span class="lbl">${tr.rows.length} semanas · última: ${esc(dmy(last.d))} · ${last.a} años</span>
       <span class="lbl"><i class="cl"></i> Subida Limpia</span>
-      ${planBtn}${edBtns}
+      ${planBtn}${cumBtn}${edBtns}
       <button class="btn rm" type="button" data-rm="${esc(tr.k)}" title="Quitar a este jugador del seguimiento (por ejemplo, si lo vendiste)">Quitar jugador</button></div>
     ${ed ? `<p class="hint edhint">Modo Edición: cambia las celdas que quieras y pulsa «Guardar cambios». Fecha, temporada, semana, edad, ENT. F, entrenamiento, skills y gt se pueden editar; las sumas, el Talento por skill y el Acumulado se recalculan solos al guardar. Si dejas un gt como estaba, se sigue calculando solo.</p>` : ""}
     ${view.showPlan ? planHtml(tr) : ""}
-    <div class="tablewrap ent dense"><table id="tbl"><thead class="two"><tr class="grp">${groups}</tr><tr class="cols">${th}</tr></thead><tbody>${rowsHtml.join("")}</tbody></table></div>`;
+    <div class="tablewrap ent dense${view.hideCum ? " nocum" : ""}"><table id="tbl"><thead class="two"><tr class="grp">${groups}</tr><tr class="cols">${th}</tr></thead><tbody>${rowsHtml.join("")}</tbody></table></div>`;
 }
 
 function render() {
@@ -1518,7 +1520,8 @@ function init() {
   $("#view").addEventListener("click", e => {
     const b = e.target.closest("button"); if (!b || !T) return;
     const tr = live().find(p => p.k === view.tab);
-    if (b.dataset.planbtn != null) { view.showPlan = !view.showPlan; try { localStorage.setItem("entrenamiento:showplan", view.showPlan ? "1" : "0"); } catch {} render(); }
+    if (b.dataset.cumbtn != null) { view.hideCum = !view.hideCum; try { localStorage.setItem("entrenamiento:hidecum", view.hideCum ? "1" : "0"); } catch {} render(); }
+    else if (b.dataset.planbtn != null) { view.showPlan = !view.showPlan; try { localStorage.setItem("entrenamiento:showplan", view.showPlan ? "1" : "0"); } catch {} render(); }
     else if (b.dataset.plact != null && tr) planAction(tr, b.dataset.plact);
     else if (!tr) return;
     else if (b.dataset.edon != null) { view.ed = { id: tr.id, rows: JSON.parse(JSON.stringify(tr.rows)), gtIn: {} }; render(); }
