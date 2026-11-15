@@ -327,6 +327,16 @@ i.cl::before { content: "*"; }
 button.btn.danger { color: #b3261e; border-color: #b3261e; }
 :root[data-theme="dark"] button.btn.danger { color: #ff8a80; border-color: #ff8a80; }
 .dlg .actions [hidden] { display: none; }
+/* Modo Edición y planificación */
+.ent input.ed { width: 3.6em; padding: 2px 4px; font: inherit; text-align: center; border: 1px solid var(--line, #888); border-radius: 4px; background: var(--panel); color: inherit; }
+.ent input.ed.d { width: 9.6em; }
+.edhint { margin: 6px 0; }
+.plan { margin: 10px 0 14px; padding: 10px 12px; border: 1px solid var(--line, #bbb); border-radius: 10px; background: var(--panel); }
+.plan h3 { margin: 0 0 4px; font-size: 1rem; }
+.plan table { border-collapse: collapse; font-size: .85rem; }
+.plan th, .plan td { padding: 4px 6px; text-align: center; white-space: nowrap; border-bottom: 1px solid var(--line, #ddd); }
+.plan th.l { text-align: left; position: sticky; left: 0; background: var(--panel); }
+.plan th.now { color: var(--accent); }
 </style>
 </head>
 <body>
@@ -797,7 +807,7 @@ async function estCall(params) {
   if (!j.ok) throw new Error(j.error || "error");
   return j;
 }
-const recOf = p => ({ k: p.k, lay: p.lay, plan: p.plan || "", pid: p.pid == null ? null : p.pid, rows: p.rows, ...(p.arch ? { arch: 1 } : {}) });
+const recOf = p => ({ k: p.k, lay: p.lay, plan: p.plan || "", pid: p.pid == null ? null : p.pid, rows: p.rows, ...(p.arch ? { arch: 1 } : {}), ...(p.planE ? { planE: 1 } : {}), ...(p.pl && Object.keys(p.pl).length ? { pl: p.pl } : {}) });
 async function pushDirty() {
   if (!CONFIG.estUrl || !sync.key || sync.busy || !T || !T.dirty.length) return;
   sync.busy = true; setSyncState("pending");
@@ -844,6 +854,8 @@ async function pullT() {
         const np = { id, t, k: rec.k, lay: rec.lay || "ATT", plan: rec.plan || "", rows: rec.rows };
         if (rec.pid != null) np.pid = rec.pid;
         if (rec.arch) np.arch = true;
+        if (rec.planE) np.planE = true;
+        if (rec.pl) np.pl = rec.pl;
         if (loc) T.players[T.players.indexOf(loc)] = np; else { T.players.push(np); delete T.gone[id]; }
         dirtyDel(id); changed = true;
       } else if (loc.t > t) dirtyAdd(id);
@@ -978,9 +990,14 @@ function autoAppend() {
     const k = p && p.skills ? SK_API.map(x => p.skills[x]) : [];
     if (!p || k.length !== 7 || !k.every(Number.isFinite)) { res.missing.push(tr.k); continue; }
     tr.pid = p.pid;
+    const pe = tr.pl && tr.pl[wk];
     const roll = last.s >= 13;
     const s = roll ? 1 : last.s + 1, t = roll ? last.t + 1 : last.t;
-    tr.rows.push({ d: wk, t, s, a: Number.isFinite(p.age) ? p.age : (s === 13 ? last.a + 1 : last.a), e: false, f: tr.plan || "", k });
+    tr.rows.push({ d: wk, t, s, a: Number.isFinite(p.age) ? p.age : (s === 13 ? last.a + 1 : last.a), e: !!(pe ? pe.e : tr.planE), f: pe ? pe.f : (tr.plan || ""), k });
+    // la planificación avanza: lo planeado para la semana siguiente pasa a ser el Entreno Actual
+    const nx = tr.pl && tr.pl[addDays(wk, 7)];
+    if (nx) { tr.plan = nx.f; tr.planE = !!nx.e; } else { tr.planE = false; }
+    if (tr.pl) for (const d of Object.keys(tr.pl)) if (d <= addDays(wk, 7)) delete tr.pl[d];
     res.added.push(tr.k); changed = true; touch(tr, true);
   }
   if (changed) { saveT(); schedulePush(); }
@@ -988,7 +1005,9 @@ function autoAppend() {
 }
 
 /* ─────────────── Vistas ─────────────── */
-const view = { tab: "Resumen", sort: null };   // sort: { i, dir }
+const view = { tab: "Resumen", sort: null, ed: null, showPlan: (() => { try { return localStorage.getItem("entrenamiento:showplan") !== "0"; } catch { return true; } })() };   // ed: borrador del Modo Edición
+const addDays = (iso, n) => { const [y, mo, d] = iso.split("-").map(Number); return ymd(new Date(y, mo - 1, d + n)); };
+const PLAN_WEEKS = 13;   // sort: { i, dir }
 const live = () => T.players.filter(p => !p.arch);
 const tabOf = () => { const h = decodeURIComponent(location.hash.slice(1)); return h && T && live().some(p => p.k === h) ? h : "Resumen"; };
 const scaleP = (v, a, b) => b > a ? Math.round((v - a) / (b - a) * 100) : 0;
@@ -1059,10 +1078,33 @@ function renderResumen() {
 }
 
 const PL_GROUPS = () => [["Semana", 4, ""], ["Entrenamiento", 2, "sep"], ["Skills y avance (gt)", 14, "sep"], ["Sumas", 5, "sep"], ["Talento por skill", 6, "sep"], ["Acumulado", 6, "sep"]];
+// Planificación: las próximas 13 semanas. La primera es el Entreno Actual; las demás se guardan en tr.pl (fecha → { f, e }).
+function planHtml(tr) {
+  const last = tr.rows[tr.rows.length - 1], ths = [], sel = [], chk = [], cal = [];
+  let s = last.s, t = last.t;
+  for (let k = 0; k < PLAN_WEEKS; k++) {
+    const d = addDays(last.d, 7 * (k + 1)); if (++s > 13) { s = 1; t++; }
+    const pe = k ? (tr.pl && tr.pl[d]) : { f: tr.plan || "", e: !!tr.planE };
+    ths.push(`<th class="${k ? "" : "now"}">${k ? esc(dmy(d)) : "Entreno Actual"}</th>`);
+    cal.push(`<td>${k ? "" : esc(dmy(d)) + " · "}T${t} S${s}</td>`);
+    const opts = (k ? `<option value="~"${pe ? "" : " selected"}>sin definir</option>` : "") + `<option value=""${pe && pe.f === "" ? " selected" : ""}>—</option>` + TRN_OPTS.map(o => `<option${pe && o === pe.f ? " selected" : ""}>${o}</option>`).join("");
+    sel.push(`<td><select class="trn" data-t="${esc(pe ? pe.f : "~")}" data-pf="${k}" aria-label="Entrenamiento semana ${k + 1}">${opts}</select></td>`);
+    chk.push(`<td><input type="checkbox" data-pe="${k}" aria-label="ENT. F semana ${k + 1}"${pe && pe.e ? " checked" : ""}${k && !pe ? " disabled" : ""}></td>`);
+  }
+  return `<section class="plan" aria-label="Planificación"><h3>Planificación · próximas ${PLAN_WEEKS} semanas</h3>
+    <p class="hint">Elige qué entrenará cada semana. Cada jueves, la semana que llega toma lo planificado y la siguiente pasa a ser el Entreno Actual; si una semana queda «sin definir», se mantiene el entrenamiento anterior.</p>
+    <div class="tablewrap"><table id="planTbl"><thead><tr><th class="l">Semana</th>${ths.join("")}</tr></thead><tbody>
+      <tr><th class="l">Temporada · semana</th>${cal.join("")}</tr>
+      <tr><th class="l">Entrenamiento</th>${sel.join("")}</tr>
+      <tr><th class="l">ENT. F</th>${chk.join("")}</tr></tbody></table></div></section>`;
+}
 function renderPlayer(tr) {
-  const o = calcOf(tr);
-  const lastIdx = tr.rows.length - 1, last = tr.rows[lastIdx];
-  const mm = SK_COLS.map((_, i) => { const v = tr.rows.map(r => r.k[i]); return [Math.min(...v), Math.max(...v)]; });
+  const ed = view.ed && view.ed.id === tr.id ? view.ed : null;
+  const rowsSrc = ed ? ed.rows : tr.rows;
+  const o = computeRows(rowsSrc, SPEED);
+  const lastIdx = rowsSrc.length - 1, last = tr.rows[tr.rows.length - 1];
+  const mm = SK_COLS.map((_, i) => { const v = rowsSrc.map(r => r.k[i]); return [Math.min(...v), Math.max(...v)]; });
+  const ni = (n, f, v, mn, mx, i) => `<input class="ed" type="number" inputmode="numeric" step="1" min="${mn}" max="${mx}" data-ed="${n}|${f}${i != null ? "|" + i : ""}" value="${esc(v)}" aria-label="${esc(f)} fila ${n + 1}">`;
   const groups = PL_GROUPS().map(([n, c, s]) => `<th colspan="${c}" class="${s}">${n}</th>`).join("");
   const cols = ["Fecha", "TEMP", "SEM", "EDAD", "ENT. F", "Entrenamiento", ...SK_COLS.flatMap(s => [s.lab, "gt"]),
     ...COMPOS.map(s => s[0]), "RAP", "TEC", "PAS", "DEF", "CRE", "ATT", ...SK_COLS.slice(1).map(s => s.full)];
@@ -1071,11 +1113,15 @@ function renderPlayer(tr) {
   const th = cols.map((c, i) => `<th class="${i === 0 ? "fc " : ""}${sepAt.has(i) ? "sep" : ""}" title="${esc(tips[c] || "")}">${esc(c)}</th>`).join("");
   const rowsHtml = [];
   for (let n = lastIdx; n >= 0; n--) {
-    const r = tr.rows[n], c = o[n];
-    const cells = [`<td class="fc">${esc(dmy(r.d))}</td>`, `<td>${r.t}</td>`, `<td>${r.s}</td>`, `<td>${r.a}</td>`,
+    const r = rowsSrc[n], c = o[n];
+    const cells = ed ? [`<td class="fc"><input class="ed d" type="date" data-ed="${n}|d" value="${esc(r.d)}" aria-label="Fecha fila ${n + 1}"></td>`, `<td>${ni(n, "t", r.t, 1, 99)}</td>`, `<td>${ni(n, "s", r.s, 1, 13)}</td>`, `<td>${ni(n, "a", r.a, 0, 60)}</td>`,
+      `<td class="sep"><input type="checkbox" data-ed="${n}|e" aria-label="ENT. F fila ${n + 1}"${r.e ? " checked" : ""}></td>`,
+      `<td>${trnSelect(r.f, `data-ed="${n}|f" aria-label="Entrenamiento fila ${n + 1}"`)}</td>`]
+    : [`<td class="fc">${esc(dmy(r.d))}</td>`, `<td>${r.t}</td>`, `<td>${r.s}</td>`, `<td>${r.a}</td>`,
       `<td class="sep"><input type="checkbox" data-ef="${n}" aria-label="ENT. F ${esc(dmy(r.d))}"${r.e ? " checked" : ""}></td>`,
       `<td>${trnSelect(r.f, `data-rf="${n}" aria-label="Entrenamiento ${esc(dmy(r.d))}"`)}</td>`];
     SK_COLS.forEach((s, i) => {
+      if (ed) { const gv = ed.gtIn[n + ":" + i]; cells.push(`<td class="sk${i === 0 ? " sep" : ""}">${ni(n, "k", r.k[i], 0, 30, i)}</td><td class="gt">${ni(n, "g", gv != null ? gv : c.gt[i], 0, 999, i)}</td>`); return; }
       cells.push(`<td class="sk sk-${s.id}${i === 0 ? " sep" : ""}${c.clean[i] ? " clean" : ""}" style="--p:${scaleP(r.k[i], mm[i][0], mm[i][1])}"${c.clean[i] ? ' title="Subida Limpia: subió sin haber sido entrenada"' : ""}>${r.k[i]}</td><td class="gt">${c.gt[i]}</td>`);
     });
     COMPOS.forEach(([, idx], j) => cells.push(`<td class="sum${j === 0 ? " sep" : ""}">${idx.reduce((x, i) => x + r.k[i], 0)}</td>`));
@@ -1083,11 +1129,18 @@ function renderPlayer(tr) {
     c.cum.forEach((v, i) => cells.push(`<td class="gt${i === 0 ? " sep" : ""}">${v}</td>`));
     rowsHtml.push(`<tr${n === lastIdx ? ' class="newest"' : ""}>${cells.join("")}</tr>`);
   }
+  const edBtns = ed
+    ? `<button class="btn primary" type="button" data-edsave>Guardar cambios</button><button class="btn" type="button" data-edcancel>Cancelar</button><span class="lbl" id="edMsg" role="status"></span>`
+    : `<button class="btn" type="button" data-edon title="Cambiar a mano cualquier celda de la tabla (con botón para guardar)">Modo Edición</button>`;
+  const planBtn = `<button class="btn" type="button" data-planbtn aria-pressed="${view.showPlan}">${view.showPlan ? "Ocultar" : "Mostrar"} planificación</button>`;
   return `<div class="view-title"><h2>${esc(tr.k)}</h2><span class="lbl">Entreno Alineaciones ${alChip(tr)}</span>
       <label class="lbl">Entreno actual ${trnSelect(tr.plan, `data-plan="${esc(tr.k)}" aria-label="Entreno actual de ${esc(tr.k)}"`)}</label>
       <span class="lbl">${tr.rows.length} semanas · última: ${esc(dmy(last.d))} · ${last.a} años</span>
       <span class="lbl"><i class="cl"></i> Subida Limpia</span>
+      ${planBtn}${edBtns}
       <button class="btn rm" type="button" data-rm="${esc(tr.k)}" title="Quitar a este jugador del seguimiento (por ejemplo, si lo vendiste)">Quitar jugador</button></div>
+    ${ed ? `<p class="hint edhint">Modo Edición: cambia las celdas que quieras y pulsa «Guardar cambios». Fecha, temporada, semana, edad, ENT. F, entrenamiento, skills y gt se pueden editar; las sumas, el Talento por skill y el Acumulado se recalculan solos al guardar. Si dejas un gt como estaba, se sigue calculando solo.</p>` : ""}
+    ${view.showPlan ? planHtml(tr) : ""}
     <div class="tablewrap ent"><table id="tbl"><thead class="two"><tr class="grp">${groups}</tr><tr class="cols">${th}</tr></thead><tbody>${rowsHtml.join("")}</tbody></table></div>`;
 }
 
@@ -1097,6 +1150,7 @@ function render() {
   view.tab = tabOf();
   renderSummaryBox(); renderTabs();
   const tr = live().find(p => p.k === view.tab);
+  if (view.ed && !(tr && tr.id === view.ed.id)) view.ed = null;
   $("#view").innerHTML = tr ? renderPlayer(tr) : renderResumen();
   const g = document.querySelector("tr.grp th"); if (g) $("#tbl").style.setProperty("--grp-h", g.getBoundingClientRect().height + "px");
 }
@@ -1116,6 +1170,29 @@ function addCandidates(onlyEnt) {
 }
 // «Juan José Pereira» → «Pereira Juan José» (la última palabra es el apellido)
 function surnameFirst(n) { const w = String(n || "").trim().split(/\s+/); return w.length < 2 ? w.join(" ") : w[w.length - 1] + " " + w.slice(0, -1).join(" "); }
+function saveEdit(tr) {
+  const ed = view.ed, msg = t => { const el = $("#edMsg"); if (el) el.textContent = t; };
+  const o0 = computeRows(tr.rows, SPEED), rows = ed.rows, inRange = (v, a, b) => Number.isInteger(v) && v >= a && v <= b;
+  for (let n = 0; n < rows.length; n++) {
+    const r = rows[n], at = `Fila ${n + 1} (${r.d || "sin fecha"})`;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(r.d || "") || Number.isNaN(Date.parse(r.d))) return msg(`${at}: la fecha no es válida.`);
+    if (n && !(r.d > rows[n - 1].d)) return msg(`${at}: las fechas deben ir de la más antigua a la más reciente, sin repetirse.`);
+    if (!inRange(r.t, 1, 99) || !inRange(r.s, 1, 13)) return msg(`${at}: la temporada (1–99) y la semana (1–13) deben ser números enteros.`);
+    if (!inRange(r.a, 0, 60)) return msg(`${at}: la edad debe ser un número entero entre 0 y 60.`);
+    if (!r.k.every(v => inRange(v, 0, 30))) return msg(`${at}: cada skill debe ser un entero entre 0 y 30.`);
+  }
+  const out = JSON.parse(JSON.stringify(rows));
+  for (const [key, val] of Object.entries(ed.gtIn)) {
+    const [n, i] = key.split(":").map(Number);
+    if (String(val).trim() === "") continue;
+    const v = Number(val); if (!inRange(v, 0, 999)) return msg(`Fila ${n + 1}: el gt debe ser un entero entre 0 y 999.`);
+    if (v !== o0[n].gt[i]) { out[n].g = out[n].g || [null, null, null, null, null, null, null]; out[n].g[i] = v; }
+  }
+  const same = JSON.stringify(out) === JSON.stringify(tr.rows);
+  view.ed = null;
+  if (!same) { tr.rows = out; touch(tr); toast("Cambios guardados"); } else toast("No había cambios");
+  render();
+}
 let pendingAdd = null;
 function restorePlayer(tr) {
   tr.arch = false; touch(tr, true); autoAppend(); saveT(); schedulePush();
@@ -1279,8 +1356,35 @@ function init() {
     view.hlOff = false;
     render();
   });
+  $("#view").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b || !T) return;
+    const tr = live().find(p => p.k === view.tab); if (!tr) return;
+    if (b.dataset.planbtn != null) { view.showPlan = !view.showPlan; try { localStorage.setItem("entrenamiento:showplan", view.showPlan ? "1" : "0"); } catch {} render(); }
+    else if (b.dataset.edon != null) { view.ed = { id: tr.id, rows: JSON.parse(JSON.stringify(tr.rows)), gtIn: {} }; render(); }
+    else if (b.dataset.edcancel != null) { view.ed = null; render(); }
+    else if (b.dataset.edsave != null) saveEdit(tr);
+  });
   $("#view").addEventListener("change", e => {
     const t = e.target; if (!T) return;
+    if (t.dataset.ed != null && view.ed) {   // Modo Edición: solo cambia el borrador
+      const [n, f, i] = t.dataset.ed.split("|"), r = view.ed.rows[Number(n)]; if (!r) return;
+      if (f === "e") r.e = t.checked; else if (f === "f") r.f = t.value; else if (f === "d") r.d = t.value;
+      else if (f === "g") view.ed.gtIn[n + ":" + i] = t.value;
+      else if (f === "k") r.k[Number(i)] = t.value === "" ? NaN : Number(t.value);
+      else r[f] = t.value === "" ? NaN : Number(t.value);
+      return;
+    }
+    if (t.dataset.pf != null || t.dataset.pe != null) {
+      const tr = live().find(p => p.k === view.tab); if (!tr) return;
+      const k = Number(t.dataset.pf != null ? t.dataset.pf : t.dataset.pe), d = addDays(tr.rows[tr.rows.length - 1].d, 7 * (k + 1));
+      if (k === 0) { if (t.dataset.pf != null) tr.plan = t.value; else tr.planE = t.checked; }
+      else {
+        tr.pl = tr.pl || {};
+        if (t.dataset.pf != null) { if (t.value === "~") delete tr.pl[d]; else tr.pl[d] = { f: t.value, e: tr.pl[d] ? !!tr.pl[d].e : false }; }
+        else if (tr.pl[d]) tr.pl[d].e = t.checked;
+      }
+      touch(tr); setTimeout(render, 0); return;
+    }
     if (t.dataset.plan != null) { const tr = live().find(p => p.k === t.dataset.plan); if (tr) { tr.plan = t.value; touch(tr); setTimeout(render, 0); } }
     else if (t.dataset.rf != null) { const tr = live().find(p => p.k === view.tab); if (tr) { tr.rows[Number(t.dataset.rf)].f = t.value; touch(tr); setTimeout(render, 0); } }
     else if (t.dataset.ef != null) { const tr = live().find(p => p.k === view.tab); if (tr) { tr.rows[Number(t.dataset.ef)].e = t.checked; touch(tr); setTimeout(render, 0); } }
