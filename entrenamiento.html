@@ -378,6 +378,19 @@ details.tm > summary { cursor: pointer; font-weight: 700; }
 .ent.dense.nocum table { font-size: min(.95rem, max(.58rem, calc((100vw - 56px) / 88))); }
 .ent td.gtk, .ent th.gtk { border-right: 1px solid color-mix(in srgb, var(--ink) 28%, var(--line)); }
 .ent td.gtk.last, .ent th.gtk.last { border-right: 0; }
+/* Resumen: planificación del equipo compacta y tabla de talentos */
+.teamplan table { font-size: min(.85rem, max(.6rem, calc((100vw - 90px) / 78))); }
+.teamplan th, .teamplan td { padding: 2px .25em; }
+.teamplan th.l { padding-right: .6em; }
+.teamplan select.trn { min-width: 3.4em; padding: 1px .35em; font-size: .95em; }
+.teamplan select.trn[data-t=""] { min-width: 3.4em; }
+.tal table { font-size: .95rem; }
+.tal th, .tal td { padding: 3px 14px; }
+.tal td.muted { color: var(--muted); }
+.tal th.nk-rap, .tal td.nk-rap { color: var(--n-rap); } .tal th.nk-tec, .tal td.nk-tec { color: var(--n-tec); } .tal th.nk-pas, .tal td.nk-pas { color: var(--n-pas); }
+.tal th.nk-def, .tal td.nk-def { color: var(--n-def); } .tal th.nk-cre, .tal td.nk-cre { color: var(--n-cre); } .tal th.nk-ata, .tal td.nk-ata { color: var(--n-ata); }
+.tal td { font-weight: 700; }
+.real { display: inline-block; margin-left: 3px; padding: 0 5px; border-radius: 999px; font-size: .68rem; font-weight: 700; vertical-align: middle; color: var(--muted); border: 1px solid var(--line); background: var(--panel); }
 </style>
 </head>
 <body>
@@ -430,6 +443,7 @@ details.tm > summary { cursor: pointer; font-weight: 700; }
       <thead><tr><th>Columna</th><th>Qué es</th></tr></thead>
       <tbody>
         <tr><td>gt</td><td>Puntos de entrenamiento acumulados desde la última subida de esa skill. Cada semana suma la Velocidad de entreno (8) si la skill fue la entrenada, 2 si además está marcada ENT. F, 1 si no se entrenó y 0 en LESIÓN. Vuelve a 0 cuando la skill sube.</td></tr>
+        <tr><td>Velocidad de entreno</td><td>8 (fija): los puntos que suma cada semana la skill entrenada. Se usa en gt, en el Talento por skill y en las proyecciones.</td></tr>
         <tr><td>Subida Limpia</td><td>Subida de skill que ocurre sin que se haya entrenado esa skill. Se marca con un asterisco <i class="cl"></i> en la esquina del nivel.</td></tr>
         <tr><td>Talento por skill</td><td>En RAP, TEC, PAS, DEF, CRE y ATT, en cada subida. Las casillas con valor se pintan con el color de la skill. Es (acumulado en esa subida − acumulado en el nivel de partida) ÷ Velocidad ÷ niveles entre ambos. El nivel de partida depende de las Subidas Limpias de los niveles L−2, L−1 y L (L = nivel nuevo): [1] si ninguna fue limpia, entre L−3 y L (tres cambios; por ejemplo, de 7 a 8: del nivel 5 al 8); [2] si L fue limpia y L−1 no, entre L−2 y L (dos cambios); [3] si L no fue limpia y L−2 sí, entre L−2 y L (dos cambios); [4] si L−1 y L fueron limpias, entre L−1 y L (un cambio). En cualquier otro caso, o si falta historial, la casilla queda vacía. Al pasar el cursor por la casilla se ve entre qué niveles se calculó.</td></tr>
         <tr><td>Sumas</td><td>DEF = Rapidez + Defensa; DEFside = Técnica + Pases + Creación; MID = Rapidez + Técnica + Pases + Creación; ATT = Rapidez + Técnica + Anotación; ATTside = Pases + Defensa + Creación.</td></tr>
@@ -1085,7 +1099,6 @@ function renderSummaryBox() {
     <dt>Entrenos Temporada</dt><dd>${weeks}</dd>
     <dt>Jugadores Entrenando</dt><dd>${live().length}</dd>
     <dt title="Skills que subieron en la última actualización del jueves">Subidas Semana Actual</dt><dd>${rises}</dd>
-    <dt>Velocidad de entreno</dt><dd>${SPEED}</dd>
   </dl>`;
   box.hidden = false;
 }
@@ -1129,6 +1142,7 @@ function renderResumen() {
   return `<div class="view-title"><h2>Resumen</h2><span class="lbl">Última semana registrada: ${esc(dmy(live().map(p => p.rows[p.rows.length - 1].d).sort().pop()))}. Orden: edad de mayor a menor y luego apellido. Pulsa un encabezado para ordenar por otra columna.</span>
       <button class="btn" type="button" data-planbtn aria-pressed="${view.showPlan}">${view.showPlan ? "Ocultar" : "Mostrar"} planificación</button></div>
     <div class="tablewrap ent"><table id="tbl"><thead><tr class="cols">${head}</tr></thead><tbody>${body}</tbody></table></div>
+    ${talentosHtml()}
     ${view.showPlan ? teamPlanHtml() : ""}`;
 }
 
@@ -1149,8 +1163,10 @@ function setPlanWeek(tr, k, v) {
   if (v === "~") delete tr.pl[d]; else tr.pl[d] = { f: v };
 }
 const trnLab = f => f === "" ? "—" : f;
-function planSel(w, k, attrs) {
-  const opts = (k ? `<option value="~"${w.def ? "" : " selected"}>↳ ${esc(trnLab(w.f))}</option>` : "") + `<option value=""${w.def && w.f === "" ? " selected" : ""}>—</option>` + TRN_OPTS.map(o => `<option${w.def && o === w.f ? " selected" : ""}>${o}</option>`).join("");
+const TRN_SHORT = { "": "—", Rapidez: "RAP", Técnica: "TEC", Pases: "PAS", Defensa: "DEF", Creación: "CRE", Anotación: "ATT", Condición: "CON", LESIÓN: "LES" };
+function planSel(w, k, attrs, short) {
+  const lab = f => short ? TRN_SHORT[f] : trnLab(f);
+  const opts = (k ? `<option value="~"${w.def ? "" : " selected"}>↳ ${esc(lab(w.f))}</option>` : "") + `<option value=""${w.def && w.f === "" ? " selected" : ""}>${short ? "GK" : "—"}</option>` + TRN_OPTS.map(o => `<option value="${o}"${w.def && o === w.f ? " selected" : ""}>${short ? TRN_SHORT[o] : o}</option>`).join("");
   return `<select class="trn${w.def ? "" : " carry"}" data-t="${esc(w.f)}" ${attrs}>${opts}</select>`;
 }
 // Talento que usa la proyección para cada skill (RAP…ATT): el último calculado (en «semanas de entreno» por nivel)
@@ -1217,17 +1233,35 @@ function planHtml(tr) {
       <p class="hint">La proyección usa el último Talento por skill calculado (el más actual, en las mismas unidades de la columna «Talento por skill»: semanas de entreno por nivel). Si una skill aún no tiene uno, puedes ingresarlo a mano. Cuando ya hay un talento calculado, el valor manual no se usa y aparece con «!». Si el último calculado tiene más de 13 semanas, se da prioridad al manual (si lo hay).</p>
       <div class="tmgrid">${tal}</div></details></section>`;
 }
+// Talentos por skill de todos los jugadores (vista Resumen). «real»: el valor sale del historial; sin marca: es el ingresado a mano.
+function talentosHtml() {
+  const ps = live().slice().sort((a, b) => a.k.localeCompare(b.k, "es"));
+  if (!ps.length) return "";
+  const body = ps.map(p => {
+    const ti = talentInfo(p, calcOf(p));
+    return `<tr><th class="l"><a href="#${encodeURIComponent(p.k)}" data-tab="${esc(p.k)}">${esc(p.k)}</a></th>${ti.map(x => {
+      const id = SK_COLS[x.i].id;
+      if (x.v == null) return `<td class="nk-${id} muted">—</td>`;
+      const tip = x.use === "calc" ? `Calculado a partir del historial${x.ageW > 0 ? ` (hace ${x.ageW} semanas)` : ""}` + (x.manual != null ? `; el valor manual (${fmtTal(x.manual)}) no se usa` : "") : `Ingresado a mano${x.calc != null ? `; el último calculado (${fmtTal(x.calc)}) tiene ${x.ageW} semanas` : ""}`;
+      return `<td class="nk-${id}" title="${esc(tip)}">${fmtTal(x.v)}${x.use === "calc" ? ' <span class="real">real</span>' : ""}</td>`;
+    }).join("")}</tr>`;
+  }).join("");
+  const head = [1, 2, 3, 4, 5, 6].map(i => `<th class="nk-${SK_COLS[i].id}">${SK_COLS[i].lab}</th>`).join("");
+  return `<section class="plan tal" aria-label="Talentos por skill"><h3>Talentos por skill</h3>
+    <p class="hint">El talento que usa la proyección de cada jugador: el último calculado del historial (marcado «real») o, si no hay uno calculado reciente, el que ingresaste a mano (sin marca). Se edita en la vista de cada jugador.</p>
+    <div class="tablewrap"><table id="talTbl"><thead><tr><th class="l">Jugador</th>${head}</tr></thead><tbody>${body}</tbody></table></div></section>`;
+}
 // Planificación del equipo (vista Resumen)
 function teamPlanHtml() {
   const ps = live().slice().sort((a, b) => a.k.localeCompare(b.k, "es")), effs = ps.map(planEff);
   if (!ps.length) return "";
   const dates = effs[0].map((w, k) => ps.reduce((mx, p) => { const l = addDays(p.rows[p.rows.length - 1].d, 7 * (k + 1)); return l > mx ? l : mx; }, w.d));
-  const ths = dates.map((d, k) => `<th class="${k ? "" : "now"}">${k ? esc(dmy(d)) : "Entreno Actual"}</th>`).join("");
-  const body = ps.map((p, r) => `<tr><th class="l"><a href="#${encodeURIComponent(p.k)}" data-tab="${esc(p.k)}">${esc(p.k)}</a></th>${effs[r].map((w, k) => `<td>${planSel(w, k, `data-tp="${esc(p.id)}|${k}" aria-label="${esc(p.k)} semana ${k + 1}"`)}</td>`).join("")}</tr>`).join("");
+  const ths = dates.map((d, k) => `<th class="${k ? "" : "now"}" title="${esc(dmy(d))}">${k ? esc(dmys(d).slice(0, 5)) : "Actual"}</th>`).join("");
+  const body = ps.map((p, r) => `<tr><th class="l"><a href="#${encodeURIComponent(p.k)}" data-tab="${esc(p.k)}">${esc(p.k)}</a></th>${effs[r].map((w, k) => `<td>${planSel(w, k, `data-tp="${esc(p.id)}|${k}" aria-label="${esc(p.k)} semana ${k + 1}" title="${esc(dmy(w.d))}"`, true)}</td>`).join("")}</tr>`).join("");
   const codes = [["RAP", "Rapidez"], ["TEC", "Técnica"], ["PAS", "Pases"], ["DEF", "Defensa"], ["CRE", "Creación"], ["ATT", "Anotación"], ["CON", "Condición"], ["GK", ""]];
   const cnt = codes.map(([c, f]) => `<tr class="cnt"><th class="l">${c}</th>${dates.map((_, k) => { const n = effs.filter(e => e[k].f === f).length; return `<td class="${n ? "" : "z"}">${n || ""}</td>`; }).join("")}</tr>`).join("");
-  return `<section class="plan" aria-label="Planificación del equipo"><h3>Planificación del equipo · próximas ${PLAN_WEEKS} semanas</h3>
-    <p class="hint">Qué entrenará cada jugador semana a semana (puedes cambiarlo aquí mismo). Las filas de abajo cuentan cuántos jugadores entrenan cada skill en cada semana; «↳» sigue con el entrenamiento de la semana anterior.</p>
+  return `<section class="plan teamplan" aria-label="Planificación del equipo"><h3>Planificación del equipo · próximas ${PLAN_WEEKS} semanas</h3>
+    <p class="hint">Qué entrenará cada jugador semana a semana (puedes cambiarlo aquí mismo). Las filas de abajo cuentan cuántos jugadores entrenan cada skill en cada semana; «↳» sigue con el entrenamiento de la semana anterior. Fechas en día-mes; la primera columna es el Entreno Actual.</p>
     <div class="tablewrap"><table id="teamPlan"><thead><tr><th class="l">Jugador</th>${ths}</tr></thead><tbody>${body}<tr class="sepr"><th class="l" colspan="${PLAN_WEEKS + 1}">Jugadores por entrenamiento</th></tr>${cnt}</tbody></table></div></section>`;
 }
 function renderPlayer(tr) {
