@@ -219,3 +219,5 @@ Qué tener en cuenta:
 **Ajuste:** los bordes de las celdas de las Tablas de Planificación (individual y Resumen) son rosados.
 
 **Ajuste:** en la Tabla Resumen las flechas de subida/bajada flotan a la derecha del número (los números quedan alineados), el fondo es el por defecto y los bordes de la tabla y de las celdas son azules.
+
+**Cambios Múltiples y Ciclos (planificación de cada jugador):** «Repetir semana 1» se quitó y «Patrón» pasó a llamarse **Ciclos**. Al hacer clic en una fila de la tabla se marca la semana donde empieza lo que ingreses (por defecto, el Entreno Actual). **Cambios Múltiples** programa solo lo ingresado, sin repetir (RAP 5 desde la 3ª fila = 5 semanas de rapidez); **Ciclos** repite el ciclo desde esa semana hasta completar las 13. Además, los títulos y textos de las tablas Resumen y Planificación van en el color de su tabla, y la marca «real» de Talentos usa letras rosadas sobre fondo oscuro.

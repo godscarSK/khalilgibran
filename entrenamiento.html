@@ -484,6 +484,21 @@ section.rtab.r1 table th, section.rtab.r1 table td { border-color: #9dbdea; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) section.rtab.r1 table th, :root:not([data-theme="light"]) section.rtab.r1 table td { border-color: #3f6aa8; } }
 section.rtab.r1 td.sum { position: relative; }
 section.rtab.r1 td.sum .chg { position: absolute; right: 3px; top: 50%; transform: translateY(-50%); font-size: .7em; line-height: 1; }
+/* títulos y textos en el color de su tabla */
+section.rtab.r1 h2, section.rtab.r1 .lastweek, section.rtab.r1 .lastweek b { color: #2f6fc4; }
+section.rtab.r2 h3, section.rtab.r2 h3 small, section.rtab.r2 .hint { color: #c9457f; }
+:root[data-theme="dark"] section.rtab.r1 h2, :root[data-theme="dark"] section.rtab.r1 .lastweek, :root[data-theme="dark"] section.rtab.r1 .lastweek b { color: #8db6f0; }
+:root[data-theme="dark"] section.rtab.r2 h3, :root[data-theme="dark"] section.rtab.r2 h3 small, :root[data-theme="dark"] section.rtab.r2 .hint { color: #f29cc3; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) section.rtab.r1 h2, :root:not([data-theme="light"]) section.rtab.r1 .lastweek, :root:not([data-theme="light"]) section.rtab.r1 .lastweek b { color: #8db6f0; }
+  :root:not([data-theme="light"]) section.rtab.r2 h3, :root:not([data-theme="light"]) section.rtab.r2 h3 small, :root:not([data-theme="light"]) section.rtab.r2 .hint { color: #f29cc3; }
+}
+/* semana marcada en la planificación individual */
+#planTbl tbody tr { cursor: pointer; }
+#planTbl tbody tr.picked > td { background-image: linear-gradient(rgba(59,120,201,.20), rgba(59,120,201,.20)); }
+#planTbl tbody tr.picked > td.fc { box-shadow: inset 3px 0 0 #3b78c9; }
+/* marca «real»: letras rosadas sobre fondo oscuro */
+.tal td .real { background: #3a1430; border-color: #ec4899; color: #ff8cc6; }
 </style>
 </head>
 <body>
@@ -1321,8 +1336,9 @@ function projectPlayer(tr, eff) {
   return { ti, weeks };
 }
 const fmtTal = v => v == null ? "" : nf2.format(v);
+const pkOf = tr => view.pkTab === tr.id ? Math.min(Math.max(view.pk | 0, 0), PLAN_WEEKS - 1) : 0;   // semana marcada (0 = Entreno Actual)
 function planHtml(tr) {
-  const last = tr.rows[tr.rows.length - 1], eff = planEff(tr), pj = projectPlayer(tr, eff);
+  const last = tr.rows[tr.rows.length - 1], eff = planEff(tr), pj = projectPlayer(tr, eff), pk = pkOf(tr);
   const groups = [["Venta", 1, "vc"], ["Semana", 4, "sep"], ["Entrenamiento", 1, "sep"], ["Skills y avance (gt)", 14, "sep"], ["Sumas", ppIdx(tr).length, "sep"], ["", 1, "sep"]].map(([n, c, s]) => `<th colspan="${c}" class="${s}">${n}</th>`).join("");
   const cols = ["Venta", "Fecha", "TEMP", "SEM", "EDAD", "Entrenamiento", ...SK_COLS.flatMap(s => [s.lab, "gt"]), ...ppIdx(tr).map(j => COMPOS[j][0]), ""], sepAt = new Set([1, 5, 6, 20, 20 + ppIdx(tr).length]);
   const skh = i => i >= 6 && i <= 19 ? ((i - 6) % 2 ? " gtk" + (i === 19 ? " last" : "") : " nk-" + SK_COLS[(i - 6) / 2].id) : "";
@@ -1337,7 +1353,7 @@ function planHtml(tr) {
     SK_COLS.forEach((sk, i) => cells.push(`<td data-cp class="sum nk-${sk.id}${i === 0 ? " sep" : ""}${p.rise[i] ? " rise" : ""}">${p.lvl[i]}${p.rise[i] ? ' <span class="chg up" title="Se estima que sube esta semana">▲</span>' : ""}</td><td class="gt gtk${i === 6 ? " last" : ""}">${p.gt[i]}</td>`));
     ppIdx(tr).forEach((j, q) => cells.push(`<td class="sum${q === 0 ? " sep" : ""}">${COMPOS[j][1].reduce((x, i) => x + p.lvl[i], 0)}</td>`));
     cells.push(`<td class="sep cpc"><button class="btn mini" type="button" data-cprow title="Copiar SEM, EDAD, CON, RAP, TEC, PAS, DEF, CRE y ATT de esta fila" aria-label="Copiar datos de esta fila">⧉</button></td>`);
-    return `<tr>${cells.join("")}</tr>`;
+    return `<tr data-pk="${k}"${k === pk ? ' class="picked"' : ""}>${cells.join("")}</tr>`;
   }).reverse().join("");   // la semana actual (Entreno Actual) queda abajo, justo encima del historial
   const tal = pj.ti.map(x => {
     const sk = SK_COLS[x.i];
@@ -1346,9 +1362,9 @@ function planHtml(tr) {
     return `<label class="tmi nk-${sk.id}"><span>${sk.lab}</span><input class="ed tm" type="number" step="0.01" min="0" max="99" inputmode="decimal" data-tm="${x.i}" value="${x.manual != null ? esc(x.manual) : ""}" placeholder="—" aria-label="Talento manual ${esc(sk.lab)}">${mark}<small>${esc(st)}</small></label>`;
   }).join("");
   return `<section class="plan rtab r2 indplan" aria-label="Planificación"><h3>Planificación · próximas ${PLAN_WEEKS} semanas</h3>
-    <p class="hint">Elige qué entrenará cada semana. Cada jueves, la semana que llega toma lo planificado y la siguiente pasa a ser el Entreno Actual. Una semana con «↳» sigue con el entrenamiento de la anterior. La fecha destacada es la del Entreno Actual (abajo) y las semanas futuras van hacia arriba. A la derecha se proyectan los niveles y los puntos (gt) según el plan: ▲ marca la semana en que se estima que la skill subiría (Condición se asume que sube cuando su gt llega a 8) y Sumas muestra las sumas de skills proyectadas (según la Posición Preferida del jugador). En «Venta» puedes anotar un posible precio de venta (M$) para cada semana.</p>
-    <div class="planbtns"><button class="btn" type="button" data-plact="repeat" title="Copia el Entreno Actual a las 13 semanas">Repetir semana 1</button>
-      <button class="btn" type="button" data-plact="pattern" title="Por ejemplo: RAP 3, TEC 2 se repite hasta completar las 13 semanas">Patrón…</button>
+    <p class="hint">Elige qué entrenará cada semana. Cada jueves, la semana que llega toma lo planificado y la siguiente pasa a ser el Entreno Actual. Una semana con «↳» sigue con el entrenamiento de la anterior. Haz clic en una fila para marcar la semana donde empiezan «Cambios Múltiples» y «Ciclos» (por defecto, el Entreno Actual). La fecha destacada es la del Entreno Actual (abajo) y las semanas futuras van hacia arriba. A la derecha se proyectan los niveles y los puntos (gt) según el plan: ▲ marca la semana en que se estima que la skill subiría (Condición se asume que sube cuando su gt llega a 8) y Sumas muestra las sumas de skills proyectadas (según la Posición Preferida del jugador). En «Venta» puedes anotar un posible precio de venta (M$) para cada semana.</p>
+    <div class="planbtns"><button class="btn" type="button" data-plact="multi" title="Por ejemplo: RAP 3, DEF 2 programa solo esas 5 semanas, desde la semana marcada">Cambios Múltiples…</button>
+      <button class="btn" type="button" data-plact="pattern" title="Por ejemplo: RAP 3, TEC 2 se repite desde la semana marcada hasta completar las 13 semanas">Ciclos…</button>
       <button class="btn" type="button" data-plact="copy" title="Copia esta planificación a otros jugadores">Copiar a otros jugadores…</button>
       <button class="btn" type="button" data-plact="clear" title="Deja las semanas 2 a 13 sin definir">Limpiar</button></div>
     <div class="tablewrap ent dense planwrap"><table id="planTbl"><thead class="two"><tr class="grp">${groups}</tr><tr class="cols">${th}</tr></thead><tbody>${body}</tbody></table></div>
@@ -1479,14 +1495,22 @@ function parsePattern(txt) {
 }
 function planAction(tr, act) {
   const eff = planEff(tr);
-  if (act === "repeat") { for (let k = 1; k < PLAN_WEEKS; k++) setPlanWeek(tr, k, tr.plan || ""); touch(tr); render(); toast("Semana 1 repetida en las 13 semanas"); }
-  else if (act === "clear") { if (!confirm(`¿Dejar «sin definir» las semanas 2 a 13 de ${tr.k}?`)) return; tr.pl = {}; touch(tr); render(); }
-  else if (act === "pattern") {
-    const txt = prompt("Patrón de entrenamiento, empezando por el Entreno Actual (se repite hasta completar 13 semanas).\nEjemplo: RAP 3, TEC 2, DEF 1\nCódigos: RAP, TEC, PAS, DEF, CRE, ATT, CON, LES, GK");
+  const k0 = pkOf(tr);
+  if (act === "clear") { if (!confirm(`¿Dejar «sin definir» las semanas 2 a 13 de ${tr.k}?`)) return; tr.pl = {}; touch(tr); render(); }
+  else if (act === "pattern" || act === "multi") {
+    const wk = k0 ? ` (semana del ${dmy(eff[k0].d)})` : " (Entreno Actual)";
+    const txt = prompt(act === "multi"
+      ? `Cambios Múltiples: se programan solo estos entrenamientos, empezando en la semana marcada${wk}. No se repiten.\nEjemplo: RAP 3, DEF 2 → cinco semanas\nCódigos: RAP, TEC, PAS, DEF, CRE, ATT, CON, LES, —`
+      : `Ciclos: el ciclo se repite desde la semana marcada${wk} hasta completar las 13 semanas.\nEjemplo: RAP 3, TEC 2, DEF 1\nCódigos: RAP, TEC, PAS, DEF, CRE, ATT, CON, LES, —`);
     if (txt == null) return;
-    const seq = parsePattern(txt); if (!seq) { toast("No entendí el patrón. Ejemplo: RAP 3, TEC 2"); return; }
-    for (let k = 0; k < PLAN_WEEKS; k++) setPlanWeek(tr, k, seq[k % seq.length]);
-    touch(tr); render(); toast("Patrón aplicado");
+    const seq = parsePattern(txt); if (!seq) { toast("No entendí lo ingresado. Ejemplo: RAP 3, TEC 2"); return; }
+    let n = 0;
+    for (let k = k0; k < PLAN_WEEKS; k++) {
+      const q = k - k0;
+      if (act === "multi" && q >= seq.length) break;
+      setPlanWeek(tr, k, seq[q % seq.length]); n++;
+    }
+    touch(tr); render(); toast(act === "multi" ? `${n} semana${n === 1 ? "" : "s"} programada${n === 1 ? "" : "s"}` : "Ciclos aplicados");
   } else if (act === "copy") {
     const others = live().filter(p => p !== tr).sort((a, b) => a.k.localeCompare(b.k, "es"));
     if (!others.length) { toast("No hay otros jugadores en el seguimiento."); return; }
@@ -1687,6 +1711,11 @@ function init() {
     render();
   });
   $("#view").addEventListener("click", e => {
+    const row = e.target.closest("#planTbl tbody tr[data-pk]");
+    if (row && !e.target.closest("button, input, select, a, label")) {   // marca la semana donde empiezan Cambios Múltiples y Ciclos
+      const tr0 = live().find(p => p.k === view.tab);
+      if (tr0) { view.pkTab = tr0.id; view.pk = Number(row.dataset.pk); row.parentNode.querySelectorAll("tr.picked").forEach(x => x.classList.remove("picked")); row.classList.add("picked"); }
+    }
     const b = e.target.closest("button"); if (!b || !T) return;
     const tr = live().find(p => p.k === view.tab);
     if (b.dataset.rtab != null) { view.rt[b.dataset.rtab] = !view.rt[b.dataset.rtab]; try { localStorage.setItem("entrenamiento:restabs", JSON.stringify(view.rt)); } catch {} render(); return; }
