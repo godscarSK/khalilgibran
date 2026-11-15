@@ -362,6 +362,9 @@ details.tm > summary { cursor: pointer; font-weight: 700; }
 .tmi input.tm { width: 5em; }
 .tmi .warn { cursor: help; }
 .tmi.nk-rap > span { color: var(--n-rap); } .tmi.nk-tec > span { color: var(--n-tec); } .tmi.nk-pas > span { color: var(--n-pas); } .tmi.nk-def > span { color: var(--n-def); } .tmi.nk-cre > span { color: var(--n-cre); } .tmi.nk-ata > span { color: var(--n-ata); }
+.ent td.fc.now, .ent tbody tr:nth-child(even) td.fc.now, .ent tbody tr:hover td.fc.now { background: #ffe066; color: #3a2d00; }
+:root[data-theme="dark"] .ent td.fc.now, :root[data-theme="dark"] .ent tbody tr:nth-child(even) td.fc.now { background: #7a5f00; color: #fff3c4; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .ent td.fc.now, :root:not([data-theme="light"]) .ent tbody tr:nth-child(even) td.fc.now { background: #7a5f00; color: #fff3c4; } }
 </style>
 </head>
 <body>
@@ -1136,7 +1139,7 @@ function planSel(w, k, attrs) {
   const opts = (k ? `<option value="~"${w.def ? "" : " selected"}>↳ ${esc(trnLab(w.f))}</option>` : "") + `<option value=""${w.def && w.f === "" ? " selected" : ""}>—</option>` + TRN_OPTS.map(o => `<option${w.def && o === w.f ? " selected" : ""}>${o}</option>`).join("");
   return `<select class="trn${w.def ? "" : " carry"}" data-t="${esc(w.f)}" ${attrs}>${opts}</select>`;
 }
-// Talento que usa la proyección para cada skill (RAP…ATT): el calculado (promedio de los últimos 3, en «semanas de entreno» por nivel)
+// Talento que usa la proyección para cada skill (RAP…ATT): el último calculado (en «semanas de entreno» por nivel)
 // o el ingresado a mano. Si ya hay uno calculado, el manual no se usa (se marca con «!»), salvo que el último calculado tenga más de 13 semanas.
 function talentInfo(tr, o) {
   const rows = tr.rows, n = rows.length - 1, tm = tr.tm || {};
@@ -1144,7 +1147,7 @@ function talentInfo(tr, o) {
     const list = o.map((c, r) => ({ t: c.tw[i - 1], r })).filter(x => x.t);
     const lastC = list[list.length - 1], manual = Number.isFinite(tm[i]) && tm[i] > 0 ? tm[i] : null;
     const ageW = lastC ? Math.round((Date.parse(rows[n].d) - Date.parse(rows[lastC.r].d)) / 604800000) : null;
-    const mean = lastC ? list.slice(-3).reduce((x, y) => x + y.t.v, 0) / Math.min(3, list.length) : null;
+    const mean = lastC ? lastC.t.v : null;   // se usa el último talento calculado (el más actual)
     const stale = lastC && ageW > 13;
     let use = null, v = null;
     if (lastC && !(stale && manual != null)) { use = "calc"; v = mean; } else if (manual != null) { use = "manual"; v = manual; }
@@ -1176,27 +1179,27 @@ function planHtml(tr) {
   const body = eff.map((w, k) => {
     if (++s > 13) { s = 1; t++; }
     const p = pj.weeks[k], prev = k ? pj.weeks[k - 1] : null;
-    const cells = [`<td class="fc">${esc(dmy(w.d))}${k ? "" : ' <span class="nowtag">Entreno Actual</span>'}</td>`, `<td>${t}</td>`, `<td>${s}</td>`,
+    const cells = [`<td class="fc${k ? "" : " now"}"${k ? "" : ' title="Entreno Actual"'}>${esc(dmy(w.d))}</td>`, `<td>${t}</td>`, `<td>${s}</td>`,
       `<td class="sep">${planSel(w, k, `data-pf="${k}" aria-label="Entrenamiento ${esc(dmy(w.d))}"`)}</td>`];
     SK_COLS.forEach((sk, i) => cells.push(`<td class="sum nk-${sk.id}${i === 0 ? " sep" : ""}${p.rise[i] ? " rise" : ""}">${p.lvl[i]}${p.rise[i] ? ' <span class="chg up" title="Se estima que sube esta semana">▲</span>' : ""}</td><td class="gt">${p.gt[i]}</td>`));
     p.cum.forEach((v, i) => cells.push(`<td class="gt${i === 0 ? " sep" : ""}">${v}</td>`));
     return `<tr>${cells.join("")}</tr>`;
-  }).join("");
+  }).reverse().join("");   // la semana actual (Entreno Actual) queda abajo, justo encima del historial
   const tal = pj.ti.map(x => {
     const sk = SK_COLS[x.i];
-    const st = x.use === "calc" ? `calculado ${fmtTal(x.mean)}` + (x.ageW > 0 ? ` (último hace ${x.ageW} sem.)` : "") : x.use === "manual" ? (x.calc != null ? `manual en uso: el calculado (${fmtTal(x.calc)}) tiene ${x.ageW} semanas` : "manual en uso") : "sin dato";
+    const st = x.use === "calc" ? `último calculado ${fmtTal(x.mean)}` + (x.ageW > 0 ? ` (hace ${x.ageW} sem.)` : "") : x.use === "manual" ? (x.calc != null ? `manual en uso: el calculado (${fmtTal(x.calc)}) tiene ${x.ageW} semanas` : "manual en uso") : "sin dato";
     const mark = x.flag ? `<span class="warn" title="Ya hay un talento calculado (${esc(fmtTal(x.mean))}); el valor ingresado no se usa en la proyección">!</span>` : "";
     return `<label class="tmi nk-${sk.id}"><span>${sk.lab}</span><input class="ed tm" type="number" step="0.01" min="0" max="99" inputmode="decimal" data-tm="${x.i}" value="${x.manual != null ? esc(x.manual) : ""}" placeholder="—" aria-label="Talento manual ${esc(sk.lab)}">${mark}<small>${esc(st)}</small></label>`;
   }).join("");
   return `<section class="plan" aria-label="Planificación"><h3>Planificación · próximas ${PLAN_WEEKS} semanas</h3>
-    <p class="hint">Elige qué entrenará cada semana. Cada jueves, la semana que llega toma lo planificado y la siguiente pasa a ser el Entreno Actual. Una semana con «↳» sigue con el entrenamiento de la anterior. A la derecha se proyectan los niveles y los puntos (gt) según el plan: ▲ marca la semana en que se estima que la skill subiría.</p>
+    <p class="hint">Elige qué entrenará cada semana. Cada jueves, la semana que llega toma lo planificado y la siguiente pasa a ser el Entreno Actual. Una semana con «↳» sigue con el entrenamiento de la anterior. La fecha destacada es la del Entreno Actual (abajo) y las semanas futuras van hacia arriba. A la derecha se proyectan los niveles y los puntos (gt) según el plan: ▲ marca la semana en que se estima que la skill subiría.</p>
     <div class="planbtns"><button class="btn" type="button" data-plact="repeat" title="Copia el Entreno Actual a las 13 semanas">Repetir semana 1</button>
       <button class="btn" type="button" data-plact="pattern" title="Por ejemplo: RAP 3, TEC 2 se repite hasta completar las 13 semanas">Patrón…</button>
       <button class="btn" type="button" data-plact="copy" title="Copia esta planificación a otros jugadores">Copiar a otros jugadores…</button>
       <button class="btn" type="button" data-plact="clear" title="Deja las semanas 2 a 13 sin definir">Limpiar</button></div>
     <div class="tablewrap ent planwrap"><table id="planTbl"><thead class="two"><tr class="grp">${groups}</tr><tr class="cols">${th}</tr></thead><tbody>${body}</tbody></table></div>
     <details class="tm"${pj.ti.some(x => x.manual != null || x.use === null) ? " open" : ""}><summary>Talento por skill para la proyección</summary>
-      <p class="hint">La proyección usa el Talento por skill calculado (promedio de los últimos 3, en las mismas unidades de la columna «Talento por skill»: semanas de entreno por nivel). Si una skill aún no tiene uno, puedes ingresarlo a mano. Cuando ya hay un talento calculado, el valor manual no se usa y aparece con «!». Si el último calculado tiene más de 13 semanas, se da prioridad al manual (si lo hay).</p>
+      <p class="hint">La proyección usa el último Talento por skill calculado (el más actual, en las mismas unidades de la columna «Talento por skill»: semanas de entreno por nivel). Si una skill aún no tiene uno, puedes ingresarlo a mano. Cuando ya hay un talento calculado, el valor manual no se usa y aparece con «!». Si el último calculado tiene más de 13 semanas, se da prioridad al manual (si lo hay).</p>
       <div class="tmgrid">${tal}</div></details></section>`;
 }
 // Planificación del equipo (vista Resumen)
