@@ -201,3 +201,5 @@ Qué tener en cuenta:
 **Resumen (orden y títulos):** TABLA RESUMEN (con la última semana registrada encima), TABLA DE PLANIFICACIÓN (siempre visible) y TABLA DE TALENTOS, en ese orden. En la planificación de cada jugador se agregó la columna EDAD, y las columnas TEMP, SEM y EDAD se colorean según la temporada (un color para las impares y otro para las pares).
 
 **Edad:** cambia en la semana 1 de cada temporada. Si un historial antiguo la tenía cambiando en otra semana, se corrige solo al abrir la página (a partir de la edad más reciente) y se guarda en la nube. En el Modo Edición no se acepta una edad que cambie fuera de la semana 1.
+
+**Resumen (botones por tabla):** arriba hay un botón por tabla (Tabla Resumen, Tabla de Planificación y Tabla de Talentos), todos encendidos por defecto; cada uno muestra u oculta su tabla (para ver solo una, apaga las otras dos). Cada tabla tiene su propio color de fondo (azul, verde y morado). Tu elección se recuerda en este navegador. La Tabla de Talentos es compacta y las celdas sin dato («—») están centradas.

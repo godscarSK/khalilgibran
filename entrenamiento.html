@@ -399,6 +399,36 @@ details.tm > summary { cursor: pointer; font-weight: 700; }
 .ent td.sn-o input.ed { color: var(--sn-o); } .ent td.sn-e input.ed { color: var(--sn-e); }
 .lastweek { margin: 2px 0 8px; }
 .plan h3 small { font-weight: 400; font-size: .75em; color: var(--muted); margin-left: 6px; }
+/* Resumen: botones por tabla y fondo propio para cada una */
+.restoggles { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 12px; }
+.restoggles .btn.rt { border-width: 2px; opacity: .65; }
+.restoggles .btn.rt[aria-pressed="true"] { opacity: 1; font-weight: 800; }
+.restoggles .btn.rt.r1 { border-color: #3b78c9; } .restoggles .btn.rt.r2 { border-color: #3a9a55; } .restoggles .btn.rt.r3 { border-color: #9a58c4; }
+.restoggles .btn.rt.r1[aria-pressed="true"] { background: #e3edfb; } .restoggles .btn.rt.r2[aria-pressed="true"] { background: #e1f4e6; } .restoggles .btn.rt.r3[aria-pressed="true"] { background: #f3e8fa; }
+section.rtab { margin: 0 0 16px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; }
+section.rtab.r1 { --panel: #e9f1fc; --zebra: #dde9f8; background: #e9f1fc; border-color: #9ab8e3; }
+section.rtab.r2 { --panel: #e8f6ec; --zebra: #d9eede; background: #e8f6ec; border-color: #8fc9a1; }
+section.rtab.r3 { --panel: #f5ecfb; --zebra: #ebdcf6; background: #f5ecfb; border-color: #c6a0e0; }
+:root[data-theme="dark"] .restoggles .btn.rt.r1[aria-pressed="true"] { background: #1c2a3f; } :root[data-theme="dark"] .restoggles .btn.rt.r2[aria-pressed="true"] { background: #1b3125; } :root[data-theme="dark"] .restoggles .btn.rt.r3[aria-pressed="true"] { background: #2c2238; }
+:root[data-theme="dark"] section.rtab.r1 { --panel: #1b2a3e; --zebra: #223450; background: #1b2a3e; border-color: #35557f; }
+:root[data-theme="dark"] section.rtab.r2 { --panel: #1a3024; --zebra: #20402f; background: #1a3024; border-color: #35704c; }
+:root[data-theme="dark"] section.rtab.r3 { --panel: #2b2237; --zebra: #382c48; background: #2b2237; border-color: #6a4d86; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .restoggles .btn.rt.r1[aria-pressed="true"] { background: #1c2a3f; } :root:not([data-theme="light"]) .restoggles .btn.rt.r2[aria-pressed="true"] { background: #1b3125; } :root:not([data-theme="light"]) .restoggles .btn.rt.r3[aria-pressed="true"] { background: #2c2238; }
+  :root:not([data-theme="light"]) section.rtab.r1 { --panel: #1b2a3e; --zebra: #223450; background: #1b2a3e; border-color: #35557f; }
+  :root:not([data-theme="light"]) section.rtab.r2 { --panel: #1a3024; --zebra: #20402f; background: #1a3024; border-color: #35704c; }
+  :root:not([data-theme="light"]) section.rtab.r3 { --panel: #2b2237; --zebra: #382c48; background: #2b2237; border-color: #6a4d86; }
+}
+section.rtab .view-title { margin-top: 0; }
+/* Tabla de talentos compacta y centrada */
+section.tal { width: fit-content; max-width: 100%; }
+section.tal .hint { max-width: 42em; }
+section.tal .tablewrap { display: inline-block; max-width: 100%; }
+.tal th, .tal td { padding: 3px 9px; text-align: center; }
+.tal th.l { text-align: left; }
+.tal td.muted { text-align: center; }
+.restoggles .btn.rt, .restoggles .btn.rt[aria-pressed="true"], .restoggles .btn.rt:hover { color: var(--ink); }
+.restoggles .btn.rt[aria-pressed="false"] { background: var(--panel); }
 </style>
 </head>
 <body>
@@ -1096,7 +1126,7 @@ function autoAppend() {
 }
 
 /* ─────────────── Vistas ─────────────── */
-const view = { tab: "Resumen", sort: null, ed: null, hideCum: (() => { try { return localStorage.getItem("entrenamiento:hidecum") === "1"; } catch { return false; } })(), showPlan: (() => { try { return localStorage.getItem("entrenamiento:showplan") !== "0"; } catch { return true; } })() };   // ed: borrador del Modo Edición
+const view = { tab: "Resumen", sort: null, ed: null, rt: (() => { try { return { r1: true, r2: true, r3: true, ...JSON.parse(localStorage.getItem("entrenamiento:restabs") || "{}") }; } catch { return { r1: true, r2: true, r3: true }; } })(), hideCum: (() => { try { return localStorage.getItem("entrenamiento:hidecum") === "1"; } catch { return false; } })(), showPlan: (() => { try { return localStorage.getItem("entrenamiento:showplan") !== "0"; } catch { return true; } })() };   // ed: borrador del Modo Edición
 const addDays = (iso, n) => { const [y, mo, d] = iso.split("-").map(Number); return ymd(new Date(y, mo - 1, d + n)); };
 const PLAN_WEEKS = 13;
 const sn = t => (t % 2 ? "sn-o" : "sn-e");   // color por temporada (impar / par)   // sort: { i, dir }
@@ -1165,11 +1195,14 @@ function renderResumen() {
     return `<td class="sum${i === 11 ? " sep" : ""}${h}">${c}</td>`;
   }).join("")}</tr>`).join("");
   const lastWeek = esc(dmy(live().map(p => p.rows[p.rows.length - 1].d).sort().pop()));
-  return `<div class="view-title"><h2>TABLA RESUMEN</h2></div>
+  const togs = [["r1", "Tabla Resumen"], ["r2", "Tabla de Planificación"], ["r3", "Tabla de Talentos"]].map(([k, n]) => `<button class="btn rt ${k}" type="button" data-rtab="${k}" aria-pressed="${!!view.rt[k]}" title="Muestra u oculta la ${n.toLowerCase()}">${n}</button>`).join("");
+  return `<div class="restoggles" role="group" aria-label="Tablas visibles">${togs}</div>
+    ${view.rt.r1 ? `<section class="rtab r1" aria-label="Tabla Resumen"><div class="view-title"><h2>TABLA RESUMEN</h2></div>
     <p class="lastweek">Última semana registrada: <b>${lastWeek}</b></p>
-    <div class="tablewrap ent"><table id="tbl"><thead><tr class="cols">${head}</tr></thead><tbody>${body}</tbody></table></div>
-    ${teamPlanHtml()}
-    ${talentosHtml()}`;
+    <div class="tablewrap ent"><table id="tbl"><thead><tr class="cols">${head}</tr></thead><tbody>${body}</tbody></table></div></section>` : ""}
+    ${view.rt.r2 ? teamPlanHtml() : ""}
+    ${view.rt.r3 ? talentosHtml() : ""}
+    ${view.rt.r1 || view.rt.r2 || view.rt.r3 ? "" : '<p class="hint">Activa al menos una tabla con los botones de arriba.</p>'}`;
 }
 
 const PL_GROUPS = () => [["Semana", 4, ""], ["Entrenamiento", 2, "sep"], ["Skills y avance (gt)", 14, "sep"], ["Sumas", 5, "sep"], ["Talento por skill", 6, "sep"], ["Acumulado", 6, "sep"]];
@@ -1273,7 +1306,7 @@ function talentosHtml() {
     }).join("")}</tr>`;
   }).join("");
   const head = [1, 2, 3, 4, 5, 6].map(i => `<th class="nk-${SK_COLS[i].id}">${SK_COLS[i].lab}</th>`).join("");
-  return `<section class="plan tal" aria-label="Talentos por skill"><h3>TABLA DE TALENTOS</h3>
+  return `<section class="plan tal rtab r3" aria-label="Talentos por skill"><h3>TABLA DE TALENTOS</h3>
     <p class="hint">El talento que usa la proyección de cada jugador: el último calculado del historial (marcado «real») o, si no hay uno calculado reciente, el que ingresaste a mano (sin marca). Se edita en la vista de cada jugador.</p>
     <div class="tablewrap"><table id="talTbl"><thead><tr><th class="l">Jugador</th>${head}</tr></thead><tbody>${body}</tbody></table></div></section>`;
 }
@@ -1286,7 +1319,7 @@ function teamPlanHtml() {
   const body = ps.map((p, r) => `<tr><th class="l"><a href="#${encodeURIComponent(p.k)}" data-tab="${esc(p.k)}">${esc(p.k)}</a></th>${effs[r].map((w, k) => `<td>${planSel(w, k, `data-tp="${esc(p.id)}|${k}" aria-label="${esc(p.k)} semana ${k + 1}" title="${esc(dmy(w.d))}"`, true)}</td>`).join("")}</tr>`).join("");
   const codes = [["RAP", "Rapidez"], ["TEC", "Técnica"], ["PAS", "Pases"], ["DEF", "Defensa"], ["CRE", "Creación"], ["ATT", "Anotación"], ["CON", "Condición"], ["GK", ""]];
   const cnt = codes.map(([c, f]) => `<tr class="cnt"><th class="l">${c}</th>${dates.map((_, k) => { const n = effs.filter(e => e[k].f === f).length; return `<td class="${n ? "" : "z"}">${n || ""}</td>`; }).join("")}</tr>`).join("");
-  return `<section class="plan teamplan" aria-label="Planificación del equipo"><h3>TABLA DE PLANIFICACIÓN <small>próximas ${PLAN_WEEKS} semanas</small></h3>
+  return `<section class="plan teamplan rtab r2" aria-label="Planificación del equipo"><h3>TABLA DE PLANIFICACIÓN <small>próximas ${PLAN_WEEKS} semanas</small></h3>
     <p class="hint">Qué entrenará cada jugador semana a semana (puedes cambiarlo aquí mismo). Las filas de abajo cuentan cuántos jugadores entrenan cada skill en cada semana; «↳» sigue con el entrenamiento de la semana anterior. Fechas en día-mes; la primera columna es el Entreno Actual.</p>
     <div class="tablewrap"><table id="teamPlan"><thead><tr><th class="l">Jugador</th>${ths}</tr></thead><tbody>${body}<tr class="sepr"><th class="l" colspan="${PLAN_WEEKS + 1}">Jugadores por entrenamiento</th></tr>${cnt}</tbody></table></div></section>`;
 }
@@ -1586,6 +1619,7 @@ function init() {
   $("#view").addEventListener("click", e => {
     const b = e.target.closest("button"); if (!b || !T) return;
     const tr = live().find(p => p.k === view.tab);
+    if (b.dataset.rtab != null) { view.rt[b.dataset.rtab] = !view.rt[b.dataset.rtab]; try { localStorage.setItem("entrenamiento:restabs", JSON.stringify(view.rt)); } catch {} render(); return; }
     if (b.dataset.cumbtn != null) { view.hideCum = !view.hideCum; try { localStorage.setItem("entrenamiento:hidecum", view.hideCum ? "1" : "0"); } catch {} render(); }
     else if (b.dataset.planbtn != null) { view.showPlan = !view.showPlan; try { localStorage.setItem("entrenamiento:showplan", view.showPlan ? "1" : "0"); } catch {} render(); }
     else if (b.dataset.plact != null && tr) planAction(tr, b.dataset.plact);
