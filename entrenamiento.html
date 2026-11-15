@@ -499,6 +499,24 @@ section.rtab.r2 h3, section.rtab.r2 h3 small, section.rtab.r2 .hint { color: #c9
 #planTbl tbody tr.picked > td.fc { box-shadow: inset 3px 0 0 #3b78c9; }
 /* marca «real»: letras rosadas sobre fondo oscuro */
 .tal td .real { background: #3a1430; border-color: #ec4899; color: #ff8cc6; }
+/* marca de talento real: solo una «R» verde */
+.tal td .real { background: none; border: 0; padding: 0; color: #1a8f43; font-size: .62rem; font-weight: 800; border-radius: 0; line-height: 1; }
+:root[data-theme="dark"] .tal td .real { color: #4ade80; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tal td .real { color: #4ade80; } }
+/* títulos h2 de las tablas con color */
+section.rtab.r2 h2 { color: #c9457f; }
+:root[data-theme="dark"] section.rtab.r2 h2 { color: #f29cc3; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) section.rtab.r2 h2 { color: #f29cc3; } }
+section.rtab .lastweek { margin: 2px 0; }
+/* Resumen: Tasación y Posición Preferida; rayas centradas y atenuadas */
+section.rtab.r1 td.tas { white-space: nowrap; font-weight: 700; color: #0b5d2b; }
+section.rtab.r1 td.ppc { white-space: nowrap; font-weight: 600; color: #5b3a29; }
+:root[data-theme="dark"] section.rtab.r1 td.tas { color: #62d08a; } :root[data-theme="dark"] section.rtab.r1 td.ppc { color: #e0c3ac; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) section.rtab.r1 td.tas { color: #62d08a; } :root:not([data-theme="light"]) section.rtab.r1 td.ppc { color: #e0c3ac; } }
+section.rtab.r1 td.dash { text-align: center; color: var(--muted); font-weight: 400; }
+/* planificación del equipo: línea a la derecha de la semana 13 */
+#teamPlan th.w13, #teamPlan td.w13 { border-right: 2px solid #c9457f; }
+#teamPlan thead th { font-size: .82em; white-space: nowrap; }
 </style>
 </head>
 <body>
@@ -1238,43 +1256,54 @@ function renderTabs() {
   $("#tabs").innerHTML = ["Resumen", ...live().map(p => p.k).sort((a, b) => a.localeCompare(b, "es"))].map(k => `<button type="button" data-tab="${esc(k)}" aria-pressed="${k === view.tab}">${esc(k)}</button>`).join("");
 }
 
+// Tasación: el valor de venta anotado (Venta) en la semana más cercana a la actual, es decir, la primera con dato
+const saleOf = tr => { const ks = Object.keys(tr.sv || {}).filter(d => String(tr.sv[d]).trim()).sort(); return ks.length ? String(tr.sv[ks[0]]).trim() : ""; };
+const saleNum = s => { const mt = /-?\d+(?:[.,]\d+)?/.exec(s || ""); return mt ? Number(mt[0].replace(",", ".")) : null; };
 function resumenData() {
   return live().map(tr => {
     const r = tr.rows[tr.rows.length - 1]; if (!r) return null;
     const k = r.k, sum = a => a.reduce((x, i) => x + k[i], 0);
     const pk = tr.rows.length > 1 ? tr.rows[tr.rows.length - 2].k : null;
-    return { tr, r, pk, cells: [alTrn(tr).v, tr.plan, tr.k, r.a, k[0], k[1], k[2], k[3], k[4], k[5], k[6], sum([1, 4]), sum([2, 3, 5]), sum([1, 2, 3, 5]), sum([1, 2, 6]), sum([3, 4, 5])] };
+    const sale = saleOf(tr), sn = saleNum(sale), pi = ppIdx(tr);
+    return { tr, r, pk, sale, sn, hid: new Set([0, 1, 2, 3, 4].filter(j => !pi.includes(j))), cells: [sn == null ? -1 : sn, alTrn(tr).v, tr.plan, Math.max(0, PP_OPTS.indexOf(tr.pp || "Ninguna")), tr.k, r.a, k[0], k[1], k[2], k[3], k[4], k[5], k[6], sum([1, 4]), sum([2, 3, 5]), sum([1, 2, 3, 5]), sum([1, 2, 6]), sum([3, 4, 5])] };
   }).filter(Boolean);
 }
 const RES_COLS = [   // [etiqueta, ayuda, clase de skill]
-  ["Entreno Alineaciones", "Lo que entrena según la página Alineaciones: el entrenamiento asignado a la posición del puesto en que aparece en las alineaciones de titulares"], ["Entreno Actual", "Entrenamiento de la semana en curso. Se guarda y se usa en la próxima actualización del jueves"], ["Jugador", ""], ["Edad", ""],
+  ["Tasación", "Valor de venta (M$) anotado en la columna Venta de la planificación, el de la semana más cercana a la actual"],
+  ["Entreno Alineaciones", "Lo que entrena según la página Alineaciones: el entrenamiento asignado a la posición del puesto en que aparece en las alineaciones de titulares"], ["Entreno Actual", "Entrenamiento de la semana en curso. Se guarda y se usa en la próxima actualización del jueves"], ["Posición Preferida", "Ninguna, Defensor, Medio o Delantero: decide qué sumas se muestran (las demás quedan con una raya)"], ["Jugador", ""], ["Edad", ""],
   ["CON", "Condición", "con"], ["RAP", "Rapidez", "rap"], ["TEC", "Técnica", "tec"], ["PAS", "Pases", "pas"], ["DEF", "Defensa", "def"], ["CRE", "Creación", "cre"], ["ATT", "Anotación", "ata"],
   ["DEF", "Rapidez + Defensa"], ["DEFside", "Técnica + Pases + Creación"], ["MID", "Rapidez + Técnica + Pases + Creación"], ["ATT", "Rapidez + Técnica + Anotación"], ["ATTside", "Pases + Defensa + Creación"]
 ];
 function renderResumen() {
   let rows = resumenData();
-  const { i: si, dir: sd } = view.sort || { i: 3, dir: -1 };   // por defecto: edad de mayor a menor y, a igual edad, por apellido
-  rows = rows.slice().sort((a, b) => { const x = a.cells[si], y = b.cells[si]; return (typeof x === "number" && typeof y === "number" ? x - y : String(x).localeCompare(String(y), "es")) * sd || a.tr.k.localeCompare(b.tr.k, "es"); });
-  const hl = new Set(si >= 11 && !view.hlOff ? [si, ...COMPOS[si - 11][1].map(i => 4 + i)] : []);   // al ordenar por una suma se resaltan las skills que entran en ella
-  const head = RES_COLS.map(([lab, tip], i) => `<th class="sortable${RES_COLS[i][2] ? " nk-" + RES_COLS[i][2] : ""}${i === 2 ? " l" : ""}${i === 4 || i === 11 ? " sep" : ""}${hl.has(i) ? " hl" : ""}" data-sort="${i}" title="${esc(tip ? tip + " (ordenar)" : "Ordenar por " + lab)}">${esc(lab)}${si === i ? `<span class="arr">${sd > 0 ? "▲" : "▼"}</span>` : ""}</th>`).join("");
+  const { i: si, dir: sd } = view.sort || { i: 5, dir: -1 };   // por defecto: edad de mayor a menor y, a igual edad, por apellido
+  const sv = (x, i) => i >= 13 && x.hid.has(i - 13) ? -1 : x.cells[i];   // las sumas ocultas (con raya) van al final
+  rows = rows.slice().sort((a, b) => { const x = sv(a, si), y = sv(b, si); return (typeof x === "number" && typeof y === "number" ? x - y : String(x).localeCompare(String(y), "es")) * sd || a.tr.k.localeCompare(b.tr.k, "es"); });
+  const hl = new Set(si >= 13 && !view.hlOff ? [si, ...COMPOS[si - 13][1].map(i => 6 + i)] : []);   // al ordenar por una suma se resaltan las skills que entran en ella
+  const head = RES_COLS.map(([lab, tip], i) => `<th class="sortable${RES_COLS[i][2] ? " nk-" + RES_COLS[i][2] : ""}${i === 4 ? " l" : ""}${i === 6 || i === 13 ? " sep" : ""}${hl.has(i) ? " hl" : ""}" data-sort="${i}" title="${esc(tip ? tip + " (ordenar)" : "Ordenar por " + lab)}">${esc(lab)}${si === i ? `<span class="arr">${sd > 0 ? "▲" : "▼"}</span>` : ""}</th>`).join("");
   const body = rows.map(x => `<tr>${x.cells.map((c, i) => {
-    if (i === 0) return `<td>${alChip(x.tr)}</td>`;
-    if (i === 1) return `<td>${trnSelect(c, `data-plan="${esc(x.tr.k)}" aria-label="Entreno actual de ${esc(x.tr.k)}"`)}</td>`;
-    if (i === 2) return `<td class="pn l"><a href="#${encodeURIComponent(c)}" data-tab="${esc(c)}">${esc(c)}</a></td>`;
+    if (i === 0) return `<td class="sum tas">${x.sale ? esc(x.sale) : "—"}</td>`;
+    if (i === 1) return `<td>${alChip(x.tr)}</td>`;
+    if (i === 2) return `<td>${trnSelect(c, `data-plan="${esc(x.tr.k)}" aria-label="Entreno actual de ${esc(x.tr.k)}"`)}</td>`;
+    if (i === 3) return `<td class="ppc">${esc(PP_OPTS[c])}</td>`;
+    if (i === 4) return `<td class="pn l"><a href="#${encodeURIComponent(c)}" data-tab="${esc(c)}">${esc(c)}</a></td>`;
     const h = hl.has(i) ? " hl" : "";
-    if (i === 3) return `<td class="${h.trim()}">${c}</td>`;
-    if (i >= 4 && i <= 10) {
-      const b = x.pk ? x.pk[i - 4] : null;
+    if (i === 5) return `<td class="${h.trim()}">${c}</td>`;
+    if (i >= 6 && i <= 12) {
+      const b = x.pk ? x.pk[i - 6] : null;
       const mark = b != null && b !== c ? (c > b ? ` <span class="chg up" title="Subió: antes ${b}" aria-label="subió, antes ${b}">▲</span>` : ` <span class="chg down" title="Bajó: antes ${b}" aria-label="bajó, antes ${b}">▼</span>`) : "";
-      return `<td class="sum nk-${RES_COLS[i][2]}${i === 4 ? " sep" : ""}${h}">${c}${mark}</td>`;
+      return `<td class="sum nk-${RES_COLS[i][2]}${i === 6 ? " sep" : ""}${h}">${c}${mark}</td>`;
     }
-    return `<td class="sum${i === 11 ? " sep" : ""}${h}">${c}</td>`;
+    if (x.hid.has(i - 13)) return `<td class="sum dash${i === 13 ? " sep" : ""}${h}">-</td>`;
+    return `<td class="sum${i === 13 ? " sep" : ""}${h}">${c}</td>`;
   }).join("")}</tr>`).join("");
+  const saleTotal = (() => { const v = rows.map(x => x.sn).filter(n => n != null); return v.length ? v.reduce((a, b) => a + b, 0).toLocaleString("es", { maximumFractionDigits: 2 }) + " M$" : "—"; })();
   const lastWeek = esc(dmy(live().map(p => p.rows[p.rows.length - 1].d).sort().pop()));
   const togs = [["r1", "Tabla Resumen"], ["r2", "Tabla de Planificación"], ["r3", "Tabla de Talentos"]].map(([k, n]) => `<button class="btn rt ${k}" type="button" data-rtab="${k}" aria-pressed="${!!view.rt[k]}" title="Muestra u oculta la ${n.toLowerCase()}">${n}</button>`).join("");
   return `<div class="restoggles" role="group" aria-label="Tablas visibles">${togs}</div>
     ${view.rt.r1 ? `<section class="rtab r1" aria-label="Tabla Resumen"><div class="view-title"><h2>TABLA RESUMEN</h2></div>
     <p class="lastweek">Última semana registrada: <b>${lastWeek}</b></p>
+    <p class="lastweek">Tasación Más Actual: <b>${saleTotal}</b></p>
     <div class="tablewrap ent"><table id="tbl"><thead><tr class="cols">${head}</tr></thead><tbody>${body}</tbody></table></div></section>` : ""}
     ${view.rt.r2 ? teamPlanHtml() : ""}
     ${view.rt.r3 ? talentosHtml() : ""}
@@ -1361,7 +1390,7 @@ function planHtml(tr) {
     const mark = x.flag ? `<span class="warn" title="Ya hay un talento calculado (${esc(fmtTal(x.mean))}); el valor ingresado no se usa en la proyección">!</span>` : "";
     return `<label class="tmi nk-${sk.id}"><span>${sk.lab}</span><input class="ed tm" type="number" step="0.01" min="0" max="99" inputmode="decimal" data-tm="${x.i}" value="${x.manual != null ? esc(x.manual) : ""}" placeholder="—" aria-label="Talento manual ${esc(sk.lab)}">${mark}<small>${esc(st)}</small></label>`;
   }).join("");
-  return `<section class="plan rtab r2 indplan" aria-label="Planificación"><h3>Planificación · próximas ${PLAN_WEEKS} semanas</h3>
+  return `<section class="plan rtab r2 indplan" aria-label="Planificación"><div class="view-title"><h2>PLANIFICACIÓN SEMANAL</h2></div>
     <p class="hint">Elige qué entrenará cada semana. Cada jueves, la semana que llega toma lo planificado y la siguiente pasa a ser el Entreno Actual. Una semana con «↳» sigue con el entrenamiento de la anterior. Haz clic en una fila para marcar la semana donde empiezan «Cambios Múltiples» y «Ciclos» (por defecto, el Entreno Actual). La fecha destacada es la del Entreno Actual (abajo) y las semanas futuras van hacia arriba. A la derecha se proyectan los niveles y los puntos (gt) según el plan: ▲ marca la semana en que se estima que la skill subiría (Condición se asume que sube cuando su gt llega a 8) y Sumas muestra las sumas de skills proyectadas (según la Posición Preferida del jugador). En «Venta» puedes anotar un posible precio de venta (M$) para cada semana.</p>
     <div class="planbtns"><button class="btn" type="button" data-plact="multi" title="Por ejemplo: RAP 3, DEF 2 programa solo esas 5 semanas, desde la semana marcada">Cambios Múltiples…</button>
       <button class="btn" type="button" data-plact="pattern" title="Por ejemplo: RAP 3, TEC 2 se repite desde la semana marcada hasta completar las 13 semanas">Ciclos…</button>
@@ -1382,12 +1411,12 @@ function talentosHtml() {
       const id = SK_COLS[x.i].id;
       if (x.v == null) return `<td class="nk-${id} muted">—</td>`;
       const tip = x.use === "calc" ? `Calculado a partir del historial${x.ageW > 0 ? ` (hace ${x.ageW} semanas)` : ""}` + (x.manual != null ? `; el valor manual (${fmtTal(x.manual)}) no se usa` : "") : `Ingresado a mano${x.calc != null ? `; el último calculado (${fmtTal(x.calc)}) tiene ${x.ageW} semanas` : ""}`;
-      return `<td class="nk-${id}" title="${esc(tip)}">${fmtTal(x.v)}${x.use === "calc" ? ' <span class="real">real</span>' : ""}</td>`;
+      return `<td class="nk-${id}" title="${esc(tip)}">${fmtTal(x.v)}${x.use === "calc" ? ' <span class="real" title="Talento real: calculado del historial">R</span>' : ""}</td>`;
     }).join("")}</tr>`;
   }).join("");
   const head = [1, 2, 3, 4, 5, 6].map(i => `<th class="nk-${SK_COLS[i].id}">${SK_COLS[i].lab}</th>`).join("");
   return `<section class="plan tal rtab r3" aria-label="Talentos por skill"><h3>TABLA DE TALENTOS</h3>
-    <p class="hint">El talento que usa la proyección de cada jugador: el último calculado del historial (marcado «real») o, si no hay uno calculado reciente, el que ingresaste a mano (sin marca). Se edita en la vista de cada jugador.</p>
+    <p class="hint">El talento que usa la proyección de cada jugador: el último calculado del historial (marcado con una «R» verde) o, si no hay uno calculado reciente, el que ingresaste a mano (sin marca). Se edita en la vista de cada jugador.</p>
     <div class="tablewrap"><table id="talTbl"><thead><tr><th class="l">Jugador</th>${head}</tr></thead><tbody>${body}</tbody></table></div></section>`;
 }
 // Planificación del equipo (vista Resumen)
@@ -1395,13 +1424,15 @@ function teamPlanHtml() {
   const ps = live().slice().sort((a, b) => a.k.localeCompare(b.k, "es")), effs = ps.map(planEff);
   if (!ps.length) return "";
   const dates = effs[0].map((w, k) => ps.reduce((mx, p) => { const l = addDays(p.rows[p.rows.length - 1].d, 7 * (k + 1)); return l > mx ? l : mx; }, w.d));
-  const ths = dates.map((d, k) => `<th class="${k ? "" : "now"}" title="${esc(dmy(d))}">${k ? esc(dmys(d).slice(0, 5)) : "Actual"}</th>`).join("");
-  const body = ps.map((p, r) => `<tr><th class="l"><a href="#${encodeURIComponent(p.k)}" data-tab="${esc(p.k)}">${esc(p.k)}</a></th>${effs[r].map((w, k) => `<td>${planSel(w, k, `data-tp="${esc(p.id)}|${k}" aria-label="${esc(p.k)} semana ${k + 1}" title="${esc(dmy(w.d))}"`, true)}</td>`).join("")}</tr>`).join("");
+  const wkN = dates.map(d => (calAt(d) || {}).s);   // semana de la temporada de cada columna
+  const w13 = k => wkN[k] === 13 && k < dates.length - 1 ? " w13" : "";   // línea a la derecha de la semana 13 (si no es la última columna)
+  const ths = dates.map((d, k) => `<th class="${k ? "" : "now"}${w13(k)}" title="${esc(dmy(d))}${k ? "" : " · Entreno Actual"}">Semana ${wkN[k]}</th>`).join("");
+  const body = ps.map((p, r) => `<tr><th class="l"><a href="#${encodeURIComponent(p.k)}" data-tab="${esc(p.k)}">${esc(p.k)}</a></th>${effs[r].map((w, k) => `<td class="${w13(k).trim()}">${planSel(w, k, `data-tp="${esc(p.id)}|${k}" aria-label="${esc(p.k)} semana ${k + 1}" title="${esc(dmy(w.d))}"`, true)}</td>`).join("")}</tr>`).join("");
   const codes = [["RAP", "Rapidez"], ["TEC", "Técnica"], ["PAS", "Pases"], ["DEF", "Defensa"], ["CRE", "Creación"], ["ATT", "Anotación"], ["—", ""]];
   const CNT_ID = { RAP: "rap", TEC: "tec", PAS: "pas", DEF: "def", CRE: "cre", ATT: "ata", CON: "con" };
-  const cnt = codes.map(([c, f]) => `<tr class="cnt${CNT_ID[c] ? " nk-" + CNT_ID[c] : ""}"><th class="l">${c}</th>${dates.map((_, k) => { const n = effs.filter(e => e[k].f === f).length; return `<td class="${n ? "" : "z"}">${n || ""}</td>`; }).join("")}</tr>`).join("");
-  return `<section class="plan teamplan rtab r2" aria-label="Planificación del equipo"><h3>TABLA DE PLANIFICACIÓN <small>próximas ${PLAN_WEEKS} semanas</small></h3>
-    <p class="hint">Qué entrenará cada jugador semana a semana (puedes cambiarlo aquí mismo). Las filas de abajo cuentan cuántos jugadores entrenan cada skill en cada semana; «↳» sigue con el entrenamiento de la semana anterior. Fechas en día-mes; la primera columna es el Entreno Actual.</p>
+  const cnt = codes.map(([c, f]) => `<tr class="cnt${CNT_ID[c] ? " nk-" + CNT_ID[c] : ""}"><th class="l">${c}</th>${dates.map((_, k) => { const n = effs.filter(e => e[k].f === f).length; return `<td class="${n ? "" : "z"}${w13(k)}">${n || ""}</td>`; }).join("")}</tr>`).join("");
+  return `<section class="plan teamplan rtab r2" aria-label="Planificación del equipo"><div class="view-title"><h2>PLANIFICACIÓN SEMANAL</h2></div>
+    <p class="hint">Qué entrenará cada jugador semana a semana (puedes cambiarlo aquí mismo). Las filas de abajo cuentan cuántos jugadores entrenan cada skill en cada semana; «↳» sigue con el entrenamiento de la semana anterior. Cada columna es una semana de la temporada (pasa el cursor para ver su fecha); la primera es el Entreno Actual.</p>
     <div class="tablewrap"><table id="teamPlan"><thead><tr><th class="l">Jugador</th>${ths}</tr></thead><tbody>${body}<tr class="sepr"><th class="l" colspan="${PLAN_WEEKS + 1}">Jugadores por entrenamiento</th></tr>${cnt}</tbody></table></div></section>`;
 }
 function renderPlayer(tr) {
@@ -1690,7 +1721,7 @@ function init() {
   window.addEventListener("pageshow", () => { $("#nav").value = "entrenamiento.html"; });
   window.addEventListener("hashchange", () => render());
   document.addEventListener("click", e => {   // un clic fuera de la tabla quita el resaltado de las columnas de la suma
-    if (view.hlOff || !view.sort || view.sort.i < 11 || view.tab !== "Resumen" || e.target.closest("#tbl") || !e.target.isConnected) return;
+    if (view.hlOff || !view.sort || view.sort.i < 13 || view.tab !== "Resumen" || e.target.closest("#tbl") || !e.target.isConnected) return;
     view.hlOff = true; render();
   });
   $("#tabs").addEventListener("click", e => { const b = e.target.closest("button[data-tab]"); if (!b) return; location.hash = b.dataset.tab === "Resumen" ? "" : encodeURIComponent(b.dataset.tab); if (b.dataset.tab === "Resumen") render(); });
