@@ -429,6 +429,14 @@ section.tal .tablewrap { display: inline-block; max-width: 100%; }
 .tal td.muted { text-align: center; }
 .restoggles .btn.rt, .restoggles .btn.rt[aria-pressed="true"], .restoggles .btn.rt:hover { color: var(--ink); }
 .restoggles .btn.rt[aria-pressed="false"] { background: var(--panel); }
+/* filas de conteo con el color de su skill */
+.teamplan tr.cnt.nk-con th, .teamplan tr.cnt.nk-con td { color: var(--n-con); } .teamplan tr.cnt.nk-rap th, .teamplan tr.cnt.nk-rap td { color: var(--n-rap); }
+.teamplan tr.cnt.nk-tec th, .teamplan tr.cnt.nk-tec td { color: var(--n-tec); } .teamplan tr.cnt.nk-pas th, .teamplan tr.cnt.nk-pas td { color: var(--n-pas); }
+.teamplan tr.cnt.nk-def th, .teamplan tr.cnt.nk-def td { color: var(--n-def); } .teamplan tr.cnt.nk-cre th, .teamplan tr.cnt.nk-cre td { color: var(--n-cre); }
+.teamplan tr.cnt.nk-ata th, .teamplan tr.cnt.nk-ata td { color: var(--n-ata); }
+.teamplan tr.cnt th, .teamplan tr.cnt td { font-weight: 800; }
+/* marca «real» más chica y más arriba */
+.real { font-size: .56rem; padding: 0 3px; margin-left: 2px; vertical-align: super; line-height: 1.2; }
 </style>
 </head>
 <body>
@@ -1225,7 +1233,7 @@ const trnLab = f => f === "" ? "—" : f;
 const TRN_SHORT = { "": "—", Rapidez: "RAP", Técnica: "TEC", Pases: "PAS", Defensa: "DEF", Creación: "CRE", Anotación: "ATT", Condición: "CON", LESIÓN: "LES" };
 function planSel(w, k, attrs, short) {
   const lab = f => short ? TRN_SHORT[f] : trnLab(f);
-  const opts = (k ? `<option value="~"${w.def ? "" : " selected"}>↳ ${esc(lab(w.f))}</option>` : "") + `<option value=""${w.def && w.f === "" ? " selected" : ""}>${short ? "GK" : "—"}</option>` + TRN_OPTS.map(o => `<option value="${o}"${w.def && o === w.f ? " selected" : ""}>${short ? TRN_SHORT[o] : o}</option>`).join("");
+  const opts = (k ? `<option value="~"${w.def ? "" : " selected"}>↳ ${esc(lab(w.f))}</option>` : "") + `<option value=""${w.def && w.f === "" ? " selected" : ""}>—</option>` + TRN_OPTS.map(o => `<option value="${o}"${w.def && o === w.f ? " selected" : ""}>${short ? TRN_SHORT[o] : o}</option>`).join("");
   return `<select class="trn${w.def ? "" : " carry"}" data-t="${esc(w.f)}" ${attrs}>${opts}</select>`;
 }
 // Talento que usa la proyección para cada skill (RAP…ATT): el último calculado (en «semanas de entreno» por nivel)
@@ -1317,8 +1325,9 @@ function teamPlanHtml() {
   const dates = effs[0].map((w, k) => ps.reduce((mx, p) => { const l = addDays(p.rows[p.rows.length - 1].d, 7 * (k + 1)); return l > mx ? l : mx; }, w.d));
   const ths = dates.map((d, k) => `<th class="${k ? "" : "now"}" title="${esc(dmy(d))}">${k ? esc(dmys(d).slice(0, 5)) : "Actual"}</th>`).join("");
   const body = ps.map((p, r) => `<tr><th class="l"><a href="#${encodeURIComponent(p.k)}" data-tab="${esc(p.k)}">${esc(p.k)}</a></th>${effs[r].map((w, k) => `<td>${planSel(w, k, `data-tp="${esc(p.id)}|${k}" aria-label="${esc(p.k)} semana ${k + 1}" title="${esc(dmy(w.d))}"`, true)}</td>`).join("")}</tr>`).join("");
-  const codes = [["RAP", "Rapidez"], ["TEC", "Técnica"], ["PAS", "Pases"], ["DEF", "Defensa"], ["CRE", "Creación"], ["ATT", "Anotación"], ["CON", "Condición"], ["GK", ""]];
-  const cnt = codes.map(([c, f]) => `<tr class="cnt"><th class="l">${c}</th>${dates.map((_, k) => { const n = effs.filter(e => e[k].f === f).length; return `<td class="${n ? "" : "z"}">${n || ""}</td>`; }).join("")}</tr>`).join("");
+  const codes = [["RAP", "Rapidez"], ["TEC", "Técnica"], ["PAS", "Pases"], ["DEF", "Defensa"], ["CRE", "Creación"], ["ATT", "Anotación"], ["CON", "Condición"], ["—", ""]];
+  const CNT_ID = { RAP: "rap", TEC: "tec", PAS: "pas", DEF: "def", CRE: "cre", ATT: "ata", CON: "con" };
+  const cnt = codes.map(([c, f]) => `<tr class="cnt${CNT_ID[c] ? " nk-" + CNT_ID[c] : ""}"><th class="l">${c}</th>${dates.map((_, k) => { const n = effs.filter(e => e[k].f === f).length; return `<td class="${n ? "" : "z"}">${n || ""}</td>`; }).join("")}</tr>`).join("");
   return `<section class="plan teamplan rtab r2" aria-label="Planificación del equipo"><h3>TABLA DE PLANIFICACIÓN <small>próximas ${PLAN_WEEKS} semanas</small></h3>
     <p class="hint">Qué entrenará cada jugador semana a semana (puedes cambiarlo aquí mismo). Las filas de abajo cuentan cuántos jugadores entrenan cada skill en cada semana; «↳» sigue con el entrenamiento de la semana anterior. Fechas en día-mes; la primera columna es el Entreno Actual.</p>
     <div class="tablewrap"><table id="teamPlan"><thead><tr><th class="l">Jugador</th>${ths}</tr></thead><tbody>${body}<tr class="sepr"><th class="l" colspan="${PLAN_WEEKS + 1}">Jugadores por entrenamiento</th></tr>${cnt}</tbody></table></div></section>`;

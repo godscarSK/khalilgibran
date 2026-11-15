@@ -203,3 +203,5 @@ Qué tener en cuenta:
 **Edad:** cambia en la semana 1 de cada temporada. Si un historial antiguo la tenía cambiando en otra semana, se corrige solo al abrir la página (a partir de la edad más reciente) y se guarda en la nube. En el Modo Edición no se acepta una edad que cambie fuera de la semana 1.
 
 **Resumen (botones por tabla):** arriba hay un botón por tabla (Tabla Resumen, Tabla de Planificación y Tabla de Talentos), todos encendidos por defecto; cada uno muestra u oculta su tabla (para ver solo una, apaga las otras dos). Cada tabla tiene su propio color de fondo (azul, verde y morado). Tu elección se recuerda en este navegador. La Tabla de Talentos es compacta y las celdas sin dato («—») están centradas.
+
+- Resumen: la última fila de conteo de la Tabla de Planificación ahora es «—» (no entrenas portería), las filas de conteo usan el color de su skill y la marca «real» de la Tabla de Talentos es más chica y está más arriba.
