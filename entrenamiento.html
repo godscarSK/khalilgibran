@@ -337,6 +337,18 @@ button.btn.danger { color: #b3261e; border-color: #b3261e; }
 .plan th, .plan td { padding: 4px 6px; text-align: center; white-space: nowrap; border-bottom: 1px solid var(--line, #ddd); }
 .plan th.l { text-align: left; position: sticky; left: 0; background: var(--panel); }
 .plan th.now { color: var(--accent); }
+.plan h3.sub { margin: 12px 0 4px; font-size: .95rem; }
+.plan .planbtns { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 8px; }
+.plan select.carry { opacity: .6; font-style: italic; }
+.plan td.rise { background: color-mix(in srgb, #2e9e4f 35%, var(--panel)); color: #1b7a38; font-weight: 800; }
+.plan td.muted { color: var(--muted, #777); font-style: italic; text-align: left; }
+.plan tr.cnt td.z { color: transparent; }
+.plan tr.cnt td { font-weight: 700; }
+.plan tr.sepr th { background: var(--panel); border-top: 2px solid var(--line, #bbb); font-size: .8rem; }
+.plan th.nk-rap { color: var(--n-rap); } .plan th.nk-tec { color: var(--n-tec); } .plan th.nk-pas { color: var(--n-pas); } .plan th.nk-def { color: var(--n-def); } .plan th.nk-cre { color: var(--n-cre); } .plan th.nk-ata { color: var(--n-ata); }
+.chklist { display: grid; grid-template-columns: repeat(auto-fill, minmax(9em, 1fr)); gap: 4px 12px; margin: 8px 0; max-height: 40vh; overflow: auto; }
+.chklist label.chk { display: flex; gap: 6px; align-items: center; }
+:root[data-theme="dark"] .plan td.rise { color: #7fe39a; }
 </style>
 </head>
 <body>
@@ -422,6 +434,17 @@ button.btn.danger { color: #b3261e; border-color: #b3261e; }
     <button class="btn" id="cloudNo" type="button">No, solo en este dispositivo</button>
     <button class="btn primary" id="cloudYes" type="button">Sí, guardar en la nube</button>
   </div>
+</dialog>
+<dialog id="copyDlg" class="dlg" aria-labelledby="copyTitle">
+  <form id="copyForm">
+    <h2 id="copyTitle">Copiar planificación</h2>
+    <p class="hint">Copia la planificación de <b id="copyFrom"></b> (Entreno Actual y las 13 semanas) a los jugadores que elijas. Reemplaza lo que tengan planificado.</p>
+    <div id="copyList" class="chklist"></div>
+    <div class="actions">
+      <button class="btn" id="copyCancel" type="button">Cancelar</button>
+      <button class="btn primary" type="submit">Copiar</button>
+    </div>
+  </form>
 </dialog>
 <dialog id="addDlg" class="dlg" aria-labelledby="addTitle">
   <form id="addForm">
@@ -993,10 +1016,10 @@ function autoAppend() {
     const pe = tr.pl && tr.pl[wk];
     const roll = last.s >= 13;
     const s = roll ? 1 : last.s + 1, t = roll ? last.t + 1 : last.t;
-    tr.rows.push({ d: wk, t, s, a: Number.isFinite(p.age) ? p.age : (s === 13 ? last.a + 1 : last.a), e: !!(pe ? pe.e : tr.planE), f: pe ? pe.f : (tr.plan || ""), k });
+    tr.rows.push({ d: wk, t, s, a: Number.isFinite(p.age) ? p.age : (s === 13 ? last.a + 1 : last.a), e: false, f: pe ? pe.f : (tr.plan || ""), k });
     // la planificación avanza: lo planeado para la semana siguiente pasa a ser el Entreno Actual
     const nx = tr.pl && tr.pl[addDays(wk, 7)];
-    if (nx) { tr.plan = nx.f; tr.planE = !!nx.e; } else { tr.planE = false; }
+    if (nx) tr.plan = nx.f;
     if (tr.pl) for (const d of Object.keys(tr.pl)) if (d <= addDays(wk, 7)) delete tr.pl[d];
     res.added.push(tr.k); changed = true; touch(tr, true);
   }
@@ -1073,30 +1096,86 @@ function renderResumen() {
     }
     return `<td class="sum${i === 11 ? " sep" : ""}${h}">${c}</td>`;
   }).join("")}</tr>`).join("");
-  return `<div class="view-title"><h2>Resumen</h2><span class="lbl">Última semana registrada: ${esc(dmy(live().map(p => p.rows[p.rows.length - 1].d).sort().pop()))}. Orden: edad de mayor a menor y luego apellido. Pulsa un encabezado para ordenar por otra columna.</span></div>
-    <div class="tablewrap ent"><table id="tbl"><thead><tr class="cols">${head}</tr></thead><tbody>${body}</tbody></table></div>`;
+  return `<div class="view-title"><h2>Resumen</h2><span class="lbl">Última semana registrada: ${esc(dmy(live().map(p => p.rows[p.rows.length - 1].d).sort().pop()))}. Orden: edad de mayor a menor y luego apellido. Pulsa un encabezado para ordenar por otra columna.</span>
+      <button class="btn" type="button" data-planbtn aria-pressed="${view.showPlan}">${view.showPlan ? "Ocultar" : "Mostrar"} planificación</button></div>
+    <div class="tablewrap ent"><table id="tbl"><thead><tr class="cols">${head}</tr></thead><tbody>${body}</tbody></table></div>
+    ${view.showPlan ? teamPlanHtml() : ""}`;
 }
 
 const PL_GROUPS = () => [["Semana", 4, ""], ["Entrenamiento", 2, "sep"], ["Skills y avance (gt)", 14, "sep"], ["Sumas", 5, "sep"], ["Talento por skill", 6, "sep"], ["Acumulado", 6, "sep"]];
-// Planificación: las próximas 13 semanas. La primera es el Entreno Actual; las demás se guardan en tr.pl (fecha → { f, e }).
+// Planificación: las próximas 13 semanas. La primera es el Entreno Actual (tr.plan); las demás se guardan en tr.pl (fecha → { f }).
+// Una semana «sin definir» sigue con el entrenamiento de la anterior.
+function planEff(tr) {
+  const last = tr.rows[tr.rows.length - 1]; let prev = tr.plan || "";
+  return Array.from({ length: PLAN_WEEKS }, (_, k) => {
+    const d = addDays(last.d, 7 * (k + 1)), e = k ? tr.pl && tr.pl[d] : { f: tr.plan || "" };
+    if (e) prev = e.f;
+    return { d, f: prev, def: !!e };
+  });
+}
+function setPlanWeek(tr, k, v) {
+  if (k === 0) { tr.plan = v; return; }
+  const d = addDays(tr.rows[tr.rows.length - 1].d, 7 * (k + 1)); tr.pl = tr.pl || {};
+  if (v === "~") delete tr.pl[d]; else tr.pl[d] = { f: v };
+}
+const trnLab = f => f === "" ? "—" : f;
+function planSel(w, k, attrs) {
+  const opts = (k ? `<option value="~"${w.def ? "" : " selected"}>↳ ${esc(trnLab(w.f))}</option>` : "") + `<option value=""${w.def && w.f === "" ? " selected" : ""}>—</option>` + TRN_OPTS.map(o => `<option${w.def && o === w.f ? " selected" : ""}>${o}</option>`).join("");
+  return `<select class="trn${w.def ? "" : " carry"}" data-t="${esc(w.f)}" ${attrs}>${opts}</select>`;
+}
+// Proyección: puntos de entrenamiento (gt) semana a semana según el plan; sube la skill cuando gt alcanza el valor estimado por nivel
+// (promedio de los últimos 3 Talentos por skill × velocidad).
+function projectPlayer(tr, eff) {
+  const o = calcOf(tr), n = o.length - 1;
+  return [1, 2, 3, 4, 5, 6].map(i => {
+    const tv = o.map(c => c.tw[i - 1]).filter(Boolean).slice(-3).map(t => t.v);
+    if (!tv.length) return { i, N: null };
+    const N = tv.reduce((x, y) => x + y, 0) / tv.length * SPEED;
+    let gt = o[n].gt[i];
+    const cells = eff.map(w => { gt += w.f === TRN[i] ? SPEED : (w.f === "LESIÓN" ? 0 : 1); if (gt >= N) { gt = 0; return { gt: 0, rise: true }; } return { gt, rise: false }; });
+    return { i, N, gt0: o[n].gt[i], cells };
+  });
+}
 function planHtml(tr) {
-  const last = tr.rows[tr.rows.length - 1], ths = [], sel = [], chk = [], cal = [];
+  const last = tr.rows[tr.rows.length - 1], eff = planEff(tr), ths = [], sel = [], cal = [];
   let s = last.s, t = last.t;
-  for (let k = 0; k < PLAN_WEEKS; k++) {
-    const d = addDays(last.d, 7 * (k + 1)); if (++s > 13) { s = 1; t++; }
-    const pe = k ? (tr.pl && tr.pl[d]) : { f: tr.plan || "", e: !!tr.planE };
-    ths.push(`<th class="${k ? "" : "now"}">${k ? esc(dmy(d)) : "Entreno Actual"}</th>`);
-    cal.push(`<td>${k ? "" : esc(dmy(d)) + " · "}T${t} S${s}</td>`);
-    const opts = (k ? `<option value="~"${pe ? "" : " selected"}>sin definir</option>` : "") + `<option value=""${pe && pe.f === "" ? " selected" : ""}>—</option>` + TRN_OPTS.map(o => `<option${pe && o === pe.f ? " selected" : ""}>${o}</option>`).join("");
-    sel.push(`<td><select class="trn" data-t="${esc(pe ? pe.f : "~")}" data-pf="${k}" aria-label="Entrenamiento semana ${k + 1}">${opts}</select></td>`);
-    chk.push(`<td><input type="checkbox" data-pe="${k}" aria-label="ENT. F semana ${k + 1}"${pe && pe.e ? " checked" : ""}${k && !pe ? " disabled" : ""}></td>`);
-  }
+  eff.forEach((w, k) => {
+    if (++s > 13) { s = 1; t++; }
+    ths.push(`<th class="${k ? "" : "now"}">${k ? esc(dmy(w.d)) : "Entreno Actual"}</th>`);
+    cal.push(`<td>${k ? "" : esc(dmy(w.d)) + " · "}T${t} S${s}</td>`);
+    sel.push(`<td>${planSel(w, k, `data-pf="${k}" aria-label="Entrenamiento semana ${k + 1}"`)}</td>`);
+  });
+  const pj = projectPlayer(tr, eff);
+  const proj = pj.map(p => {
+    const lab = `<th class="l nk-${SK_COLS[p.i].id}">${SK_COLS[p.i].lab}${p.N ? ` <small title="Puntos estimados por nivel">≈${Math.round(p.N)}</small>` : ""}</th>`;
+    if (!p.N) return `<tr>${lab}<td colspan="${PLAN_WEEKS}" class="muted">sin Talento calculado para esta skill</td></tr>`;
+    return `<tr>${lab}${p.cells.map(c => `<td class="${c.rise ? "rise" : ""}">${c.rise ? "▲" : c.gt}</td>`).join("")}</tr>`;
+  }).join("");
   return `<section class="plan" aria-label="Planificación"><h3>Planificación · próximas ${PLAN_WEEKS} semanas</h3>
-    <p class="hint">Elige qué entrenará cada semana. Cada jueves, la semana que llega toma lo planificado y la siguiente pasa a ser el Entreno Actual; si una semana queda «sin definir», se mantiene el entrenamiento anterior.</p>
+    <p class="hint">Elige qué entrenará cada semana. Cada jueves, la semana que llega toma lo planificado y la siguiente pasa a ser el Entreno Actual. Una semana con «↳» sigue con el entrenamiento de la anterior.</p>
+    <div class="planbtns"><button class="btn" type="button" data-plact="repeat" title="Copia el Entreno Actual a las 13 semanas">Repetir semana 1</button>
+      <button class="btn" type="button" data-plact="pattern" title="Por ejemplo: RAP 3, TEC 2 se repite hasta completar las 13 semanas">Patrón…</button>
+      <button class="btn" type="button" data-plact="copy" title="Copia esta planificación a otros jugadores">Copiar a otros jugadores…</button>
+      <button class="btn" type="button" data-plact="clear" title="Deja las semanas 2 a 13 sin definir">Limpiar</button></div>
     <div class="tablewrap"><table id="planTbl"><thead><tr><th class="l">Semana</th>${ths.join("")}</tr></thead><tbody>
       <tr><th class="l">Temporada · semana</th>${cal.join("")}</tr>
-      <tr><th class="l">Entrenamiento</th>${sel.join("")}</tr>
-      <tr><th class="l">ENT. F</th>${chk.join("")}</tr></tbody></table></div></section>`;
+      <tr><th class="l">Entrenamiento</th>${sel.join("")}</tr></tbody></table></div>
+    <h3 class="sub">Proyección estimada de puntos (gt)</h3>
+    <p class="hint">Según el plan, los puntos de entrenamiento (gt) de cada skill semana a semana. ▲ marca la semana en que se estima que subiría. El valor «≈» son los puntos que suele necesitar por nivel (promedio de los últimos 3 Talentos por skill × velocidad). Es solo una estimación.</p>
+    <div class="tablewrap"><table id="projTbl"><thead><tr><th class="l">Skill</th>${ths.join("")}</tr></thead><tbody>${proj}</tbody></table></div></section>`;
+}
+// Planificación del equipo (vista Resumen)
+function teamPlanHtml() {
+  const ps = live().slice().sort((a, b) => a.k.localeCompare(b.k, "es")), effs = ps.map(planEff);
+  if (!ps.length) return "";
+  const dates = effs[0].map((w, k) => ps.reduce((mx, p) => { const l = addDays(p.rows[p.rows.length - 1].d, 7 * (k + 1)); return l > mx ? l : mx; }, w.d));
+  const ths = dates.map((d, k) => `<th class="${k ? "" : "now"}">${k ? esc(dmy(d)) : "Entreno Actual"}</th>`).join("");
+  const body = ps.map((p, r) => `<tr><th class="l"><a href="#${encodeURIComponent(p.k)}" data-tab="${esc(p.k)}">${esc(p.k)}</a></th>${effs[r].map((w, k) => `<td>${planSel(w, k, `data-tp="${esc(p.id)}|${k}" aria-label="${esc(p.k)} semana ${k + 1}"`)}</td>`).join("")}</tr>`).join("");
+  const codes = [["RAP", "Rapidez"], ["TEC", "Técnica"], ["PAS", "Pases"], ["DEF", "Defensa"], ["CRE", "Creación"], ["ATT", "Anotación"], ["CON", "Condición"], ["GK", ""]];
+  const cnt = codes.map(([c, f]) => `<tr class="cnt"><th class="l">${c}</th>${dates.map((_, k) => { const n = effs.filter(e => e[k].f === f).length; return `<td class="${n ? "" : "z"}">${n || ""}</td>`; }).join("")}</tr>`).join("");
+  return `<section class="plan" aria-label="Planificación del equipo"><h3>Planificación del equipo · próximas ${PLAN_WEEKS} semanas</h3>
+    <p class="hint">Qué entrenará cada jugador semana a semana (puedes cambiarlo aquí mismo). Las filas de abajo cuentan cuántos jugadores entrenan cada skill en cada semana; «↳» sigue con el entrenamiento de la semana anterior.</p>
+    <div class="tablewrap"><table id="teamPlan"><thead><tr><th class="l">Jugador</th>${ths}</tr></thead><tbody>${body}<tr class="sepr"><th class="l" colspan="${PLAN_WEEKS + 1}">Jugadores por entrenamiento</th></tr>${cnt}</tbody></table></div></section>`;
 }
 function renderPlayer(tr) {
   const ed = view.ed && view.ed.id === tr.id ? view.ed : null;
@@ -1170,6 +1249,37 @@ function addCandidates(onlyEnt) {
 }
 // «Juan José Pereira» → «Pereira Juan José» (la última palabra es el apellido)
 function surnameFirst(n) { const w = String(n || "").trim().split(/\s+/); return w.length < 2 ? w.join(" ") : w[w.length - 1] + " " + w.slice(0, -1).join(" "); }
+const PAT_CODES = { RAP: "Rapidez", TEC: "Técnica", PAS: "Pases", DEF: "Defensa", CRE: "Creación", ATT: "Anotación", ANO: "Anotación", CON: "Condición", LES: "LESIÓN", GK: "", "-": "", "—": "" };
+function parsePattern(txt) {
+  const seq = [];
+  for (const part of String(txt).split(/[,;]+/).map(x => x.trim()).filter(Boolean)) {
+    const mt = /^(.+?)(?:\s*[x×*]\s*|\s+)?(\d+)?$/i.exec(part); if (!mt) return null;
+    const nm = norm(mt[1]).trim(), n = mt[2] ? Number(mt[2]) : 1;
+    const key = Object.keys(PAT_CODES).find(c => norm(c) === nm) || (TRN_OPTS.find(o => norm(o).startsWith(nm.slice(0, 3)) && nm.length >= 3) && null);
+    let f;
+    if (key != null) f = PAT_CODES[key]; else { const o = TRN_OPTS.find(o => norm(o) === nm || (nm.length >= 3 && norm(o).startsWith(nm))); if (!o) return null; f = o; }
+    if (!(n >= 1 && n <= 13)) return null;
+    for (let i = 0; i < n; i++) seq.push(f);
+  }
+  return seq.length ? seq : null;
+}
+function planAction(tr, act) {
+  const eff = planEff(tr);
+  if (act === "repeat") { for (let k = 1; k < PLAN_WEEKS; k++) setPlanWeek(tr, k, tr.plan || ""); touch(tr); render(); toast("Semana 1 repetida en las 13 semanas"); }
+  else if (act === "clear") { if (!confirm(`¿Dejar «sin definir» las semanas 2 a 13 de ${tr.k}?`)) return; tr.pl = {}; touch(tr); render(); }
+  else if (act === "pattern") {
+    const txt = prompt("Patrón de entrenamiento, empezando por el Entreno Actual (se repite hasta completar 13 semanas).\nEjemplo: RAP 3, TEC 2, DEF 1\nCódigos: RAP, TEC, PAS, DEF, CRE, ATT, CON, LES, GK");
+    if (txt == null) return;
+    const seq = parsePattern(txt); if (!seq) { toast("No entendí el patrón. Ejemplo: RAP 3, TEC 2"); return; }
+    for (let k = 0; k < PLAN_WEEKS; k++) setPlanWeek(tr, k, seq[k % seq.length]);
+    touch(tr); render(); toast("Patrón aplicado");
+  } else if (act === "copy") {
+    const others = live().filter(p => p !== tr).sort((a, b) => a.k.localeCompare(b.k, "es"));
+    if (!others.length) { toast("No hay otros jugadores en el seguimiento."); return; }
+    $("#copyList").innerHTML = others.map(p => `<label class="chk"><input type="checkbox" value="${esc(p.id)}"> ${esc(p.k)}</label>`).join("");
+    $("#copyFrom").textContent = tr.k; $("#copyDlg")._from = tr.id; $("#copyDlg").showModal();
+  }
+}
 function saveEdit(tr) {
   const ed = view.ed, msg = t => { const el = $("#edMsg"); if (el) el.textContent = t; };
   const o0 = computeRows(tr.rows, SPEED), rows = ed.rows, inRange = (v, a, b) => Number.isInteger(v) && v >= a && v <= b;
@@ -1358,8 +1468,10 @@ function init() {
   });
   $("#view").addEventListener("click", e => {
     const b = e.target.closest("button"); if (!b || !T) return;
-    const tr = live().find(p => p.k === view.tab); if (!tr) return;
+    const tr = live().find(p => p.k === view.tab);
     if (b.dataset.planbtn != null) { view.showPlan = !view.showPlan; try { localStorage.setItem("entrenamiento:showplan", view.showPlan ? "1" : "0"); } catch {} render(); }
+    else if (b.dataset.plact != null && tr) planAction(tr, b.dataset.plact);
+    else if (!tr) return;
     else if (b.dataset.edon != null) { view.ed = { id: tr.id, rows: JSON.parse(JSON.stringify(tr.rows)), gtIn: {} }; render(); }
     else if (b.dataset.edcancel != null) { view.ed = null; render(); }
     else if (b.dataset.edsave != null) saveEdit(tr);
@@ -1374,16 +1486,12 @@ function init() {
       else r[f] = t.value === "" ? NaN : Number(t.value);
       return;
     }
-    if (t.dataset.pf != null || t.dataset.pe != null) {
-      const tr = live().find(p => p.k === view.tab); if (!tr) return;
-      const k = Number(t.dataset.pf != null ? t.dataset.pf : t.dataset.pe), d = addDays(tr.rows[tr.rows.length - 1].d, 7 * (k + 1));
-      if (k === 0) { if (t.dataset.pf != null) tr.plan = t.value; else tr.planE = t.checked; }
-      else {
-        tr.pl = tr.pl || {};
-        if (t.dataset.pf != null) { if (t.value === "~") delete tr.pl[d]; else tr.pl[d] = { f: t.value, e: tr.pl[d] ? !!tr.pl[d].e : false }; }
-        else if (tr.pl[d]) tr.pl[d].e = t.checked;
-      }
-      touch(tr); setTimeout(render, 0); return;
+    if (t.dataset.pf != null || t.dataset.tp != null) {
+      let tr, k;
+      if (t.dataset.tp != null) { const [id, kk] = t.dataset.tp.split("|"); tr = live().find(p => p.id === id); k = Number(kk); }
+      else { tr = live().find(p => p.k === view.tab); k = Number(t.dataset.pf); }
+      if (!tr) return;
+      setPlanWeek(tr, k, t.value); touch(tr); setTimeout(render, 0); return;
     }
     if (t.dataset.plan != null) { const tr = live().find(p => p.k === t.dataset.plan); if (tr) { tr.plan = t.value; touch(tr); setTimeout(render, 0); } }
     else if (t.dataset.rf != null) { const tr = live().find(p => p.k === view.tab); if (tr) { tr.rows[Number(t.dataset.rf)].f = t.value; touch(tr); setTimeout(render, 0); } }
@@ -1402,6 +1510,19 @@ function init() {
   $("#cloudYes").addEventListener("click", () => { $("#cloudDlg").close(); if (pendingAdd) addPlayer(pendingAdd, true); pendingAdd = null; });
   $("#cloudNo").addEventListener("click", () => { $("#cloudDlg").close(); if (pendingAdd) addPlayer(pendingAdd, false); pendingAdd = null; });
   $("#cloudCancel").addEventListener("click", () => { $("#cloudDlg").close(); pendingAdd = null; });
+  $("#copyCancel").addEventListener("click", () => $("#copyDlg").close());
+  $("#copyForm").addEventListener("submit", ev => {
+    ev.preventDefault();
+    const src = live().find(p => p.id === $("#copyDlg")._from), ids = [...document.querySelectorAll("#copyList input:checked")].map(x => x.value);
+    $("#copyDlg").close(); if (!src || !ids.length) return;
+    const eff = planEff(src); let n = 0;
+    for (const id of ids) {
+      const p = live().find(x => x.id === id); if (!p) continue;
+      eff.forEach((w, k) => setPlanWeek(p, k, k && !w.def ? "~" : w.f));
+      touch(p); n++;
+    }
+    render(); toast(`Planificación copiada a ${n} jugador${n === 1 ? "" : "es"}`);
+  });
   $("#addDel").addEventListener("click", () => {
     const tr = T.players.find(p => p.id === $("#addSel").value); if (!tr) return;
     if (!confirm(`¿Eliminar para siempre el registro de ${tr.k}?\n\nSe borran sus ${tr.rows.length} semanas de historial de la nube y de todos tus dispositivos. No se puede deshacer.`)) return;
