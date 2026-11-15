@@ -437,6 +437,11 @@ section.tal .tablewrap { display: inline-block; max-width: 100%; }
 .teamplan tr.cnt th, .teamplan tr.cnt td { font-weight: 800; }
 /* marca «real» más chica y más arriba */
 .real { font-size: .56rem; padding: 0 3px; margin-left: 2px; vertical-align: super; line-height: 1.2; }
+/* marca «real»: flotante (no desplaza el número) y rosa */
+.tal td { position: relative; }
+.tal td .real { position: absolute; top: 2px; right: 3px; margin: 0; vertical-align: baseline; background: #ec4899; border-color: #ec4899; color: #fff; font-weight: 800; }
+.tal td { padding-left: 24px; padding-right: 24px; }
+.tal td .real { top: 1px; right: 2px; }
 </style>
 </head>
 <body>
