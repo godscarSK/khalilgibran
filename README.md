@@ -213,3 +213,5 @@ Qué tener en cuenta:
 **Cambios de botones y color:** el botón rojo «Copiar» de la barra superior ahora se llama **CSV** (hace lo mismo: copia la tabla visible). El botón «Copiar» de cada fila de la Tabla de Planificación individual copia solo SEM, EDAD, CON, RAP, TEC, PAS, DEF, CRE, ATT y las columnas visibles de Sumas. El selector Posición Preferida es café chocolate y el fondo de la Tabla de Planificación (individual y Resumen) es amarillo.
 
 **Ajuste:** el botón por fila de la Tabla de Planificación individual es el icono ⧉ (como en Egresados) y copia solo 9 datos (SEM, EDAD, CON, RAP, TEC, PAS, DEF, CRE, ATT). El fondo de las Tablas de Planificación (individual y Resumen) ahora es rosado.
+
+**Ajuste:** las Tablas de Planificación (individual y Resumen) vuelven a los colores por defecto y solo su borde es rosado.
