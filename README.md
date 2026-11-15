@@ -197,3 +197,7 @@ Qué tener en cuenta:
 **Ocultar Acumulado:** el botón «Ocultar/Mostrar Acumulado» (en la vista de cada jugador) quita la sección Acumulado de la tabla de entrenamiento y de la de planificación a la vez; al ocultarla, la letra de las tablas aumenta un poco porque hay menos columnas. Tu elección se recuerda en este navegador.
 
 **Resumen:** bajo la tabla hay una tabla de **Talentos por skill** (RAP a ATT, cada columna con el color de su skill) con el talento que usa la proyección de cada jugador: el último calculado del historial (con la marca «real») o, si no hay uno calculado reciente, el ingresado a mano (sin marca). La **Planificación del equipo** es compacta (skills abreviadas RAP, TEC, PAS, DEF, CRE, ATT, CON, LES y GK; fechas día-mes; la primera columna es el Entreno Actual) para que quepa sin desplazarse. La Velocidad de entreno (8, fija) está en «Cómo se calcula».
+
+**Resumen (orden y títulos):** TABLA RESUMEN (con la última semana registrada encima), TABLA DE PLANIFICACIÓN (siempre visible) y TABLA DE TALENTOS, en ese orden. En la planificación de cada jugador se agregó la columna EDAD, y las columnas TEMP, SEM y EDAD se colorean según la temporada (un color para las impares y otro para las pares).
+
+**Edad:** cambia en la semana 1 de cada temporada. Si un historial antiguo la tenía cambiando en otra semana, se corrige solo al abrir la página (a partir de la edad más reciente) y se guarda en la nube. En el Modo Edición no se acepta una edad que cambie fuera de la semana 1.

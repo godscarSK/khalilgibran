@@ -391,6 +391,14 @@ details.tm > summary { cursor: pointer; font-weight: 700; }
 .tal th.nk-def, .tal td.nk-def { color: var(--n-def); } .tal th.nk-cre, .tal td.nk-cre { color: var(--n-cre); } .tal th.nk-ata, .tal td.nk-ata { color: var(--n-ata); }
 .tal td { font-weight: 700; }
 .real { display: inline-block; margin-left: 3px; padding: 0 5px; border-radius: 999px; font-size: .68rem; font-weight: 700; vertical-align: middle; color: var(--muted); border: 1px solid var(--line); background: var(--panel); }
+/* color de TEMP, SEM y EDAD según la temporada (impar / par) */
+:root { --sn-o: #0b6aa8; --sn-e: #b8520a; }
+:root[data-theme="dark"] { --sn-o: #6cc0ff; --sn-e: #ffb066; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --sn-o: #6cc0ff; --sn-e: #ffb066; } }
+.ent td.sn-o { color: var(--sn-o); font-weight: 600; } .ent td.sn-e { color: var(--sn-e); font-weight: 600; }
+.ent td.sn-o input.ed { color: var(--sn-o); } .ent td.sn-e input.ed { color: var(--sn-e); }
+.lastweek { margin: 2px 0 8px; }
+.plan h3 small { font-weight: 400; font-size: .75em; color: var(--muted); margin-left: 6px; }
 </style>
 </head>
 <body>
@@ -937,7 +945,7 @@ async function syncPull() {
   try {
     setSyncState("pending");
     const r = await pullT();
-    if (r.changed) { autoAppend(); saveT(); render(); }
+    if (r.changed) { fixAges(); autoAppend(); saveT(); render(); }
     if (T.dirty.length) await pushDirty(); else setSyncState("ok");
   } catch (err) { setSyncState("offline", explainSync(err)); }
 }
@@ -1045,6 +1053,22 @@ function matchPlayer(tr) {
   const hits = roster.players.filter(p => norm(p.name).split(/[^a-z]+/).includes(key));
   return hits.length === 1 ? hits[0] : null;
 }
+// La edad cambia en la semana 1 de cada temporada. Si el historial la cambia en otra semana (datos antiguos), se recalcula a partir de la edad más reciente.
+function ageOk(rows) {
+  for (let n = 1; n < rows.length; n++) { const p = rows[n - 1], r = rows[n]; if (r.t === p.t ? r.a !== p.a : (r.t === p.t + 1 && r.a !== p.a + 1)) return false; }
+  return true;
+}
+function fixAges() {
+  if (!T) return;
+  let ch = false;
+  for (const tr of T.players) {
+    if (ageOk(tr.rows)) continue;
+    const L = tr.rows[tr.rows.length - 1];
+    tr.rows.forEach(r => { r.a = L.a - (L.t - r.t); });
+    touch(tr, true); ch = true;
+  }
+  if (ch) { saveT(); schedulePush(); }
+}
 function autoAppend() {
   const res = { added: [], missing: [], week: null };
   if (!roster.players.length || !roster.stamp || !T) return res;
@@ -1060,7 +1084,7 @@ function autoAppend() {
     const pe = tr.pl && tr.pl[wk];
     const roll = last.s >= 13;
     const s = roll ? 1 : last.s + 1, t = roll ? last.t + 1 : last.t;
-    tr.rows.push({ d: wk, t, s, a: Number.isFinite(p.age) ? p.age : (s === 13 ? last.a + 1 : last.a), e: false, f: pe ? pe.f : (tr.plan || ""), k });
+    tr.rows.push({ d: wk, t, s, a: Number.isFinite(p.age) ? p.age : (s === 1 ? last.a + 1 : last.a), e: false, f: pe ? pe.f : (tr.plan || ""), k });
     // la planificación avanza: lo planeado para la semana siguiente pasa a ser el Entreno Actual
     const nx = tr.pl && tr.pl[addDays(wk, 7)];
     if (nx) tr.plan = nx.f;
@@ -1074,7 +1098,8 @@ function autoAppend() {
 /* ─────────────── Vistas ─────────────── */
 const view = { tab: "Resumen", sort: null, ed: null, hideCum: (() => { try { return localStorage.getItem("entrenamiento:hidecum") === "1"; } catch { return false; } })(), showPlan: (() => { try { return localStorage.getItem("entrenamiento:showplan") !== "0"; } catch { return true; } })() };   // ed: borrador del Modo Edición
 const addDays = (iso, n) => { const [y, mo, d] = iso.split("-").map(Number); return ymd(new Date(y, mo - 1, d + n)); };
-const PLAN_WEEKS = 13;   // sort: { i, dir }
+const PLAN_WEEKS = 13;
+const sn = t => (t % 2 ? "sn-o" : "sn-e");   // color por temporada (impar / par)   // sort: { i, dir }
 const live = () => T.players.filter(p => !p.arch);
 const tabOf = () => { const h = decodeURIComponent(location.hash.slice(1)); return h && T && live().some(p => p.k === h) ? h : "Resumen"; };
 const scaleP = (v, a, b) => b > a ? Math.round((v - a) / (b - a) * 100) : 0;
@@ -1139,11 +1164,12 @@ function renderResumen() {
     }
     return `<td class="sum${i === 11 ? " sep" : ""}${h}">${c}</td>`;
   }).join("")}</tr>`).join("");
-  return `<div class="view-title"><h2>Resumen</h2><span class="lbl">Última semana registrada: ${esc(dmy(live().map(p => p.rows[p.rows.length - 1].d).sort().pop()))}. Orden: edad de mayor a menor y luego apellido. Pulsa un encabezado para ordenar por otra columna.</span>
-      <button class="btn" type="button" data-planbtn aria-pressed="${view.showPlan}">${view.showPlan ? "Ocultar" : "Mostrar"} planificación</button></div>
+  const lastWeek = esc(dmy(live().map(p => p.rows[p.rows.length - 1].d).sort().pop()));
+  return `<div class="view-title"><h2>TABLA RESUMEN</h2></div>
+    <p class="lastweek">Última semana registrada: <b>${lastWeek}</b></p>
     <div class="tablewrap ent"><table id="tbl"><thead><tr class="cols">${head}</tr></thead><tbody>${body}</tbody></table></div>
-    ${talentosHtml()}
-    ${view.showPlan ? teamPlanHtml() : ""}`;
+    ${teamPlanHtml()}
+    ${talentosHtml()}`;
 }
 
 const PL_GROUPS = () => [["Semana", 4, ""], ["Entrenamiento", 2, "sep"], ["Skills y avance (gt)", 14, "sep"], ["Sumas", 5, "sep"], ["Talento por skill", 6, "sep"], ["Acumulado", 6, "sep"]];
@@ -1202,15 +1228,15 @@ function projectPlayer(tr, eff) {
 const fmtTal = v => v == null ? "" : nf2.format(v);
 function planHtml(tr) {
   const last = tr.rows[tr.rows.length - 1], eff = planEff(tr), pj = projectPlayer(tr, eff);
-  const groups = [["Semana", 3, ""], ["Entrenamiento", 1, "sep"], ["Skills y avance (gt)", 14, "sep"], ...(view.hideCum ? [] : [["Acumulado", 6, "sep"]])].map(([n, c, s]) => `<th colspan="${c}" class="${s}">${n}</th>`).join("");
-  const cols = ["Fecha", "TEMP", "SEM", "Entrenamiento", ...SK_COLS.flatMap(s => [s.lab, "gt"]), ...(view.hideCum ? [] : ["RAP", "TEC", "PAS", "DEF", "CRE", "ATT"])], sepAt = new Set([3, 4, 18]);
-  const skh = i => i >= 4 && i <= 17 ? ((i - 4) % 2 ? " gtk" + (i === 17 ? " last" : "") : " nk-" + SK_COLS[(i - 4) / 2].id) : "";
+  const groups = [["Semana", 4, ""], ["Entrenamiento", 1, "sep"], ["Skills y avance (gt)", 14, "sep"], ...(view.hideCum ? [] : [["Acumulado", 6, "sep"]])].map(([n, c, s]) => `<th colspan="${c}" class="${s}">${n}</th>`).join("");
+  const cols = ["Fecha", "TEMP", "SEM", "EDAD", "Entrenamiento", ...SK_COLS.flatMap(s => [s.lab, "gt"]), ...(view.hideCum ? [] : ["RAP", "TEC", "PAS", "DEF", "CRE", "ATT"])], sepAt = new Set([4, 5, 19]);
+  const skh = i => i >= 5 && i <= 18 ? ((i - 5) % 2 ? " gtk" + (i === 18 ? " last" : "") : " nk-" + SK_COLS[(i - 5) / 2].id) : "";
   const th = cols.map((c, i) => `<th class="${i === 0 ? "fc " : ""}${sepAt.has(i) ? "sep" : ""}${skh(i)}">${esc(c)}</th>`).join("");
-  let s = last.s, t = last.t;
+  let s = last.s, t = last.t, age = last.a;
   const body = eff.map((w, k) => {
-    if (++s > 13) { s = 1; t++; }
+    if (++s > 13) { s = 1; t++; age++; }
     const p = pj.weeks[k], prev = k ? pj.weeks[k - 1] : null;
-    const cells = [`<td class="fc${k ? "" : " now"}" title="${esc(dmy(w.d))}${k ? "" : " · Entreno Actual"}">${esc(dmys(w.d))}</td>`, `<td>${t}</td>`, `<td>${s}</td>`,
+    const cells = [`<td class="fc${k ? "" : " now"}" title="${esc(dmy(w.d))}${k ? "" : " · Entreno Actual"}">${esc(dmys(w.d))}</td>`, `<td class="${sn(t)}">${t}</td>`, `<td class="${sn(t)}">${s}</td>`, `<td class="${sn(t)}">${age}</td>`,
       `<td class="sep">${planSel(w, k, `data-pf="${k}" aria-label="Entrenamiento ${esc(dmy(w.d))}"`)}</td>`];
     SK_COLS.forEach((sk, i) => cells.push(`<td class="sum nk-${sk.id}${i === 0 ? " sep" : ""}${p.rise[i] ? " rise" : ""}">${p.lvl[i]}${p.rise[i] ? ' <span class="chg up" title="Se estima que sube esta semana">▲</span>' : ""}</td><td class="gt gtk${i === 6 ? " last" : ""}">${p.gt[i]}</td>`));
     if (!view.hideCum) p.cum.forEach((v, i) => cells.push(`<td class="gt${i === 0 ? " sep" : ""}">${v}</td>`));
@@ -1247,7 +1273,7 @@ function talentosHtml() {
     }).join("")}</tr>`;
   }).join("");
   const head = [1, 2, 3, 4, 5, 6].map(i => `<th class="nk-${SK_COLS[i].id}">${SK_COLS[i].lab}</th>`).join("");
-  return `<section class="plan tal" aria-label="Talentos por skill"><h3>Talentos por skill</h3>
+  return `<section class="plan tal" aria-label="Talentos por skill"><h3>TABLA DE TALENTOS</h3>
     <p class="hint">El talento que usa la proyección de cada jugador: el último calculado del historial (marcado «real») o, si no hay uno calculado reciente, el que ingresaste a mano (sin marca). Se edita en la vista de cada jugador.</p>
     <div class="tablewrap"><table id="talTbl"><thead><tr><th class="l">Jugador</th>${head}</tr></thead><tbody>${body}</tbody></table></div></section>`;
 }
@@ -1260,7 +1286,7 @@ function teamPlanHtml() {
   const body = ps.map((p, r) => `<tr><th class="l"><a href="#${encodeURIComponent(p.k)}" data-tab="${esc(p.k)}">${esc(p.k)}</a></th>${effs[r].map((w, k) => `<td>${planSel(w, k, `data-tp="${esc(p.id)}|${k}" aria-label="${esc(p.k)} semana ${k + 1}" title="${esc(dmy(w.d))}"`, true)}</td>`).join("")}</tr>`).join("");
   const codes = [["RAP", "Rapidez"], ["TEC", "Técnica"], ["PAS", "Pases"], ["DEF", "Defensa"], ["CRE", "Creación"], ["ATT", "Anotación"], ["CON", "Condición"], ["GK", ""]];
   const cnt = codes.map(([c, f]) => `<tr class="cnt"><th class="l">${c}</th>${dates.map((_, k) => { const n = effs.filter(e => e[k].f === f).length; return `<td class="${n ? "" : "z"}">${n || ""}</td>`; }).join("")}</tr>`).join("");
-  return `<section class="plan teamplan" aria-label="Planificación del equipo"><h3>Planificación del equipo · próximas ${PLAN_WEEKS} semanas</h3>
+  return `<section class="plan teamplan" aria-label="Planificación del equipo"><h3>TABLA DE PLANIFICACIÓN <small>próximas ${PLAN_WEEKS} semanas</small></h3>
     <p class="hint">Qué entrenará cada jugador semana a semana (puedes cambiarlo aquí mismo). Las filas de abajo cuentan cuántos jugadores entrenan cada skill en cada semana; «↳» sigue con el entrenamiento de la semana anterior. Fechas en día-mes; la primera columna es el Entreno Actual.</p>
     <div class="tablewrap"><table id="teamPlan"><thead><tr><th class="l">Jugador</th>${ths}</tr></thead><tbody>${body}<tr class="sepr"><th class="l" colspan="${PLAN_WEEKS + 1}">Jugadores por entrenamiento</th></tr>${cnt}</tbody></table></div></section>`;
 }
@@ -1281,10 +1307,10 @@ function renderPlayer(tr) {
   const rowsHtml = [];
   for (let n = lastIdx; n >= 0; n--) {
     const r = rowsSrc[n], c = o[n];
-    const cells = ed ? [`<td class="fc"><input class="ed d" type="date" data-ed="${n}|d" value="${esc(r.d)}" aria-label="Fecha fila ${n + 1}"></td>`, `<td>${ni(n, "t", r.t, 1, 99)}</td>`, `<td>${ni(n, "s", r.s, 1, 13)}</td>`, `<td>${ni(n, "a", r.a, 0, 60)}</td>`,
+    const cells = ed ? [`<td class="fc"><input class="ed d" type="date" data-ed="${n}|d" value="${esc(r.d)}" aria-label="Fecha fila ${n + 1}"></td>`, `<td class="${sn(r.t)}">${ni(n, "t", r.t, 1, 99)}</td>`, `<td class="${sn(r.t)}">${ni(n, "s", r.s, 1, 13)}</td>`, `<td class="${sn(r.t)}">${ni(n, "a", r.a, 0, 60)}</td>`,
       `<td class="sep"><input type="checkbox" data-ed="${n}|e" aria-label="ENT. F fila ${n + 1}"${r.e ? " checked" : ""}></td>`,
       `<td>${trnSelect(r.f, `data-ed="${n}|f" aria-label="Entrenamiento fila ${n + 1}"`)}</td>`]
-    : [`<td class="fc" title="${esc(dmy(r.d))}">${esc(dmys(r.d))}</td>`, `<td>${r.t}</td>`, `<td>${r.s}</td>`, `<td>${r.a}</td>`,
+    : [`<td class="fc" title="${esc(dmy(r.d))}">${esc(dmys(r.d))}</td>`, `<td class="${sn(r.t)}">${r.t}</td>`, `<td class="${sn(r.t)}">${r.s}</td>`, `<td class="${sn(r.t)}">${r.a}</td>`,
       `<td class="sep"><input type="checkbox" data-ef="${n}" aria-label="ENT. F ${esc(dmy(r.d))}"${r.e ? " checked" : ""}></td>`,
       `<td>${trnSelect(r.f, `data-rf="${n}" aria-label="Entrenamiento ${esc(dmy(r.d))}"`)}</td>`];
     SK_COLS.forEach((s, i) => {
@@ -1378,6 +1404,7 @@ function saveEdit(tr) {
     if (n && !(r.d > rows[n - 1].d)) return msg(`${at}: las fechas deben ir de la más antigua a la más reciente, sin repetirse.`);
     if (!inRange(r.t, 1, 99) || !inRange(r.s, 1, 13)) return msg(`${at}: la temporada (1–99) y la semana (1–13) deben ser números enteros.`);
     if (!inRange(r.a, 0, 60)) return msg(`${at}: la edad debe ser un número entero entre 0 y 60.`);
+    if (n && !ageOk([rows[n - 1], r])) return msg(`${at}: la edad solo cambia en la semana 1 de cada temporada (sube 1 al pasar a la temporada siguiente).`);
     if (!r.k.every(v => inRange(v, 0, 30))) return msg(`${at}: cada skill debe ser un entero entre 0 y 30.`);
   }
   const out = JSON.parse(JSON.stringify(rows));
@@ -1501,6 +1528,7 @@ async function load(force) {
   }
   if (T) {
     if (roster.players.length) { let ch = false; for (const tr of live()) if (tr.pid == null) { const p = matchPlayer(tr); if (p) { tr.pid = p.pid; ch = true; } } if (ch) saveT(); }
+    fixAges();
     const r = autoAppend();
     if (r.added.length) notices.push({ html: `<p><strong>Actualización del jueves:</strong> se agregó la semana del ${esc(dmy(r.week))} para ${r.added.length} jugador${r.added.length === 1 ? "" : "es"}: ${esc(r.added.join(", "))}.</p><p>Si cambias el entrenamiento de la semana que viene, elígelo en «Entreno Actual».</p>` });
     if (r.missing.length) notices.push({ html: `<p><strong>No pude actualizar a:</strong> ${esc(r.missing.join(", "))}. No encontré a ese jugador (o a más de uno) en los datos del plantel, o le faltan skills. Si ya no está en el equipo, ábrelo y usa «Quitar jugador».</p>` });
