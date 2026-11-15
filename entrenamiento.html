@@ -349,6 +349,19 @@ button.btn.danger { color: #b3261e; border-color: #b3261e; }
 .chklist { display: grid; grid-template-columns: repeat(auto-fill, minmax(9em, 1fr)); gap: 4px 12px; margin: 8px 0; max-height: 40vh; overflow: auto; }
 .chklist label.chk { display: flex; gap: 6px; align-items: center; }
 :root[data-theme="dark"] .plan td.rise { color: #7fe39a; }
+/* Planificación en formato de tabla */
+.tablewrap.ent.planwrap { max-height: none; }
+.nowtag { display: inline-block; margin-left: 4px; padding: 1px 6px; border-radius: 999px; font-size: .68rem; font-weight: 700; color: #fff; background: var(--accent); vertical-align: middle; }
+.ent td.rise { background: color-mix(in srgb, #2e9e4f 28%, var(--panel)); }
+.ent td.rise .chg.up { font-weight: 800; }
+details.tm { margin-top: 10px; }
+details.tm > summary { cursor: pointer; font-weight: 700; }
+.tmgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(15em, 1fr)); gap: 8px 14px; margin-top: 6px; }
+.tmi { display: grid; grid-template-columns: 2.6em 5em auto; align-items: center; gap: 2px 6px; font-weight: 700; }
+.tmi small { grid-column: 1 / -1; font-weight: 400; color: var(--muted, #666); }
+.tmi input.tm { width: 5em; }
+.tmi .warn { cursor: help; }
+.tmi.nk-rap > span { color: var(--n-rap); } .tmi.nk-tec > span { color: var(--n-tec); } .tmi.nk-pas > span { color: var(--n-pas); } .tmi.nk-def > span { color: var(--n-def); } .tmi.nk-cre > span { color: var(--n-cre); } .tmi.nk-ata > span { color: var(--n-ata); }
 </style>
 </head>
 <body>
@@ -830,7 +843,7 @@ async function estCall(params) {
   if (!j.ok) throw new Error(j.error || "error");
   return j;
 }
-const recOf = p => ({ k: p.k, lay: p.lay, plan: p.plan || "", pid: p.pid == null ? null : p.pid, rows: p.rows, ...(p.arch ? { arch: 1 } : {}), ...(p.planE ? { planE: 1 } : {}), ...(p.pl && Object.keys(p.pl).length ? { pl: p.pl } : {}) });
+const recOf = p => ({ k: p.k, lay: p.lay, plan: p.plan || "", pid: p.pid == null ? null : p.pid, rows: p.rows, ...(p.arch ? { arch: 1 } : {}), ...(p.pl && Object.keys(p.pl).length ? { pl: p.pl } : {}), ...(p.tm && Object.keys(p.tm).length ? { tm: p.tm } : {}) });
 async function pushDirty() {
   if (!CONFIG.estUrl || !sync.key || sync.busy || !T || !T.dirty.length) return;
   sync.busy = true; setSyncState("pending");
@@ -877,7 +890,7 @@ async function pullT() {
         const np = { id, t, k: rec.k, lay: rec.lay || "ATT", plan: rec.plan || "", rows: rec.rows };
         if (rec.pid != null) np.pid = rec.pid;
         if (rec.arch) np.arch = true;
-        if (rec.planE) np.planE = true;
+        if (rec.tm) np.tm = rec.tm;
         if (rec.pl) np.pl = rec.pl;
         if (loc) T.players[T.players.indexOf(loc)] = np; else { T.players.push(np); delete T.gone[id]; }
         dirtyDel(id); changed = true;
@@ -1123,46 +1136,68 @@ function planSel(w, k, attrs) {
   const opts = (k ? `<option value="~"${w.def ? "" : " selected"}>↳ ${esc(trnLab(w.f))}</option>` : "") + `<option value=""${w.def && w.f === "" ? " selected" : ""}>—</option>` + TRN_OPTS.map(o => `<option${w.def && o === w.f ? " selected" : ""}>${o}</option>`).join("");
   return `<select class="trn${w.def ? "" : " carry"}" data-t="${esc(w.f)}" ${attrs}>${opts}</select>`;
 }
-// Proyección: puntos de entrenamiento (gt) semana a semana según el plan; sube la skill cuando gt alcanza el valor estimado por nivel
-// (promedio de los últimos 3 Talentos por skill × velocidad).
-function projectPlayer(tr, eff) {
-  const o = calcOf(tr), n = o.length - 1;
+// Talento que usa la proyección para cada skill (RAP…ATT): el calculado (promedio de los últimos 3, en «semanas de entreno» por nivel)
+// o el ingresado a mano. Si ya hay uno calculado, el manual no se usa (se marca con «!»), salvo que el último calculado tenga más de 13 semanas.
+function talentInfo(tr, o) {
+  const rows = tr.rows, n = rows.length - 1, tm = tr.tm || {};
   return [1, 2, 3, 4, 5, 6].map(i => {
-    const tv = o.map(c => c.tw[i - 1]).filter(Boolean).slice(-3).map(t => t.v);
-    if (!tv.length) return { i, N: null };
-    const N = tv.reduce((x, y) => x + y, 0) / tv.length * SPEED;
-    let gt = o[n].gt[i];
-    const cells = eff.map(w => { gt += w.f === TRN[i] ? SPEED : (w.f === "LESIÓN" ? 0 : 1); if (gt >= N) { gt = 0; return { gt: 0, rise: true }; } return { gt, rise: false }; });
-    return { i, N, gt0: o[n].gt[i], cells };
+    const list = o.map((c, r) => ({ t: c.tw[i - 1], r })).filter(x => x.t);
+    const lastC = list[list.length - 1], manual = Number.isFinite(tm[i]) && tm[i] > 0 ? tm[i] : null;
+    const ageW = lastC ? Math.round((Date.parse(rows[n].d) - Date.parse(rows[lastC.r].d)) / 604800000) : null;
+    const mean = lastC ? list.slice(-3).reduce((x, y) => x + y.t.v, 0) / Math.min(3, list.length) : null;
+    const stale = lastC && ageW > 13;
+    let use = null, v = null;
+    if (lastC && !(stale && manual != null)) { use = "calc"; v = mean; } else if (manual != null) { use = "manual"; v = manual; }
+    return { i, calc: lastC ? lastC.t.v : null, mean, ageW, stale, manual, use, v, N: v == null ? null : v * SPEED, flag: manual != null && use === "calc" };
   });
 }
-function planHtml(tr) {
-  const last = tr.rows[tr.rows.length - 1], eff = planEff(tr), ths = [], sel = [], cal = [];
-  let s = last.s, t = last.t;
-  eff.forEach((w, k) => {
-    if (++s > 13) { s = 1; t++; }
-    ths.push(`<th class="${k ? "" : "now"}">${k ? esc(dmy(w.d)) : "Entreno Actual"}</th>`);
-    cal.push(`<td>${k ? "" : esc(dmy(w.d)) + " · "}T${t} S${s}</td>`);
-    sel.push(`<td>${planSel(w, k, `data-pf="${k}" aria-label="Entrenamiento semana ${k + 1}"`)}</td>`);
+// Proyección: nivel y puntos (gt) de cada skill semana a semana según el plan; la skill sube cuando gt alcanza los puntos estimados por nivel.
+function projectPlayer(tr, eff) {
+  const o = calcOf(tr), n = o.length - 1, last = tr.rows[n], ti = talentInfo(tr, o);
+  const lvl = last.k.slice(), gt = o[n].gt.slice(), cum = o[n].cum.slice();
+  const weeks = eff.map(w => {
+    const rise = [false, false, false, false, false, false, false];
+    for (let i = 0; i < 7; i++) {
+      gt[i] += w.f === TRN[i] ? SPEED : (w.f === "LESIÓN" ? 0 : 1);
+      if (i > 0 && ti[i - 1].N != null && gt[i] >= ti[i - 1].N) { lvl[i]++; gt[i] = 0; rise[i] = true; }
+      if (i > 0) cum[i - 1] += w.f === TRN[i] ? SPEED : (w.f === "LESIÓN" ? 0 : 1);
+    }
+    return { lvl: lvl.slice(), gt: gt.slice(), cum: cum.slice(), rise };
   });
-  const pj = projectPlayer(tr, eff);
-  const proj = pj.map(p => {
-    const lab = `<th class="l nk-${SK_COLS[p.i].id}">${SK_COLS[p.i].lab}${p.N ? ` <small title="Puntos estimados por nivel">≈${Math.round(p.N)}</small>` : ""}</th>`;
-    if (!p.N) return `<tr>${lab}<td colspan="${PLAN_WEEKS}" class="muted">sin Talento calculado para esta skill</td></tr>`;
-    return `<tr>${lab}${p.cells.map(c => `<td class="${c.rise ? "rise" : ""}">${c.rise ? "▲" : c.gt}</td>`).join("")}</tr>`;
+  return { ti, weeks };
+}
+const fmtTal = v => v == null ? "" : nf2.format(v);
+function planHtml(tr) {
+  const last = tr.rows[tr.rows.length - 1], eff = planEff(tr), pj = projectPlayer(tr, eff);
+  const groups = [["Semana", 3, ""], ["Entrenamiento", 1, "sep"], ["Skills y avance (gt)", 14, "sep"], ["Acumulado", 6, "sep"]].map(([n, c, s]) => `<th colspan="${c}" class="${s}">${n}</th>`).join("");
+  const cols = ["Fecha", "TEMP", "SEM", "Entrenamiento", ...SK_COLS.flatMap(s => [s.lab, "gt"]), "RAP", "TEC", "PAS", "DEF", "CRE", "ATT"], sepAt = new Set([3, 4, 18]);
+  const th = cols.map((c, i) => `<th class="${i === 0 ? "fc " : ""}${sepAt.has(i) ? "sep" : ""}">${esc(c)}</th>`).join("");
+  let s = last.s, t = last.t;
+  const body = eff.map((w, k) => {
+    if (++s > 13) { s = 1; t++; }
+    const p = pj.weeks[k], prev = k ? pj.weeks[k - 1] : null;
+    const cells = [`<td class="fc">${esc(dmy(w.d))}${k ? "" : ' <span class="nowtag">Entreno Actual</span>'}</td>`, `<td>${t}</td>`, `<td>${s}</td>`,
+      `<td class="sep">${planSel(w, k, `data-pf="${k}" aria-label="Entrenamiento ${esc(dmy(w.d))}"`)}</td>`];
+    SK_COLS.forEach((sk, i) => cells.push(`<td class="sum nk-${sk.id}${i === 0 ? " sep" : ""}${p.rise[i] ? " rise" : ""}">${p.lvl[i]}${p.rise[i] ? ' <span class="chg up" title="Se estima que sube esta semana">▲</span>' : ""}</td><td class="gt">${p.gt[i]}</td>`));
+    p.cum.forEach((v, i) => cells.push(`<td class="gt${i === 0 ? " sep" : ""}">${v}</td>`));
+    return `<tr>${cells.join("")}</tr>`;
+  }).join("");
+  const tal = pj.ti.map(x => {
+    const sk = SK_COLS[x.i];
+    const st = x.use === "calc" ? `calculado ${fmtTal(x.mean)}` + (x.ageW > 0 ? ` (último hace ${x.ageW} sem.)` : "") : x.use === "manual" ? (x.calc != null ? `manual en uso: el calculado (${fmtTal(x.calc)}) tiene ${x.ageW} semanas` : "manual en uso") : "sin dato";
+    const mark = x.flag ? `<span class="warn" title="Ya hay un talento calculado (${esc(fmtTal(x.mean))}); el valor ingresado no se usa en la proyección">!</span>` : "";
+    return `<label class="tmi nk-${sk.id}"><span>${sk.lab}</span><input class="ed tm" type="number" step="0.01" min="0" max="99" inputmode="decimal" data-tm="${x.i}" value="${x.manual != null ? esc(x.manual) : ""}" placeholder="—" aria-label="Talento manual ${esc(sk.lab)}">${mark}<small>${esc(st)}</small></label>`;
   }).join("");
   return `<section class="plan" aria-label="Planificación"><h3>Planificación · próximas ${PLAN_WEEKS} semanas</h3>
-    <p class="hint">Elige qué entrenará cada semana. Cada jueves, la semana que llega toma lo planificado y la siguiente pasa a ser el Entreno Actual. Una semana con «↳» sigue con el entrenamiento de la anterior.</p>
+    <p class="hint">Elige qué entrenará cada semana. Cada jueves, la semana que llega toma lo planificado y la siguiente pasa a ser el Entreno Actual. Una semana con «↳» sigue con el entrenamiento de la anterior. A la derecha se proyectan los niveles y los puntos (gt) según el plan: ▲ marca la semana en que se estima que la skill subiría.</p>
     <div class="planbtns"><button class="btn" type="button" data-plact="repeat" title="Copia el Entreno Actual a las 13 semanas">Repetir semana 1</button>
       <button class="btn" type="button" data-plact="pattern" title="Por ejemplo: RAP 3, TEC 2 se repite hasta completar las 13 semanas">Patrón…</button>
       <button class="btn" type="button" data-plact="copy" title="Copia esta planificación a otros jugadores">Copiar a otros jugadores…</button>
       <button class="btn" type="button" data-plact="clear" title="Deja las semanas 2 a 13 sin definir">Limpiar</button></div>
-    <div class="tablewrap"><table id="planTbl"><thead><tr><th class="l">Semana</th>${ths.join("")}</tr></thead><tbody>
-      <tr><th class="l">Temporada · semana</th>${cal.join("")}</tr>
-      <tr><th class="l">Entrenamiento</th>${sel.join("")}</tr></tbody></table></div>
-    <h3 class="sub">Proyección estimada de puntos (gt)</h3>
-    <p class="hint">Según el plan, los puntos de entrenamiento (gt) de cada skill semana a semana. ▲ marca la semana en que se estima que subiría. El valor «≈» son los puntos que suele necesitar por nivel (promedio de los últimos 3 Talentos por skill × velocidad). Es solo una estimación.</p>
-    <div class="tablewrap"><table id="projTbl"><thead><tr><th class="l">Skill</th>${ths.join("")}</tr></thead><tbody>${proj}</tbody></table></div></section>`;
+    <div class="tablewrap ent planwrap"><table id="planTbl"><thead class="two"><tr class="grp">${groups}</tr><tr class="cols">${th}</tr></thead><tbody>${body}</tbody></table></div>
+    <details class="tm"${pj.ti.some(x => x.manual != null || x.use === null) ? " open" : ""}><summary>Talento por skill para la proyección</summary>
+      <p class="hint">La proyección usa el Talento por skill calculado (promedio de los últimos 3, en las mismas unidades de la columna «Talento por skill»: semanas de entreno por nivel). Si una skill aún no tiene uno, puedes ingresarlo a mano. Cuando ya hay un talento calculado, el valor manual no se usa y aparece con «!». Si el último calculado tiene más de 13 semanas, se da prioridad al manual (si lo hay).</p>
+      <div class="tmgrid">${tal}</div></details></section>`;
 }
 // Planificación del equipo (vista Resumen)
 function teamPlanHtml() {
@@ -1231,7 +1266,7 @@ function render() {
   const tr = live().find(p => p.k === view.tab);
   if (view.ed && !(tr && tr.id === view.ed.id)) view.ed = null;
   $("#view").innerHTML = tr ? renderPlayer(tr) : renderResumen();
-  const g = document.querySelector("tr.grp th"); if (g) $("#tbl").style.setProperty("--grp-h", g.getBoundingClientRect().height + "px");
+  document.querySelectorAll("table").forEach(tb => { const g = tb.querySelector("tr.grp th"); if (g) tb.style.setProperty("--grp-h", g.getBoundingClientRect().height + "px"); });
 }
 
 /* ─────────────── Agregar y quitar jugadores ─────────────── */
@@ -1485,6 +1520,13 @@ function init() {
       else if (f === "k") r.k[Number(i)] = t.value === "" ? NaN : Number(t.value);
       else r[f] = t.value === "" ? NaN : Number(t.value);
       return;
+    }
+    if (t.dataset.tm != null) {   // talento ingresado a mano
+      const tr = live().find(p => p.k === view.tab); if (!tr) return;
+      const v = t.value.trim() === "" ? null : Number(t.value.replace(",", "."));
+      tr.tm = tr.tm || {};
+      if (v == null || !Number.isFinite(v) || v <= 0) delete tr.tm[t.dataset.tm]; else tr.tm[t.dataset.tm] = Math.round(v * 100) / 100;
+      touch(tr); setTimeout(render, 0); return;
     }
     if (t.dataset.pf != null || t.dataset.tp != null) {
       let tr, k;
