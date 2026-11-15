@@ -472,6 +472,11 @@ select.pp:focus-visible { outline: 2px solid #c9935f; outline-offset: 2px; }
 select.pp option { background: #fffaf4; color: #3d2415; }
 
 .planwrap .btn.mini { padding: 0 5px; min-height: 0; line-height: 1.4; font-size: .8rem; }
+/* Tablas de Planificación: bordes de celdas rosados */
+#planTbl th, #planTbl td, #teamPlan th, #teamPlan td { border-color: #eaa6c4; }
+.planwrap, #teamPlan { border-color: #e58bb3; }
+:root[data-theme="dark"] #planTbl th, :root[data-theme="dark"] #planTbl td, :root[data-theme="dark"] #teamPlan th, :root[data-theme="dark"] #teamPlan td { border-color: #8c3d63; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) #planTbl th, :root:not([data-theme="light"]) #planTbl td, :root:not([data-theme="light"]) #teamPlan th, :root:not([data-theme="light"]) #teamPlan td { border-color: #8c3d63; } }
 </style>
 </head>
 <body>

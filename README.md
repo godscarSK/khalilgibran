@@ -215,3 +215,5 @@ Qué tener en cuenta:
 **Ajuste:** el botón por fila de la Tabla de Planificación individual es el icono ⧉ (como en Egresados) y copia solo 9 datos (SEM, EDAD, CON, RAP, TEC, PAS, DEF, CRE, ATT). El fondo de las Tablas de Planificación (individual y Resumen) ahora es rosado.
 
 **Ajuste:** las Tablas de Planificación (individual y Resumen) vuelven a los colores por defecto y solo su borde es rosado.
+
+**Ajuste:** los bordes de las celdas de las Tablas de Planificación (individual y Resumen) son rosados.
