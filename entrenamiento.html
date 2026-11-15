@@ -452,6 +452,15 @@ section.tal .tablewrap { display: inline-block; max-width: 100%; }
 .ent.dense input.ed.sv { width: 3.9em; text-align: right; padding: 1px 3px; }
 .planwrap .mus { margin-left: 2px; font-size: .8em; font-weight: 700; color: var(--muted); }
 .ent.dense.planwrap table { font-size: min(.9rem, max(.58rem, calc((100vw - 56px) / 96))); }
+/* Tabla de Planificación individual: fondo verde (como la del Resumen), Venta en verde oscuro y centrada, botón por fila */
+:root { --venta: #0b5d2b; }
+:root[data-theme="dark"] { --venta: #62d08a; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --venta: #62d08a; } }
+section.indplan.rtab { margin: 0 0 14px; }
+.planwrap td.vc input.sv, .planwrap td.vc .mus { color: var(--venta); font-weight: 700; }
+.ent.dense input.ed.sv { text-align: center; }
+.planwrap .btn.cprow { padding: 1px 8px; font-size: .85em; white-space: nowrap; }
+select.pp { font: inherit; }
 </style>
 </head>
 <body>
@@ -934,7 +943,7 @@ async function estCall(params) {
   if (!j.ok) throw new Error(j.error || "error");
   return j;
 }
-const recOf = p => ({ k: p.k, lay: p.lay, plan: p.plan || "", pid: p.pid == null ? null : p.pid, rows: p.rows, ...(p.arch ? { arch: 1 } : {}), ...(p.pl && Object.keys(p.pl).length ? { pl: p.pl } : {}), ...(p.tm && Object.keys(p.tm).length ? { tm: p.tm } : {}), ...(p.sv && Object.keys(p.sv).length ? { sv: p.sv } : {}) });
+const recOf = p => ({ k: p.k, lay: p.lay, plan: p.plan || "", pid: p.pid == null ? null : p.pid, rows: p.rows, ...(p.arch ? { arch: 1 } : {}), ...(p.pl && Object.keys(p.pl).length ? { pl: p.pl } : {}), ...(p.tm && Object.keys(p.tm).length ? { tm: p.tm } : {}), ...(p.sv && Object.keys(p.sv).length ? { sv: p.sv } : {}), ...(p.pp ? { pp: p.pp } : {}) });
 async function pushDirty() {
   if (!CONFIG.estUrl || !sync.key || sync.busy || !T || !T.dirty.length) return;
   sync.busy = true; setSyncState("pending");
@@ -984,6 +993,7 @@ async function pullT() {
         if (rec.tm) np.tm = rec.tm;
         if (rec.pl) np.pl = rec.pl;
         if (rec.sv) np.sv = rec.sv;
+        if (rec.pp) np.pp = rec.pp;
         if (loc) T.players[T.players.indexOf(loc)] = np; else { T.players.push(np); delete T.gone[id]; }
         dirtyDel(id); changed = true;
       } else if (loc.t > t) dirtyAdd(id);
@@ -1074,6 +1084,9 @@ const alChip = tr => {
   return `<span class="atrn" data-t="${esc(t.v)}"${st} title="${esc(t.tip)}">${t.v ? esc(t.v) : "—"}</span>${d ? ` <span class="warn" title="${esc(d)}" aria-label="${esc(d)}">!</span>` : ""}`;
 };
 const COMPOS = [["DEF", [1, 4]], ["DEFside", [2, 3, 5]], ["MID", [1, 2, 3, 5]], ["ATT", [1, 2, 6]], ["ATTside", [3, 4, 5]]];   // las cinco columnas del final de la tabla de Plantel (índices de k[])
+const PP_OPTS = ["Ninguna", "Defensor", "Medio", "Delantero"];
+const PP_COMPOS = { Defensor: [0, 1], Medio: [2], Delantero: [3, 4] };   // columnas de Sumas que se muestran según la Posición Preferida
+const ppIdx = tr => PP_COMPOS[tr.pp] || [0, 1, 2, 3, 4];
 const COMPOS_TIP = { DEF: "Rapidez + Defensa", DEFside: "Técnica + Pases + Creación", MID: "Rapidez + Técnica + Pases + Creación", ATT: "Rapidez + Técnica + Anotación", ATTside: "Pases + Defensa + Creación" };
 let T = null;   // { speed, players: [{ k, lay, plan, pid?, rows: [...] }] }
 const ymd = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -1287,8 +1300,8 @@ function projectPlayer(tr, eff) {
 const fmtTal = v => v == null ? "" : nf2.format(v);
 function planHtml(tr) {
   const last = tr.rows[tr.rows.length - 1], eff = planEff(tr), pj = projectPlayer(tr, eff);
-  const groups = [["Venta", 1, "vc"], ["Semana", 4, "sep"], ["Entrenamiento", 1, "sep"], ["Skills y avance (gt)", 14, "sep"], ["Sumas", 5, "sep"]].map(([n, c, s]) => `<th colspan="${c}" class="${s}">${n}</th>`).join("");
-  const cols = ["Venta", "Fecha", "TEMP", "SEM", "EDAD", "Entrenamiento", ...SK_COLS.flatMap(s => [s.lab, "gt"]), ...COMPOS.map(s => s[0])], sepAt = new Set([1, 5, 6, 20]);
+  const groups = [["Venta", 1, "vc"], ["Semana", 4, "sep"], ["Entrenamiento", 1, "sep"], ["Skills y avance (gt)", 14, "sep"], ["Sumas", ppIdx(tr).length, "sep"], ["", 1, "sep"]].map(([n, c, s]) => `<th colspan="${c}" class="${s}">${n}</th>`).join("");
+  const cols = ["Venta", "Fecha", "TEMP", "SEM", "EDAD", "Entrenamiento", ...SK_COLS.flatMap(s => [s.lab, "gt"]), ...ppIdx(tr).map(j => COMPOS[j][0]), ""], sepAt = new Set([1, 5, 6, 20, 20 + ppIdx(tr).length]);
   const skh = i => i >= 6 && i <= 19 ? ((i - 6) % 2 ? " gtk" + (i === 19 ? " last" : "") : " nk-" + SK_COLS[(i - 6) / 2].id) : "";
   const th = cols.map((c, i) => `<th class="${i === 0 ? "vc " : i === 1 ? "fc " : ""}${sepAt.has(i) ? "sep" : ""}${skh(i)}" title="${esc(c === "Venta" ? "Posible precio de venta, en M$ (texto libre)" : COMPOS_TIP[c] || "")}">${esc(c)}</th>`).join("");
   const sv = tr.sv || {};
@@ -1299,7 +1312,8 @@ function planHtml(tr) {
     const cells = [`<td class="vc"><input class="ed sv" type="text" maxlength="14" autocomplete="off" data-sv="${esc(w.d)}" value="${esc(sv[w.d] || "")}" aria-label="Venta ${esc(dmy(w.d))}"><span class="mus">M$</span></td>`, `<td class="fc sep${k ? "" : " now"}" title="${esc(dmy(w.d))}${k ? "" : " · Entreno Actual"}">${esc(dmys(w.d))}</td>`, `<td class="${sn(t)}">${t}</td>`, `<td class="${sn(t)}">${s}</td>`, `<td class="${sn(t)}">${age}</td>`,
       `<td class="sep">${planSel(w, k, `data-pf="${k}" aria-label="Entrenamiento ${esc(dmy(w.d))}"`)}</td>`];
     SK_COLS.forEach((sk, i) => cells.push(`<td class="sum nk-${sk.id}${i === 0 ? " sep" : ""}${p.rise[i] ? " rise" : ""}">${p.lvl[i]}${p.rise[i] ? ' <span class="chg up" title="Se estima que sube esta semana">▲</span>' : ""}</td><td class="gt gtk${i === 6 ? " last" : ""}">${p.gt[i]}</td>`));
-    COMPOS.forEach(([, idx], j) => cells.push(`<td class="sum${j === 0 ? " sep" : ""}">${idx.reduce((x, i) => x + p.lvl[i], 0)}</td>`));
+    ppIdx(tr).forEach((j, q) => cells.push(`<td class="sum${q === 0 ? " sep" : ""}">${COMPOS[j][1].reduce((x, i) => x + p.lvl[i], 0)}</td>`));
+    cells.push(`<td class="sep cpc"><button class="btn cprow" type="button" data-cprow title="Copiar solo esta fila">Copiar</button></td>`);
     return `<tr>${cells.join("")}</tr>`;
   }).reverse().join("");   // la semana actual (Entreno Actual) queda abajo, justo encima del historial
   const tal = pj.ti.map(x => {
@@ -1308,8 +1322,8 @@ function planHtml(tr) {
     const mark = x.flag ? `<span class="warn" title="Ya hay un talento calculado (${esc(fmtTal(x.mean))}); el valor ingresado no se usa en la proyección">!</span>` : "";
     return `<label class="tmi nk-${sk.id}"><span>${sk.lab}</span><input class="ed tm" type="number" step="0.01" min="0" max="99" inputmode="decimal" data-tm="${x.i}" value="${x.manual != null ? esc(x.manual) : ""}" placeholder="—" aria-label="Talento manual ${esc(sk.lab)}">${mark}<small>${esc(st)}</small></label>`;
   }).join("");
-  return `<section class="plan" aria-label="Planificación"><h3>Planificación · próximas ${PLAN_WEEKS} semanas</h3>
-    <p class="hint">Elige qué entrenará cada semana. Cada jueves, la semana que llega toma lo planificado y la siguiente pasa a ser el Entreno Actual. Una semana con «↳» sigue con el entrenamiento de la anterior. La fecha destacada es la del Entreno Actual (abajo) y las semanas futuras van hacia arriba. A la derecha se proyectan los niveles y los puntos (gt) según el plan: ▲ marca la semana en que se estima que la skill subiría (Condición se asume que sube cuando su gt llega a 8) y Sumas muestra las cinco sumas de skills proyectadas. En «Venta» puedes anotar un posible precio de venta (M$) para cada semana.</p>
+  return `<section class="plan rtab r2 indplan" aria-label="Planificación"><h3>Planificación · próximas ${PLAN_WEEKS} semanas</h3>
+    <p class="hint">Elige qué entrenará cada semana. Cada jueves, la semana que llega toma lo planificado y la siguiente pasa a ser el Entreno Actual. Una semana con «↳» sigue con el entrenamiento de la anterior. La fecha destacada es la del Entreno Actual (abajo) y las semanas futuras van hacia arriba. A la derecha se proyectan los niveles y los puntos (gt) según el plan: ▲ marca la semana en que se estima que la skill subiría (Condición se asume que sube cuando su gt llega a 8) y Sumas muestra las sumas de skills proyectadas (según la Posición Preferida del jugador). En «Venta» puedes anotar un posible precio de venta (M$) para cada semana.</p>
     <div class="planbtns"><button class="btn" type="button" data-plact="repeat" title="Copia el Entreno Actual a las 13 semanas">Repetir semana 1</button>
       <button class="btn" type="button" data-plact="pattern" title="Por ejemplo: RAP 3, TEC 2 se repite hasta completar las 13 semanas">Patrón…</button>
       <button class="btn" type="button" data-plact="copy" title="Copia esta planificación a otros jugadores">Copiar a otros jugadores…</button>
@@ -1358,13 +1372,14 @@ function renderPlayer(tr) {
   const lastIdx = rowsSrc.length - 1, last = tr.rows[tr.rows.length - 1];
   const mm = SK_COLS.map((_, i) => { const v = rowsSrc.map(r => r.k[i]); return [Math.min(...v), Math.max(...v)]; });
   const ni = (n, f, v, mn, mx, i) => `<input class="ed" type="number" inputmode="numeric" step="1" min="${mn}" max="${mx}" data-ed="${n}|${f}${i != null ? "|" + i : ""}" value="${esc(v)}" aria-label="${esc(f)} fila ${n + 1}">`;
-  const groups = PL_GROUPS().map(([n, c, s]) => `<th colspan="${c}" class="${s}">${n}</th>`).join("");
+  const pi = ppIdx(tr), ns = pi.length;
+  const groups = PL_GROUPS().map(([n, c, s]) => `<th colspan="${n === "Sumas" ? ns : c}" class="${s}">${n}</th>`).join("");
   const cols = ["Fecha", "TEMP", "SEM", "EDAD", "ENT. F", "Entrenamiento", ...SK_COLS.flatMap(s => [s.lab, "gt"]),
-    ...COMPOS.map(s => s[0]), "RAP", "TEC", "PAS", "DEF", "CRE", "ATT", "RAP", "TEC", "PAS", "DEF", "CRE", "ATT"];   // las últimas 6 (Acumulado) no se ven: solo se incluyen al copiar
+    ...pi.map(j => COMPOS[j][0]), "RAP", "TEC", "PAS", "DEF", "CRE", "ATT", "RAP", "TEC", "PAS", "DEF", "CRE", "ATT"];   // las últimas 6 (Acumulado) no se ven: solo se incluyen al copiar
   const tips = { ...COMPOS_TIP, "ENT. F": "Si está marcada, la skill entrenada suma 2 en lugar de la Velocidad de entreno", gt: "Puntos de entrenamiento acumulados desde la última subida de la skill: suma la Velocidad de entreno si se entrenó, 2 con ENT. F, 1 si no se entrenó y 0 en LESIÓN. Vuelve a 0 cuando la skill sube" };
-  const sepAt = new Set([4, 6, 20, 25, 31]);
+  const sepAt = new Set([4, 6, 20, 20 + ns, 26 + ns]);
   const skh = i => i >= 6 && i <= 19 ? ((i - 6) % 2 ? " gtk" + (i === 19 ? " last" : "") : " nk-" + SK_COLS[(i - 6) / 2].id) : "";
-  const th = cols.map((c, i) => `<th class="${i === 0 ? "fc " : ""}${i >= 31 ? "cumc " : ""}${sepAt.has(i) ? "sep" : ""}${skh(i)}" title="${esc(tips[c] || "")}">${esc(c)}</th>`).join("");
+  const th = cols.map((c, i) => `<th class="${i === 0 ? "fc " : ""}${i >= 26 + ns ? "cumc " : ""}${sepAt.has(i) ? "sep" : ""}${skh(i)}" title="${esc(tips[c] || "")}">${esc(c)}</th>`).join("");
   const rowsHtml = [];
   for (let n = lastIdx; n >= 0; n--) {
     const r = rowsSrc[n], c = o[n];
@@ -1378,7 +1393,7 @@ function renderPlayer(tr) {
       if (ed) { const gv = ed.gtIn[n + ":" + i]; cells.push(`<td class="sk${i === 0 ? " sep" : ""}">${ni(n, "k", r.k[i], 0, 30, i)}</td><td class="gt gtk${i === 6 ? " last" : ""}">${ni(n, "g", gv != null ? gv : c.gt[i], 0, 999, i)}</td>`); return; }
       cells.push(`<td class="sk sk-${s.id}${i === 0 ? " sep" : ""}${c.clean[i] ? " clean" : ""}" style="--p:${scaleP(r.k[i], mm[i][0], mm[i][1])}"${c.clean[i] ? ' title="Subida Limpia: subió sin haber sido entrenada"' : ""}>${r.k[i]}</td><td class="gt gtk${i === 6 ? " last" : ""}">${c.gt[i]}</td>`);
     });
-    COMPOS.forEach(([, idx], j) => cells.push(`<td class="sum${j === 0 ? " sep" : ""}">${idx.reduce((x, i) => x + r.k[i], 0)}</td>`));
+    pi.forEach((j, q) => cells.push(`<td class="sum${q === 0 ? " sep" : ""}">${COMPOS[j][1].reduce((x, i) => x + r.k[i], 0)}</td>`));
     c.tw.forEach((t, i) => cells.push(`<td class="${i === 0 ? "sep" : ""}${t ? " tal sk-" + SK_COLS[i + 1].id : ""}"${t ? ` title="Niveles ${t.from} → ${t.to} (${t.m} ${t.m === 1 ? "cambio" : "cambios"})"` : ""}>${t ? nf2.format(t.v) : ""}</td>`));
     c.cum.forEach((v, i) => cells.push(`<td class="gt cumc${i === 0 ? " sep" : ""}">${v}</td>`));   // Acumulado: oculto, solo se copia
     rowsHtml.push(`<tr${n === lastIdx ? ' class="newest"' : ""}>${cells.join("")}</tr>`);
@@ -1388,6 +1403,7 @@ function renderPlayer(tr) {
     : `<button class="btn" type="button" data-edon title="Cambiar a mano cualquier celda de la tabla (con botón para guardar)">Modo Edición</button>`;
   const planBtn = `<button class="btn" type="button" data-planbtn aria-pressed="${view.showPlan}">${view.showPlan ? "Ocultar" : "Mostrar"} planificación</button>`;
   return `<div class="view-title"><h2>${esc(tr.k)}</h2><span class="lbl">Entreno Alineaciones ${alChip(tr)}</span>
+      <label class="lbl">Posición Preferida <select class="pp" data-pp="${esc(tr.k)}" aria-label="Posición Preferida de ${esc(tr.k)}">${PP_OPTS.map(o => `<option value="${o}"${(tr.pp || "Ninguna") === o ? " selected" : ""}>${o}</option>`).join("")}</select></label>
       <label class="lbl">Entreno actual ${trnSelect(tr.plan, `data-plan="${esc(tr.k)}" aria-label="Entreno actual de ${esc(tr.k)}"`)}</label>
       <span class="lbl">${tr.rows.length} semanas · última: ${esc(dmy(last.d))} · ${last.a} años</span>
       <span class="lbl"><i class="cl"></i> Subida Limpia</span>
@@ -1536,6 +1552,13 @@ async function copyText(text) {
 }
 let toastTimer = 0;
 function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 2200); }
+function copyRow(row) {   // copia solo la fila de la Tabla de Planificación (sin el botón)
+  const cells = [...row.children].filter(c => !c.querySelector("button")).map(c => {
+    const s = c.querySelector("select"), i = c.querySelector("input[type=text]");
+    return (s ? (s.dataset.t != null ? s.dataset.t : s.value) : i ? i.value : c.textContent.replace(/[▲▼]/g, "")).trim();
+  });
+  copyText(cells.join("\t")).then(() => toast("Fila copiada"));
+}
 function copyView() {
   const tbl = $("#tbl"); if (!tbl) return;
   const lines = [...tbl.querySelectorAll("tr")].filter(r => !r.classList.contains("grp")).map(r => [...r.children].map(c => {
@@ -1647,6 +1670,7 @@ function init() {
     const b = e.target.closest("button"); if (!b || !T) return;
     const tr = live().find(p => p.k === view.tab);
     if (b.dataset.rtab != null) { view.rt[b.dataset.rtab] = !view.rt[b.dataset.rtab]; try { localStorage.setItem("entrenamiento:restabs", JSON.stringify(view.rt)); } catch {} render(); return; }
+    if (b.dataset.cprow != null) { copyRow(b.closest("tr")); return; }
     if (b.dataset.planbtn != null) { view.showPlan = !view.showPlan; try { localStorage.setItem("entrenamiento:showplan", view.showPlan ? "1" : "0"); } catch {} render(); }
     else if (b.dataset.plact != null && tr) planAction(tr, b.dataset.plact);
     else if (!tr) return;
@@ -1663,6 +1687,11 @@ function init() {
       else if (f === "k") r.k[Number(i)] = t.value === "" ? NaN : Number(t.value);
       else r[f] = t.value === "" ? NaN : Number(t.value);
       return;
+    }
+    if (t.dataset.pp != null) {   // Posición Preferida: decide qué columnas de Sumas se ven
+      const tr = live().find(p => p.k === t.dataset.pp); if (!tr) return;
+      if (t.value === "Ninguna") delete tr.pp; else tr.pp = t.value;
+      touch(tr); setTimeout(render, 0); return;
     }
     if (t.dataset.sv != null) {   // Venta (posible precio de venta, M$), por fecha
       const tr = live().find(p => p.k === view.tab); if (!tr) return;
