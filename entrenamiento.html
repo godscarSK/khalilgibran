@@ -365,6 +365,16 @@ details.tm > summary { cursor: pointer; font-weight: 700; }
 .ent td.fc.now, .ent tbody tr:nth-child(even) td.fc.now, .ent tbody tr:hover td.fc.now { background: #ffe066; color: #3a2d00; }
 :root[data-theme="dark"] .ent td.fc.now, :root[data-theme="dark"] .ent tbody tr:nth-child(even) td.fc.now { background: #7a5f00; color: #fff3c4; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .ent td.fc.now, :root:not([data-theme="light"]) .ent tbody tr:nth-child(even) td.fc.now { background: #7a5f00; color: #fff3c4; } }
+/* Tablas de jugador compactas: la letra se ajusta al ancho de la pantalla para no tener que desplazarse */
+.ent.dense table { font-size: min(.9rem, max(.58rem, calc((100vw - 56px) / 106))); }
+.ent.dense th { padding: 3px .3em; font-size: .9em; }
+.ent.dense thead tr.grp th { font-size: .75em; letter-spacing: .02em; }
+.ent.dense td { padding: 2px .28em; }
+.ent.dense select.trn { min-width: 5.4em; padding: 1px .45em; font-size: .95em; }
+.ent.dense select.trn[data-t=""] { min-width: 3.4em; }
+.ent.dense input.ed { width: 2.7em; padding: 1px 2px; }
+.ent.dense input.ed.d { width: 8.4em; }
+.ent.dense td .chg { font-size: .8em; }
 </style>
 </head>
 <body>
@@ -990,6 +1000,7 @@ let T = null;   // { speed, players: [{ k, lay, plan, pid?, rows: [...] }] }
 const ymd = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const weekKeyOf = t => { const d = new Date(t), back = (d.getDay() - 4 + 7) % 7; return ymd(new Date(d.getFullYear(), d.getMonth(), d.getDate() - back)); };   // la semana va de jueves a miércoles
 const dmy = s => String(s).split("-").reverse().join("-");
+const dmys = s => { const [y, mo, d] = String(s).split("-"); return `${d}-${mo}-${y.slice(2)}`; };   // 19-11-26
 const nf2 = new Intl.NumberFormat("es-CL", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const norm = s => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 const SPEED = 8;   // velocidad de entreno: fija
@@ -1179,7 +1190,7 @@ function planHtml(tr) {
   const body = eff.map((w, k) => {
     if (++s > 13) { s = 1; t++; }
     const p = pj.weeks[k], prev = k ? pj.weeks[k - 1] : null;
-    const cells = [`<td class="fc${k ? "" : " now"}"${k ? "" : ' title="Entreno Actual"'}>${esc(dmy(w.d))}</td>`, `<td>${t}</td>`, `<td>${s}</td>`,
+    const cells = [`<td class="fc${k ? "" : " now"}" title="${esc(dmy(w.d))}${k ? "" : " · Entreno Actual"}">${esc(dmys(w.d))}</td>`, `<td>${t}</td>`, `<td>${s}</td>`,
       `<td class="sep">${planSel(w, k, `data-pf="${k}" aria-label="Entrenamiento ${esc(dmy(w.d))}"`)}</td>`];
     SK_COLS.forEach((sk, i) => cells.push(`<td class="sum nk-${sk.id}${i === 0 ? " sep" : ""}${p.rise[i] ? " rise" : ""}">${p.lvl[i]}${p.rise[i] ? ' <span class="chg up" title="Se estima que sube esta semana">▲</span>' : ""}</td><td class="gt">${p.gt[i]}</td>`));
     p.cum.forEach((v, i) => cells.push(`<td class="gt${i === 0 ? " sep" : ""}">${v}</td>`));
@@ -1197,7 +1208,7 @@ function planHtml(tr) {
       <button class="btn" type="button" data-plact="pattern" title="Por ejemplo: RAP 3, TEC 2 se repite hasta completar las 13 semanas">Patrón…</button>
       <button class="btn" type="button" data-plact="copy" title="Copia esta planificación a otros jugadores">Copiar a otros jugadores…</button>
       <button class="btn" type="button" data-plact="clear" title="Deja las semanas 2 a 13 sin definir">Limpiar</button></div>
-    <div class="tablewrap ent planwrap"><table id="planTbl"><thead class="two"><tr class="grp">${groups}</tr><tr class="cols">${th}</tr></thead><tbody>${body}</tbody></table></div>
+    <div class="tablewrap ent dense planwrap"><table id="planTbl"><thead class="two"><tr class="grp">${groups}</tr><tr class="cols">${th}</tr></thead><tbody>${body}</tbody></table></div>
     <details class="tm"${pj.ti.some(x => x.manual != null || x.use === null) ? " open" : ""}><summary>Talento por skill para la proyección</summary>
       <p class="hint">La proyección usa el último Talento por skill calculado (el más actual, en las mismas unidades de la columna «Talento por skill»: semanas de entreno por nivel). Si una skill aún no tiene uno, puedes ingresarlo a mano. Cuando ya hay un talento calculado, el valor manual no se usa y aparece con «!». Si el último calculado tiene más de 13 semanas, se da prioridad al manual (si lo hay).</p>
       <div class="tmgrid">${tal}</div></details></section>`;
@@ -1224,7 +1235,7 @@ function renderPlayer(tr) {
   const ni = (n, f, v, mn, mx, i) => `<input class="ed" type="number" inputmode="numeric" step="1" min="${mn}" max="${mx}" data-ed="${n}|${f}${i != null ? "|" + i : ""}" value="${esc(v)}" aria-label="${esc(f)} fila ${n + 1}">`;
   const groups = PL_GROUPS().map(([n, c, s]) => `<th colspan="${c}" class="${s}">${n}</th>`).join("");
   const cols = ["Fecha", "TEMP", "SEM", "EDAD", "ENT. F", "Entrenamiento", ...SK_COLS.flatMap(s => [s.lab, "gt"]),
-    ...COMPOS.map(s => s[0]), "RAP", "TEC", "PAS", "DEF", "CRE", "ATT", ...SK_COLS.slice(1).map(s => s.full)];
+    ...COMPOS.map(s => s[0]), "RAP", "TEC", "PAS", "DEF", "CRE", "ATT", "RAP", "TEC", "PAS", "DEF", "CRE", "ATT"];
   const tips = { ...COMPOS_TIP, "ENT. F": "Si está marcada, la skill entrenada suma 2 en lugar de la Velocidad de entreno", gt: "Puntos de entrenamiento acumulados desde la última subida de la skill: suma la Velocidad de entreno si se entrenó, 2 con ENT. F, 1 si no se entrenó y 0 en LESIÓN. Vuelve a 0 cuando la skill sube" };
   const sepAt = new Set([4, 6, 20, 25, 31]);
   const th = cols.map((c, i) => `<th class="${i === 0 ? "fc " : ""}${sepAt.has(i) ? "sep" : ""}" title="${esc(tips[c] || "")}">${esc(c)}</th>`).join("");
@@ -1234,7 +1245,7 @@ function renderPlayer(tr) {
     const cells = ed ? [`<td class="fc"><input class="ed d" type="date" data-ed="${n}|d" value="${esc(r.d)}" aria-label="Fecha fila ${n + 1}"></td>`, `<td>${ni(n, "t", r.t, 1, 99)}</td>`, `<td>${ni(n, "s", r.s, 1, 13)}</td>`, `<td>${ni(n, "a", r.a, 0, 60)}</td>`,
       `<td class="sep"><input type="checkbox" data-ed="${n}|e" aria-label="ENT. F fila ${n + 1}"${r.e ? " checked" : ""}></td>`,
       `<td>${trnSelect(r.f, `data-ed="${n}|f" aria-label="Entrenamiento fila ${n + 1}"`)}</td>`]
-    : [`<td class="fc">${esc(dmy(r.d))}</td>`, `<td>${r.t}</td>`, `<td>${r.s}</td>`, `<td>${r.a}</td>`,
+    : [`<td class="fc" title="${esc(dmy(r.d))}">${esc(dmys(r.d))}</td>`, `<td>${r.t}</td>`, `<td>${r.s}</td>`, `<td>${r.a}</td>`,
       `<td class="sep"><input type="checkbox" data-ef="${n}" aria-label="ENT. F ${esc(dmy(r.d))}"${r.e ? " checked" : ""}></td>`,
       `<td>${trnSelect(r.f, `data-rf="${n}" aria-label="Entrenamiento ${esc(dmy(r.d))}"`)}</td>`];
     SK_COLS.forEach((s, i) => {
@@ -1258,7 +1269,7 @@ function renderPlayer(tr) {
       <button class="btn rm" type="button" data-rm="${esc(tr.k)}" title="Quitar a este jugador del seguimiento (por ejemplo, si lo vendiste)">Quitar jugador</button></div>
     ${ed ? `<p class="hint edhint">Modo Edición: cambia las celdas que quieras y pulsa «Guardar cambios». Fecha, temporada, semana, edad, ENT. F, entrenamiento, skills y gt se pueden editar; las sumas, el Talento por skill y el Acumulado se recalculan solos al guardar. Si dejas un gt como estaba, se sigue calculando solo.</p>` : ""}
     ${view.showPlan ? planHtml(tr) : ""}
-    <div class="tablewrap ent"><table id="tbl"><thead class="two"><tr class="grp">${groups}</tr><tr class="cols">${th}</tr></thead><tbody>${rowsHtml.join("")}</tbody></table></div>`;
+    <div class="tablewrap ent dense"><table id="tbl"><thead class="two"><tr class="grp">${groups}</tr><tr class="cols">${th}</tr></thead><tbody>${rowsHtml.join("")}</tbody></table></div>`;
 }
 
 function render() {
