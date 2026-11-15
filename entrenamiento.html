@@ -442,6 +442,16 @@ section.tal .tablewrap { display: inline-block; max-width: 100%; }
 .tal td .real { position: absolute; top: 2px; right: 3px; margin: 0; vertical-align: baseline; background: #ec4899; border-color: #ec4899; color: #fff; font-weight: 800; }
 .tal td { padding-left: 24px; padding-right: 24px; }
 .tal td .real { top: 1px; right: 2px; }
+/* Acumulado: no se ve, pero sigue en la tabla para que «Copiar» lo incluya a la derecha */
+.ent .cumc { display: none; }
+/* Venta: columna fija a la izquierda de Fecha */
+.planwrap th.vc, .planwrap td.vc { position: sticky; left: 0; z-index: 2; min-width: 6.2em; width: 6.2em; max-width: 6.2em; box-sizing: border-box; white-space: nowrap; text-align: center; background: var(--panel); }
+.planwrap th.vc { z-index: 4; background: var(--hh, var(--panel)); }
+.planwrap tbody tr:nth-child(even) td.vc { background: var(--zebra); }
+.planwrap th.fc, .planwrap td.fc { left: 6.2em; }
+.ent.dense input.ed.sv { width: 3.9em; text-align: right; padding: 1px 3px; }
+.planwrap .mus { margin-left: 2px; font-size: .8em; font-weight: 700; color: var(--muted); }
+.ent.dense.planwrap table { font-size: min(.9rem, max(.58rem, calc((100vw - 56px) / 96))); }
 </style>
 </head>
 <body>
@@ -924,7 +934,7 @@ async function estCall(params) {
   if (!j.ok) throw new Error(j.error || "error");
   return j;
 }
-const recOf = p => ({ k: p.k, lay: p.lay, plan: p.plan || "", pid: p.pid == null ? null : p.pid, rows: p.rows, ...(p.arch ? { arch: 1 } : {}), ...(p.pl && Object.keys(p.pl).length ? { pl: p.pl } : {}), ...(p.tm && Object.keys(p.tm).length ? { tm: p.tm } : {}) });
+const recOf = p => ({ k: p.k, lay: p.lay, plan: p.plan || "", pid: p.pid == null ? null : p.pid, rows: p.rows, ...(p.arch ? { arch: 1 } : {}), ...(p.pl && Object.keys(p.pl).length ? { pl: p.pl } : {}), ...(p.tm && Object.keys(p.tm).length ? { tm: p.tm } : {}), ...(p.sv && Object.keys(p.sv).length ? { sv: p.sv } : {}) });
 async function pushDirty() {
   if (!CONFIG.estUrl || !sync.key || sync.busy || !T || !T.dirty.length) return;
   sync.busy = true; setSyncState("pending");
@@ -973,6 +983,7 @@ async function pullT() {
         if (rec.arch) np.arch = true;
         if (rec.tm) np.tm = rec.tm;
         if (rec.pl) np.pl = rec.pl;
+        if (rec.sv) np.sv = rec.sv;
         if (loc) T.players[T.players.indexOf(loc)] = np; else { T.players.push(np); delete T.gone[id]; }
         dirtyDel(id); changed = true;
       } else if (loc.t > t) dirtyAdd(id);
@@ -1132,6 +1143,7 @@ function autoAppend() {
     const nx = tr.pl && tr.pl[addDays(wk, 7)];
     if (nx) tr.plan = nx.f;
     if (tr.pl) for (const d of Object.keys(tr.pl)) if (d <= addDays(wk, 7)) delete tr.pl[d];
+    if (tr.sv) for (const d of Object.keys(tr.sv)) if (d < addDays(wk, 7)) delete tr.sv[d];
     res.added.push(tr.k); changed = true; touch(tr, true);
   }
   if (changed) { saveT(); schedulePush(); }
@@ -1139,7 +1151,7 @@ function autoAppend() {
 }
 
 /* ─────────────── Vistas ─────────────── */
-const view = { tab: "Resumen", sort: null, ed: null, rt: (() => { try { return { r1: true, r2: true, r3: true, ...JSON.parse(localStorage.getItem("entrenamiento:restabs") || "{}") }; } catch { return { r1: true, r2: true, r3: true }; } })(), hideCum: (() => { try { return localStorage.getItem("entrenamiento:hidecum") === "1"; } catch { return false; } })(), showPlan: (() => { try { return localStorage.getItem("entrenamiento:showplan") !== "0"; } catch { return true; } })() };   // ed: borrador del Modo Edición
+const view = { tab: "Resumen", sort: null, ed: null, rt: (() => { try { return { r1: true, r2: true, r3: true, ...JSON.parse(localStorage.getItem("entrenamiento:restabs") || "{}") }; } catch { return { r1: true, r2: true, r3: true }; } })(), showPlan: (() => { try { return localStorage.getItem("entrenamiento:showplan") !== "0"; } catch { return true; } })() };   // ed: borrador del Modo Edición
 const addDays = (iso, n) => { const [y, mo, d] = iso.split("-").map(Number); return ymd(new Date(y, mo - 1, d + n)); };
 const PLAN_WEEKS = 13;
 const sn = t => (t % 2 ? "sn-o" : "sn-e");   // color por temporada (impar / par)   // sort: { i, dir }
@@ -1218,7 +1230,7 @@ function renderResumen() {
     ${view.rt.r1 || view.rt.r2 || view.rt.r3 ? "" : '<p class="hint">Activa al menos una tabla con los botones de arriba.</p>'}`;
 }
 
-const PL_GROUPS = () => [["Semana", 4, ""], ["Entrenamiento", 2, "sep"], ["Skills y avance (gt)", 14, "sep"], ["Sumas", 5, "sep"], ["Talento por skill", 6, "sep"], ["Acumulado", 6, "sep"]];
+const PL_GROUPS = () => [["Semana", 4, ""], ["Entrenamiento", 2, "sep"], ["Skills y avance (gt)", 14, "sep"], ["Sumas", 5, "sep"], ["Talento por skill", 6, "sep"]];
 // Planificación: las próximas 13 semanas. La primera es el Entreno Actual (tr.plan); las demás se guardan en tr.pl (fecha → { f }).
 // Una semana «sin definir» sigue con el entrenamiento de la anterior.
 function planEff(tr) {
@@ -1264,7 +1276,8 @@ function projectPlayer(tr, eff) {
     const rise = [false, false, false, false, false, false, false];
     for (let i = 0; i < 7; i++) {
       gt[i] += w.f === TRN[i] ? SPEED : (w.f === "LESIÓN" ? 0 : 1);
-      if (i > 0 && ti[i - 1].N != null && gt[i] >= ti[i - 1].N) { lvl[i]++; gt[i] = 0; rise[i] = true; }
+      const need = i === 0 ? 8 : ti[i - 1].N;   // Condición: se asume que sube cuando su gt llega a 8
+      if (need != null && gt[i] >= need) { lvl[i]++; gt[i] = 0; rise[i] = true; }
       if (i > 0) cum[i - 1] += w.f === TRN[i] ? SPEED : (w.f === "LESIÓN" ? 0 : 1);
     }
     return { lvl: lvl.slice(), gt: gt.slice(), cum: cum.slice(), rise };
@@ -1274,18 +1287,19 @@ function projectPlayer(tr, eff) {
 const fmtTal = v => v == null ? "" : nf2.format(v);
 function planHtml(tr) {
   const last = tr.rows[tr.rows.length - 1], eff = planEff(tr), pj = projectPlayer(tr, eff);
-  const groups = [["Semana", 4, ""], ["Entrenamiento", 1, "sep"], ["Skills y avance (gt)", 14, "sep"], ...(view.hideCum ? [] : [["Acumulado", 6, "sep"]])].map(([n, c, s]) => `<th colspan="${c}" class="${s}">${n}</th>`).join("");
-  const cols = ["Fecha", "TEMP", "SEM", "EDAD", "Entrenamiento", ...SK_COLS.flatMap(s => [s.lab, "gt"]), ...(view.hideCum ? [] : ["RAP", "TEC", "PAS", "DEF", "CRE", "ATT"])], sepAt = new Set([4, 5, 19]);
-  const skh = i => i >= 5 && i <= 18 ? ((i - 5) % 2 ? " gtk" + (i === 18 ? " last" : "") : " nk-" + SK_COLS[(i - 5) / 2].id) : "";
-  const th = cols.map((c, i) => `<th class="${i === 0 ? "fc " : ""}${sepAt.has(i) ? "sep" : ""}${skh(i)}">${esc(c)}</th>`).join("");
+  const groups = [["Venta", 1, "vc"], ["Semana", 4, "sep"], ["Entrenamiento", 1, "sep"], ["Skills y avance (gt)", 14, "sep"], ["Sumas", 5, "sep"]].map(([n, c, s]) => `<th colspan="${c}" class="${s}">${n}</th>`).join("");
+  const cols = ["Venta", "Fecha", "TEMP", "SEM", "EDAD", "Entrenamiento", ...SK_COLS.flatMap(s => [s.lab, "gt"]), ...COMPOS.map(s => s[0])], sepAt = new Set([1, 5, 6, 20]);
+  const skh = i => i >= 6 && i <= 19 ? ((i - 6) % 2 ? " gtk" + (i === 19 ? " last" : "") : " nk-" + SK_COLS[(i - 6) / 2].id) : "";
+  const th = cols.map((c, i) => `<th class="${i === 0 ? "vc " : i === 1 ? "fc " : ""}${sepAt.has(i) ? "sep" : ""}${skh(i)}" title="${esc(c === "Venta" ? "Posible precio de venta, en M$ (texto libre)" : COMPOS_TIP[c] || "")}">${esc(c)}</th>`).join("");
+  const sv = tr.sv || {};
   let s = last.s, t = last.t, age = last.a;
   const body = eff.map((w, k) => {
     if (++s > 13) { s = 1; t++; age++; }
     const p = pj.weeks[k], prev = k ? pj.weeks[k - 1] : null;
-    const cells = [`<td class="fc${k ? "" : " now"}" title="${esc(dmy(w.d))}${k ? "" : " · Entreno Actual"}">${esc(dmys(w.d))}</td>`, `<td class="${sn(t)}">${t}</td>`, `<td class="${sn(t)}">${s}</td>`, `<td class="${sn(t)}">${age}</td>`,
+    const cells = [`<td class="vc"><input class="ed sv" type="text" maxlength="14" autocomplete="off" data-sv="${esc(w.d)}" value="${esc(sv[w.d] || "")}" aria-label="Venta ${esc(dmy(w.d))}"><span class="mus">M$</span></td>`, `<td class="fc sep${k ? "" : " now"}" title="${esc(dmy(w.d))}${k ? "" : " · Entreno Actual"}">${esc(dmys(w.d))}</td>`, `<td class="${sn(t)}">${t}</td>`, `<td class="${sn(t)}">${s}</td>`, `<td class="${sn(t)}">${age}</td>`,
       `<td class="sep">${planSel(w, k, `data-pf="${k}" aria-label="Entrenamiento ${esc(dmy(w.d))}"`)}</td>`];
     SK_COLS.forEach((sk, i) => cells.push(`<td class="sum nk-${sk.id}${i === 0 ? " sep" : ""}${p.rise[i] ? " rise" : ""}">${p.lvl[i]}${p.rise[i] ? ' <span class="chg up" title="Se estima que sube esta semana">▲</span>' : ""}</td><td class="gt gtk${i === 6 ? " last" : ""}">${p.gt[i]}</td>`));
-    if (!view.hideCum) p.cum.forEach((v, i) => cells.push(`<td class="gt${i === 0 ? " sep" : ""}">${v}</td>`));
+    COMPOS.forEach(([, idx], j) => cells.push(`<td class="sum${j === 0 ? " sep" : ""}">${idx.reduce((x, i) => x + p.lvl[i], 0)}</td>`));
     return `<tr>${cells.join("")}</tr>`;
   }).reverse().join("");   // la semana actual (Entreno Actual) queda abajo, justo encima del historial
   const tal = pj.ti.map(x => {
@@ -1295,12 +1309,12 @@ function planHtml(tr) {
     return `<label class="tmi nk-${sk.id}"><span>${sk.lab}</span><input class="ed tm" type="number" step="0.01" min="0" max="99" inputmode="decimal" data-tm="${x.i}" value="${x.manual != null ? esc(x.manual) : ""}" placeholder="—" aria-label="Talento manual ${esc(sk.lab)}">${mark}<small>${esc(st)}</small></label>`;
   }).join("");
   return `<section class="plan" aria-label="Planificación"><h3>Planificación · próximas ${PLAN_WEEKS} semanas</h3>
-    <p class="hint">Elige qué entrenará cada semana. Cada jueves, la semana que llega toma lo planificado y la siguiente pasa a ser el Entreno Actual. Una semana con «↳» sigue con el entrenamiento de la anterior. La fecha destacada es la del Entreno Actual (abajo) y las semanas futuras van hacia arriba. A la derecha se proyectan los niveles y los puntos (gt) según el plan: ▲ marca la semana en que se estima que la skill subiría.</p>
+    <p class="hint">Elige qué entrenará cada semana. Cada jueves, la semana que llega toma lo planificado y la siguiente pasa a ser el Entreno Actual. Una semana con «↳» sigue con el entrenamiento de la anterior. La fecha destacada es la del Entreno Actual (abajo) y las semanas futuras van hacia arriba. A la derecha se proyectan los niveles y los puntos (gt) según el plan: ▲ marca la semana en que se estima que la skill subiría (Condición se asume que sube cuando su gt llega a 8) y Sumas muestra las cinco sumas de skills proyectadas. En «Venta» puedes anotar un posible precio de venta (M$) para cada semana.</p>
     <div class="planbtns"><button class="btn" type="button" data-plact="repeat" title="Copia el Entreno Actual a las 13 semanas">Repetir semana 1</button>
       <button class="btn" type="button" data-plact="pattern" title="Por ejemplo: RAP 3, TEC 2 se repite hasta completar las 13 semanas">Patrón…</button>
       <button class="btn" type="button" data-plact="copy" title="Copia esta planificación a otros jugadores">Copiar a otros jugadores…</button>
       <button class="btn" type="button" data-plact="clear" title="Deja las semanas 2 a 13 sin definir">Limpiar</button></div>
-    <div class="tablewrap ent dense planwrap${view.hideCum ? " nocum" : ""}"><table id="planTbl"><thead class="two"><tr class="grp">${groups}</tr><tr class="cols">${th}</tr></thead><tbody>${body}</tbody></table></div>
+    <div class="tablewrap ent dense planwrap"><table id="planTbl"><thead class="two"><tr class="grp">${groups}</tr><tr class="cols">${th}</tr></thead><tbody>${body}</tbody></table></div>
     <details class="tm"${pj.ti.some(x => x.manual != null || x.use === null) ? " open" : ""}><summary>Talento por skill para la proyección</summary>
       <p class="hint">La proyección usa el último Talento por skill calculado (el más actual, en las mismas unidades de la columna «Talento por skill»: semanas de entreno por nivel). Si una skill aún no tiene uno, puedes ingresarlo a mano. Cuando ya hay un talento calculado, el valor manual no se usa y aparece con «!». Si el último calculado tiene más de 13 semanas, se da prioridad al manual (si lo hay).</p>
       <div class="tmgrid">${tal}</div></details></section>`;
@@ -1330,7 +1344,7 @@ function teamPlanHtml() {
   const dates = effs[0].map((w, k) => ps.reduce((mx, p) => { const l = addDays(p.rows[p.rows.length - 1].d, 7 * (k + 1)); return l > mx ? l : mx; }, w.d));
   const ths = dates.map((d, k) => `<th class="${k ? "" : "now"}" title="${esc(dmy(d))}">${k ? esc(dmys(d).slice(0, 5)) : "Actual"}</th>`).join("");
   const body = ps.map((p, r) => `<tr><th class="l"><a href="#${encodeURIComponent(p.k)}" data-tab="${esc(p.k)}">${esc(p.k)}</a></th>${effs[r].map((w, k) => `<td>${planSel(w, k, `data-tp="${esc(p.id)}|${k}" aria-label="${esc(p.k)} semana ${k + 1}" title="${esc(dmy(w.d))}"`, true)}</td>`).join("")}</tr>`).join("");
-  const codes = [["RAP", "Rapidez"], ["TEC", "Técnica"], ["PAS", "Pases"], ["DEF", "Defensa"], ["CRE", "Creación"], ["ATT", "Anotación"], ["CON", "Condición"], ["—", ""]];
+  const codes = [["RAP", "Rapidez"], ["TEC", "Técnica"], ["PAS", "Pases"], ["DEF", "Defensa"], ["CRE", "Creación"], ["ATT", "Anotación"], ["—", ""]];
   const CNT_ID = { RAP: "rap", TEC: "tec", PAS: "pas", DEF: "def", CRE: "cre", ATT: "ata", CON: "con" };
   const cnt = codes.map(([c, f]) => `<tr class="cnt${CNT_ID[c] ? " nk-" + CNT_ID[c] : ""}"><th class="l">${c}</th>${dates.map((_, k) => { const n = effs.filter(e => e[k].f === f).length; return `<td class="${n ? "" : "z"}">${n || ""}</td>`; }).join("")}</tr>`).join("");
   return `<section class="plan teamplan rtab r2" aria-label="Planificación del equipo"><h3>TABLA DE PLANIFICACIÓN <small>próximas ${PLAN_WEEKS} semanas</small></h3>
@@ -1344,13 +1358,13 @@ function renderPlayer(tr) {
   const lastIdx = rowsSrc.length - 1, last = tr.rows[tr.rows.length - 1];
   const mm = SK_COLS.map((_, i) => { const v = rowsSrc.map(r => r.k[i]); return [Math.min(...v), Math.max(...v)]; });
   const ni = (n, f, v, mn, mx, i) => `<input class="ed" type="number" inputmode="numeric" step="1" min="${mn}" max="${mx}" data-ed="${n}|${f}${i != null ? "|" + i : ""}" value="${esc(v)}" aria-label="${esc(f)} fila ${n + 1}">`;
-  const groups = PL_GROUPS().slice(0, view.hideCum ? -1 : 6).map(([n, c, s]) => `<th colspan="${c}" class="${s}">${n}</th>`).join("");
+  const groups = PL_GROUPS().map(([n, c, s]) => `<th colspan="${c}" class="${s}">${n}</th>`).join("");
   const cols = ["Fecha", "TEMP", "SEM", "EDAD", "ENT. F", "Entrenamiento", ...SK_COLS.flatMap(s => [s.lab, "gt"]),
-    ...COMPOS.map(s => s[0]), "RAP", "TEC", "PAS", "DEF", "CRE", "ATT", ...(view.hideCum ? [] : ["RAP", "TEC", "PAS", "DEF", "CRE", "ATT"])];
+    ...COMPOS.map(s => s[0]), "RAP", "TEC", "PAS", "DEF", "CRE", "ATT", "RAP", "TEC", "PAS", "DEF", "CRE", "ATT"];   // las últimas 6 (Acumulado) no se ven: solo se incluyen al copiar
   const tips = { ...COMPOS_TIP, "ENT. F": "Si está marcada, la skill entrenada suma 2 en lugar de la Velocidad de entreno", gt: "Puntos de entrenamiento acumulados desde la última subida de la skill: suma la Velocidad de entreno si se entrenó, 2 con ENT. F, 1 si no se entrenó y 0 en LESIÓN. Vuelve a 0 cuando la skill sube" };
   const sepAt = new Set([4, 6, 20, 25, 31]);
   const skh = i => i >= 6 && i <= 19 ? ((i - 6) % 2 ? " gtk" + (i === 19 ? " last" : "") : " nk-" + SK_COLS[(i - 6) / 2].id) : "";
-  const th = cols.map((c, i) => `<th class="${i === 0 ? "fc " : ""}${sepAt.has(i) ? "sep" : ""}${skh(i)}" title="${esc(tips[c] || "")}">${esc(c)}</th>`).join("");
+  const th = cols.map((c, i) => `<th class="${i === 0 ? "fc " : ""}${i >= 31 ? "cumc " : ""}${sepAt.has(i) ? "sep" : ""}${skh(i)}" title="${esc(tips[c] || "")}">${esc(c)}</th>`).join("");
   const rowsHtml = [];
   for (let n = lastIdx; n >= 0; n--) {
     const r = rowsSrc[n], c = o[n];
@@ -1366,23 +1380,22 @@ function renderPlayer(tr) {
     });
     COMPOS.forEach(([, idx], j) => cells.push(`<td class="sum${j === 0 ? " sep" : ""}">${idx.reduce((x, i) => x + r.k[i], 0)}</td>`));
     c.tw.forEach((t, i) => cells.push(`<td class="${i === 0 ? "sep" : ""}${t ? " tal sk-" + SK_COLS[i + 1].id : ""}"${t ? ` title="Niveles ${t.from} → ${t.to} (${t.m} ${t.m === 1 ? "cambio" : "cambios"})"` : ""}>${t ? nf2.format(t.v) : ""}</td>`));
-    if (!view.hideCum) c.cum.forEach((v, i) => cells.push(`<td class="gt${i === 0 ? " sep" : ""}">${v}</td>`));
+    c.cum.forEach((v, i) => cells.push(`<td class="gt cumc${i === 0 ? " sep" : ""}">${v}</td>`));   // Acumulado: oculto, solo se copia
     rowsHtml.push(`<tr${n === lastIdx ? ' class="newest"' : ""}>${cells.join("")}</tr>`);
   }
   const edBtns = ed
     ? `<button class="btn primary" type="button" data-edsave>Guardar cambios</button><button class="btn" type="button" data-edcancel>Cancelar</button><span class="lbl" id="edMsg" role="status"></span>`
     : `<button class="btn" type="button" data-edon title="Cambiar a mano cualquier celda de la tabla (con botón para guardar)">Modo Edición</button>`;
-  const cumBtn = `<button class="btn" type="button" data-cumbtn aria-pressed="${!view.hideCum}" title="Muestra u oculta la sección Acumulado en la tabla de entrenamiento y en la de planificación">${view.hideCum ? "Mostrar" : "Ocultar"} Acumulado</button>`;
   const planBtn = `<button class="btn" type="button" data-planbtn aria-pressed="${view.showPlan}">${view.showPlan ? "Ocultar" : "Mostrar"} planificación</button>`;
   return `<div class="view-title"><h2>${esc(tr.k)}</h2><span class="lbl">Entreno Alineaciones ${alChip(tr)}</span>
       <label class="lbl">Entreno actual ${trnSelect(tr.plan, `data-plan="${esc(tr.k)}" aria-label="Entreno actual de ${esc(tr.k)}"`)}</label>
       <span class="lbl">${tr.rows.length} semanas · última: ${esc(dmy(last.d))} · ${last.a} años</span>
       <span class="lbl"><i class="cl"></i> Subida Limpia</span>
-      ${planBtn}${cumBtn}${edBtns}
+      ${planBtn}${edBtns}
       <button class="btn rm" type="button" data-rm="${esc(tr.k)}" title="Quitar a este jugador del seguimiento (por ejemplo, si lo vendiste)">Quitar jugador</button></div>
-    ${ed ? `<p class="hint edhint">Modo Edición: cambia las celdas que quieras y pulsa «Guardar cambios». Fecha, temporada, semana, edad, ENT. F, entrenamiento, skills y gt se pueden editar; las sumas, el Talento por skill y el Acumulado se recalculan solos al guardar. Si dejas un gt como estaba, se sigue calculando solo.</p>` : ""}
+    ${ed ? `<p class="hint edhint">Modo Edición: cambia las celdas que quieras y pulsa «Guardar cambios». Fecha, temporada, semana, edad, ENT. F, entrenamiento, skills y gt se pueden editar; las sumas, el Talento por skill y el Acumulado (que solo aparece al copiar) se recalculan solos al guardar. Si dejas un gt como estaba, se sigue calculando solo.</p>` : ""}
     ${view.showPlan ? planHtml(tr) : ""}
-    <div class="tablewrap ent dense${view.hideCum ? " nocum" : ""}"><table id="tbl"><thead class="two"><tr class="grp">${groups}</tr><tr class="cols">${th}</tr></thead><tbody>${rowsHtml.join("")}</tbody></table></div>`;
+    <div class="tablewrap ent dense nocum"><table id="tbl"><thead class="two"><tr class="grp">${groups}</tr><tr class="cols">${th}</tr></thead><tbody>${rowsHtml.join("")}</tbody></table></div>`;
 }
 
 function render() {
@@ -1634,8 +1647,7 @@ function init() {
     const b = e.target.closest("button"); if (!b || !T) return;
     const tr = live().find(p => p.k === view.tab);
     if (b.dataset.rtab != null) { view.rt[b.dataset.rtab] = !view.rt[b.dataset.rtab]; try { localStorage.setItem("entrenamiento:restabs", JSON.stringify(view.rt)); } catch {} render(); return; }
-    if (b.dataset.cumbtn != null) { view.hideCum = !view.hideCum; try { localStorage.setItem("entrenamiento:hidecum", view.hideCum ? "1" : "0"); } catch {} render(); }
-    else if (b.dataset.planbtn != null) { view.showPlan = !view.showPlan; try { localStorage.setItem("entrenamiento:showplan", view.showPlan ? "1" : "0"); } catch {} render(); }
+    if (b.dataset.planbtn != null) { view.showPlan = !view.showPlan; try { localStorage.setItem("entrenamiento:showplan", view.showPlan ? "1" : "0"); } catch {} render(); }
     else if (b.dataset.plact != null && tr) planAction(tr, b.dataset.plact);
     else if (!tr) return;
     else if (b.dataset.edon != null) { view.ed = { id: tr.id, rows: JSON.parse(JSON.stringify(tr.rows)), gtIn: {} }; render(); }
@@ -1651,6 +1663,12 @@ function init() {
       else if (f === "k") r.k[Number(i)] = t.value === "" ? NaN : Number(t.value);
       else r[f] = t.value === "" ? NaN : Number(t.value);
       return;
+    }
+    if (t.dataset.sv != null) {   // Venta (posible precio de venta, M$), por fecha
+      const tr = live().find(p => p.k === view.tab); if (!tr) return;
+      const v = t.value.trim().slice(0, 14); tr.sv = tr.sv || {};
+      if (v) tr.sv[t.dataset.sv] = v; else delete tr.sv[t.dataset.sv];
+      touch(tr); return;   // sin volver a dibujar, para no perder el cursor al pasar de un campo a otro
     }
     if (t.dataset.tm != null) {   // talento ingresado a mano
       const tr = live().find(p => p.k === view.tab); if (!tr) return;

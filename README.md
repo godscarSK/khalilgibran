@@ -194,7 +194,9 @@ Qué tener en cuenta:
 
 **Planificación del equipo:** en la pestaña Resumen, una tabla con lo que entrenará cada jugador en las próximas 13 semanas (editable ahí mismo) y, abajo, cuántos jugadores entrenan cada skill en cada semana, para repartir la carga.
 
-**Ocultar Acumulado:** el botón «Ocultar/Mostrar Acumulado» (en la vista de cada jugador) quita la sección Acumulado de la tabla de entrenamiento y de la de planificación a la vez; al ocultarla, la letra de las tablas aumenta un poco porque hay menos columnas. Tu elección se recuerda en este navegador.
+**Acumulado:** la sección ya no se muestra en ninguna tabla (ni existe el botón para ocultarla), pero sigue calculándose: al pulsar **Copiar** en la vista de un jugador, las columnas de Acumulado salen a la derecha del resto, como antes.
+
+**Planificación de cada jugador (Venta, Sumas y Condición):** a la izquierda de Fecha hay una columna **Venta** con un campo de texto por semana y «M$» a su derecha, para anotar un posible precio de venta; se guarda por fecha en la nube junto con el jugador y no se copia a otros jugadores. Además hay un grupo **Sumas** (DEF, DEFside, MID, ATT, ATTside) proyectado semana a semana, y **Condición** también se proyecta: se asume que sube cuando su gt llega a 8. En el Resumen, la tabla de planificación ya no tiene la fila CON.
 
 **Resumen:** bajo la tabla hay una tabla de **Talentos por skill** (RAP a ATT, cada columna con el color de su skill) con el talento que usa la proyección de cada jugador: el último calculado del historial (con la marca «real») o, si no hay uno calculado reciente, el ingresado a mano (sin marca). La **Planificación del equipo** es compacta (skills abreviadas RAP, TEC, PAS, DEF, CRE, ATT, CON, LES y GK; fechas día-mes; la primera columna es el Entreno Actual) para que quepa sin desplazarse. La Velocidad de entreno (8, fija) está en «Cómo se calcula».
 
