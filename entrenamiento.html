@@ -517,6 +517,9 @@ section.rtab.r1 td.dash { text-align: center; color: var(--muted); font-weight: 
 /* planificación del equipo: línea a la derecha de la semana 13 */
 #teamPlan th.w13, #teamPlan td.w13 { border-right: 2px solid #c9457f; }
 #teamPlan thead th { font-size: .82em; white-space: nowrap; }
+/* «R»: pegada al número, que sigue centrado */
+.tal td .tn { position: relative; display: inline-block; }
+.tal td .real { position: absolute; top: -1px; right: auto; left: 100%; margin-left: 1px; }
 </style>
 </head>
 <body>
@@ -1140,9 +1143,10 @@ const alChip = tr => {
   return `<span class="atrn" data-t="${esc(t.v)}"${st} title="${esc(t.tip)}">${t.v ? esc(t.v) : "—"}</span>${d ? ` <span class="warn" title="${esc(d)}" aria-label="${esc(d)}">!</span>` : ""}`;
 };
 const COMPOS = [["DEF", [1, 4]], ["DEFside", [2, 3, 5]], ["MID", [1, 2, 3, 5]], ["ATT", [1, 2, 6]], ["ATTside", [3, 4, 5]]];   // las cinco columnas del final de la tabla de Plantel (índices de k[])
-const PP_OPTS = ["Ninguna", "Defensor", "Medio", "Delantero"];
-const PP_COMPOS = { Defensor: [0, 1], Medio: [2], Delantero: [3, 4] };   // columnas de Sumas que se muestran según la Posición Preferida
-const ppIdx = tr => PP_COMPOS[tr.pp] || [0, 1, 2, 3, 4];
+const PP_OPTS = ["Ninguna", "Defensor", "Medio", "Atacante"];
+const ppOf = tr => tr.pp === "Delantero" ? "Atacante" : (tr.pp || "Ninguna");   // «Delantero» fue el nombre anterior de «Atacante»
+const PP_COMPOS = { Defensor: [0, 1], Medio: [2], Atacante: [3, 4] };   // columnas de Sumas que se muestran según la Posición Preferida
+const ppIdx = tr => PP_COMPOS[ppOf(tr)] || [0, 1, 2, 3, 4];
 const COMPOS_TIP = { DEF: "Rapidez + Defensa", DEFside: "Técnica + Pases + Creación", MID: "Rapidez + Técnica + Pases + Creación", ATT: "Rapidez + Técnica + Anotación", ATTside: "Pases + Defensa + Creación" };
 let T = null;   // { speed, players: [{ k, lay, plan, pid?, rows: [...] }] }
 const ymd = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -1265,12 +1269,12 @@ function resumenData() {
     const k = r.k, sum = a => a.reduce((x, i) => x + k[i], 0);
     const pk = tr.rows.length > 1 ? tr.rows[tr.rows.length - 2].k : null;
     const sale = saleOf(tr), sn = saleNum(sale), pi = ppIdx(tr);
-    return { tr, r, pk, sale, sn, hid: new Set([0, 1, 2, 3, 4].filter(j => !pi.includes(j))), cells: [sn == null ? -1 : sn, alTrn(tr).v, tr.plan, Math.max(0, PP_OPTS.indexOf(tr.pp || "Ninguna")), tr.k, r.a, k[0], k[1], k[2], k[3], k[4], k[5], k[6], sum([1, 4]), sum([2, 3, 5]), sum([1, 2, 3, 5]), sum([1, 2, 6]), sum([3, 4, 5])] };
+    return { tr, r, pk, sale, sn, hid: new Set([0, 1, 2, 3, 4].filter(j => !pi.includes(j))), cells: [sn == null ? -1 : sn, alTrn(tr).v, tr.plan, Math.max(0, PP_OPTS.indexOf(ppOf(tr))), tr.k, r.a, k[0], k[1], k[2], k[3], k[4], k[5], k[6], sum([1, 4]), sum([2, 3, 5]), sum([1, 2, 3, 5]), sum([1, 2, 6]), sum([3, 4, 5])] };
   }).filter(Boolean);
 }
 const RES_COLS = [   // [etiqueta, ayuda, clase de skill]
   ["Tasación", "Valor de venta (M$) anotado en la columna Venta de la planificación, el de la semana más cercana a la actual"],
-  ["Entreno Alineaciones", "Lo que entrena según la página Alineaciones: el entrenamiento asignado a la posición del puesto en que aparece en las alineaciones de titulares"], ["Entreno Actual", "Entrenamiento de la semana en curso. Se guarda y se usa en la próxima actualización del jueves"], ["Posición Preferida", "Ninguna, Defensor, Medio o Delantero: decide qué sumas se muestran (las demás quedan con una raya)"], ["Jugador", ""], ["Edad", ""],
+  ["Entreno Alineaciones", "Lo que entrena según la página Alineaciones: el entrenamiento asignado a la posición del puesto en que aparece en las alineaciones de titulares"], ["Entreno Actual", "Entrenamiento de la semana en curso. Se guarda y se usa en la próxima actualización del jueves"], ["Posición Preferida", "Ninguna, Defensor, Medio o Atacante: decide qué sumas se muestran (las demás quedan con una raya)"], ["Jugador", ""], ["Edad", ""],
   ["CON", "Condición", "con"], ["RAP", "Rapidez", "rap"], ["TEC", "Técnica", "tec"], ["PAS", "Pases", "pas"], ["DEF", "Defensa", "def"], ["CRE", "Creación", "cre"], ["ATT", "Anotación", "ata"],
   ["DEF", "Rapidez + Defensa"], ["DEFside", "Técnica + Pases + Creación"], ["MID", "Rapidez + Técnica + Pases + Creación"], ["ATT", "Rapidez + Técnica + Anotación"], ["ATTside", "Pases + Defensa + Creación"]
 ];
@@ -1303,7 +1307,7 @@ function renderResumen() {
   return `<div class="restoggles" role="group" aria-label="Tablas visibles">${togs}</div>
     ${view.rt.r1 ? `<section class="rtab r1" aria-label="Tabla Resumen"><div class="view-title"><h2>TABLA RESUMEN</h2></div>
     <p class="lastweek">Última semana registrada: <b>${lastWeek}</b></p>
-    <p class="lastweek">Tasación Más Actual: <b>${saleTotal}</b></p>
+    <p class="lastweek">Tasación Total: <b>${saleTotal}</b></p>
     <div class="tablewrap ent"><table id="tbl"><thead><tr class="cols">${head}</tr></thead><tbody>${body}</tbody></table></div></section>` : ""}
     ${view.rt.r2 ? teamPlanHtml() : ""}
     ${view.rt.r3 ? talentosHtml() : ""}
@@ -1366,9 +1370,10 @@ function projectPlayer(tr, eff) {
 }
 const fmtTal = v => v == null ? "" : nf2.format(v);
 const pkOf = tr => view.pkTab === tr.id ? Math.min(Math.max(view.pk | 0, 0), PLAN_WEEKS - 1) : 0;   // semana marcada (0 = Entreno Actual)
+const fullName = tr => String((matchPlayer(tr) || {}).name || tr.k).trim().toLocaleUpperCase("es");   // nombre completo del jugador, en mayúsculas
 function planHtml(tr) {
   const last = tr.rows[tr.rows.length - 1], eff = planEff(tr), pj = projectPlayer(tr, eff), pk = pkOf(tr);
-  const groups = [["Venta", 1, "vc"], ["Semana", 4, "sep"], ["Entrenamiento", 1, "sep"], ["Skills y avance (gt)", 14, "sep"], ["Sumas", ppIdx(tr).length, "sep"], ["", 1, "sep"]].map(([n, c, s]) => `<th colspan="${c}" class="${s}">${n}</th>`).join("");
+  const groups = [[fullName(tr), 5, ""], ["Entrenamiento", 1, "sep"], ["Skills y avance (gt)", 14, "sep"], ["Sumas", ppIdx(tr).length, "sep"], ["", 1, "sep"]].map(([n, c, s]) => `<th colspan="${c}" class="${s}">${n}</th>`).join("");
   const cols = ["Venta", "Fecha", "TEMP", "SEM", "EDAD", "Entrenamiento", ...SK_COLS.flatMap(s => [s.lab, "gt"]), ...ppIdx(tr).map(j => COMPOS[j][0]), ""], sepAt = new Set([1, 5, 6, 20, 20 + ppIdx(tr).length]);
   const skh = i => i >= 6 && i <= 19 ? ((i - 6) % 2 ? " gtk" + (i === 19 ? " last" : "") : " nk-" + SK_COLS[(i - 6) / 2].id) : "";
   const th = cols.map((c, i) => `<th class="${i === 0 ? "vc " : i === 1 ? "fc " : ""}${sepAt.has(i) ? "sep" : ""}${skh(i)}" title="${esc(c === "Venta" ? "Posible precio de venta, en M$ (texto libre)" : COMPOS_TIP[c] || "")}">${esc(c)}</th>`).join("");
@@ -1411,7 +1416,7 @@ function talentosHtml() {
       const id = SK_COLS[x.i].id;
       if (x.v == null) return `<td class="nk-${id} muted">—</td>`;
       const tip = x.use === "calc" ? `Calculado a partir del historial${x.ageW > 0 ? ` (hace ${x.ageW} semanas)` : ""}` + (x.manual != null ? `; el valor manual (${fmtTal(x.manual)}) no se usa` : "") : `Ingresado a mano${x.calc != null ? `; el último calculado (${fmtTal(x.calc)}) tiene ${x.ageW} semanas` : ""}`;
-      return `<td class="nk-${id}" title="${esc(tip)}">${fmtTal(x.v)}${x.use === "calc" ? ' <span class="real" title="Talento real: calculado del historial">R</span>' : ""}</td>`;
+      return `<td class="nk-${id}" title="${esc(tip)}"><span class="tn">${fmtTal(x.v)}${x.use === "calc" ? '<span class="real" title="Talento real: calculado del historial">R</span>' : ""}</span></td>`;
     }).join("")}</tr>`;
   }).join("");
   const head = [1, 2, 3, 4, 5, 6].map(i => `<th class="nk-${SK_COLS[i].id}">${SK_COLS[i].lab}</th>`).join("");
@@ -1433,7 +1438,7 @@ function teamPlanHtml() {
   const cnt = codes.map(([c, f]) => `<tr class="cnt${CNT_ID[c] ? " nk-" + CNT_ID[c] : ""}"><th class="l">${c}</th>${dates.map((_, k) => { const n = effs.filter(e => e[k].f === f).length; return `<td class="${n ? "" : "z"}${w13(k)}">${n || ""}</td>`; }).join("")}</tr>`).join("");
   return `<section class="plan teamplan rtab r2" aria-label="Planificación del equipo"><div class="view-title"><h2>PLANIFICACIÓN SEMANAL</h2></div>
     <p class="hint">Qué entrenará cada jugador semana a semana (puedes cambiarlo aquí mismo). Las filas de abajo cuentan cuántos jugadores entrenan cada skill en cada semana; «↳» sigue con el entrenamiento de la semana anterior. Cada columna es una semana de la temporada (pasa el cursor para ver su fecha); la primera es el Entreno Actual.</p>
-    <div class="tablewrap"><table id="teamPlan"><thead><tr><th class="l">Jugador</th>${ths}</tr></thead><tbody>${body}<tr class="sepr"><th class="l" colspan="${PLAN_WEEKS + 1}">Jugadores por entrenamiento</th></tr>${cnt}</tbody></table></div></section>`;
+    <div class="tablewrap"><table id="teamPlan"><thead><tr><th class="l">Jugador</th>${ths}</tr></thead><tbody>${body}<tr class="sepr"><th class="l" colspan="${PLAN_WEEKS + 1}">RESUMEN POR SKILL</th></tr>${cnt}</tbody></table></div></section>`;
 }
 function renderPlayer(tr) {
   const ed = view.ed && view.ed.id === tr.id ? view.ed : null;
@@ -1443,7 +1448,7 @@ function renderPlayer(tr) {
   const mm = SK_COLS.map((_, i) => { const v = rowsSrc.map(r => r.k[i]); return [Math.min(...v), Math.max(...v)]; });
   const ni = (n, f, v, mn, mx, i) => `<input class="ed" type="number" inputmode="numeric" step="1" min="${mn}" max="${mx}" data-ed="${n}|${f}${i != null ? "|" + i : ""}" value="${esc(v)}" aria-label="${esc(f)} fila ${n + 1}">`;
   const pi = ppIdx(tr), ns = pi.length;
-  const groups = PL_GROUPS().map(([n, c, s]) => `<th colspan="${n === "Sumas" ? ns : c}" class="${s}">${n}</th>`).join("");
+  const groups = PL_GROUPS().map(([n, c, s]) => `<th colspan="${n === "Sumas" ? ns : c}" class="${s}">${n === "Semana" ? esc(fullName(tr)) : n}</th>`).join("");
   const cols = ["Fecha", "TEMP", "SEM", "EDAD", "ENT. F", "Entrenamiento", ...SK_COLS.flatMap(s => [s.lab, "gt"]),
     ...pi.map(j => COMPOS[j][0]), "RAP", "TEC", "PAS", "DEF", "CRE", "ATT", "RAP", "TEC", "PAS", "DEF", "CRE", "ATT"];   // las últimas 6 (Acumulado) no se ven: solo se incluyen al copiar
   const tips = { ...COMPOS_TIP, "ENT. F": "Si está marcada, la skill entrenada suma 2 en lugar de la Velocidad de entreno", gt: "Puntos de entrenamiento acumulados desde la última subida de la skill: suma la Velocidad de entreno si se entrenó, 2 con ENT. F, 1 si no se entrenó y 0 en LESIÓN. Vuelve a 0 cuando la skill sube" };
@@ -1473,7 +1478,7 @@ function renderPlayer(tr) {
     : `<button class="btn" type="button" data-edon title="Cambiar a mano cualquier celda de la tabla (con botón para guardar)">Modo Edición</button>`;
   const planBtn = `<button class="btn" type="button" data-planbtn aria-pressed="${view.showPlan}">${view.showPlan ? "Ocultar" : "Mostrar"} planificación</button>`;
   return `<div class="view-title"><h2>${esc(tr.k)}</h2><span class="lbl">Entreno Alineaciones ${alChip(tr)}</span>
-      <label class="lbl ppl">Posición Preferida <select class="pp" data-pp="${esc(tr.k)}" aria-label="Posición Preferida de ${esc(tr.k)}">${PP_OPTS.map(o => `<option value="${o}"${(tr.pp || "Ninguna") === o ? " selected" : ""}>${o}</option>`).join("")}</select></label>
+      <label class="lbl ppl">Posición Preferida <select class="pp" data-pp="${esc(tr.k)}" aria-label="Posición Preferida de ${esc(tr.k)}">${PP_OPTS.map(o => `<option value="${o}"${ppOf(tr) === o ? " selected" : ""}>${o}</option>`).join("")}</select></label>
       <label class="lbl">Entreno actual ${trnSelect(tr.plan, `data-plan="${esc(tr.k)}" aria-label="Entreno actual de ${esc(tr.k)}"`)}</label>
       <span class="lbl">${tr.rows.length} semanas · última: ${esc(dmy(last.d))} · ${last.a} años</span>
       <span class="lbl"><i class="cl"></i> Subida Limpia</span>
