@@ -489,11 +489,27 @@ function keyPaths(o, prefix = "", depth = 0, out = []) {
   return out;
 }
 
+// Busca en los datos un campo por nombre (hasta 3 niveles) y lo convierte con «conv».
+function findDeep(o, re, conv) {
+  const queue = [[o, 0]];
+  for (let guard = 0; queue.length && guard < 300; guard++) {
+    const [x, d] = queue.shift();
+    if (!x || typeof x !== "object") continue;
+    for (const [k, v] of Object.entries(x)) {
+      if (re.test(k)) { const r = conv(v); if (r !== null && r !== undefined && r !== "") return r; }
+      if (v && typeof v === "object" && !Array.isArray(v) && d < 3) queue.push([v, d + 1]);
+    }
+  }
+  return null;
+}
+const countryName = v => typeof v === "string" ? v.trim() : (v && typeof v === "object" ? String(v.name ?? v.fullName ?? v.code ?? v.id ?? "").trim() : (typeof v === "number" ? String(v) : ""));
+const findCountry = info => findDeep(info, /^(country|nationality)$/i, countryName) || "";
 function normalize(row, api) {
   const p = {
     n: row.n, name: row.name, pid: row.pid, link: "https://sokker.org/player/PID/" + row.pid,
     loaded: false, age: null, callUp: false, value: null, currency: "",
-    form: null, wage: null, wageCurrency: "", injury: 0, red: 0, skills: null, skillKeys: []
+    form: null, wage: null, wageCurrency: "", injury: 0, red: 0, skills: null, skillKeys: [],
+    height: null, disc: null, country: "", tid: null, tname: ""
   };
   const i = api && api.info;
   if (i) {
@@ -505,6 +521,11 @@ function normalize(row, api) {
     p.currency = i.value?.currency || "";
     const s = i.skills || {};
     p.form = num(s.form);
+    p.height = num(i.characteristics?.height) ?? findDeep(i, /^height$/i, num);
+    p.disc = findDeep(s, /^(tactical_?discipline|discipline|tactics)$/i, num) ?? findDeep(i, /^tactical_?discipline$/i, num);
+    p.country = findCountry(i);
+    p.tid = num(i.team?.id) ?? num(i.teamId);
+    p.tname = (typeof i.team?.name === "string" && i.team.name) || "";
     const w = findWage(i);
     if (w) { p.wage = w.value; p.wageCurrency = w.currency || p.currency; }
     p.injury = num(i.injury?.daysRemaining) > 0 ? i.injury.daysRemaining : 0;
@@ -616,7 +637,7 @@ async function load(force) {
     return;
   }
 
-  state.teamName = st.team?.name || "";
+  state.teamName = st.team?.name || ""; state.teamId = st.team?.id || null;
   state.calendar = st.calendar || null;
   state.finance = st.finance || null;
   state.players = st.rows.map(r => normalize(r, st.api?.[r.pid]));
@@ -1062,7 +1083,7 @@ function render() {
       }
       if (c.key === "name") {
         return `<td class="l c-name"><a href="${esc(p.link)}" target="_blank" rel="noopener">${esc(p.name || p.pid)}</a>`
-          + `<button type="button" class="copypid" data-pid="${esc(p.pid)}" title="Copiar PID ${esc(p.pid)}" aria-label="Copiar PID ${esc(p.pid)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>`
+          + `<button type="button" class="copypid" data-pid="${esc(p.pid)}" title="Copiar la información de ${esc(p.name || p.pid)} (formato foro)" aria-label="Copiar la información de ${esc(p.name || p.pid)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>`
           + (p.callUp ? `<span class="sel" title="Citado a la selección">SEL</span>` : "")
           + (p.injury ? `<span class="inj" title="Lesionado: ${p.injury} ${p.injury === 1 ? "día" : "días"}" aria-label="Lesionado, ${p.injury} ${p.injury === 1 ? "día" : "días"}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 2h6v7h7v6h-7v7H9v-7H2V9h7z"/></svg>${p.injury} d</span>` : "")
           + (p.red ? `<span class="redcard" title="Tarjeta roja: suspendido" aria-label="Tarjeta roja, suspendido" role="img"></span>` : "")
@@ -1176,6 +1197,27 @@ function toast(msg) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove("show"), 2000);
 }
+// Información del jugador en el formato del foro de Sokker (lo que falta queda con una raya)
+const LEVELS = ["tragic", "hopeless", "unsatisfactory", "poor", "weak", "average", "adequate", "good", "solid", "very good", "excellent", "formidable", "outstanding", "incredible", "brilliant", "magical", "unearthly", "divine"];
+const levelName = n => Number.isFinite(n) ? (n > 17 ? "superdivine" : LEVELS[Math.max(0, Math.round(n))]) : "-";
+function playerBB(p) {
+  const d = v => v == null || v === "" ? "-" : String(v);
+  const money = (n, cur) => Number.isFinite(n) ? String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, " ") + (cur ? " " + cur : "") : "-";
+  const s = p.skills || {};
+  const lv = (label, n) => `${label} [b][${Number.isFinite(n) ? n : "-"}][/b] [b]${levelName(n)}[/b]`;
+  const tid = p.tid ?? state.teamId, tname = p.tname || state.teamName;
+  return [
+    `[b][pid=${p.pid}]${p.name || p.pid}[/pid][/b], age: [b]${d(p.age)}[/b], height [b]${d(p.height)}[/b] cm`,
+    `value: [b]${money(p.value, p.currency)}[/b], wage: [b]${money(p.wage, p.wageCurrency || p.currency)}[/b]`,
+    `Club: ${tid != null && tname ? `[tid=${tid}]${tname}[/tid]` : "-"}, country: ${d(p.country)}`,
+    `${lv("form", p.form)}, ${lv("Tactical Discipline", p.disc)}`,
+    "",
+    `${lv("stamina", s.stamina)}, ${lv("keeper", s.keeper)}`,
+    `${lv("pace", s.pace)}, ${lv("defender", s.defender)}`,
+    `${lv("technique", s.technique)}, ${lv("playmaker", s.playmaker)}`,
+    `${lv("passing", s.passing)}, ${lv("striker", s.striker)}`
+  ].join("\n");
+}
 async function copyText(text) {
   try { await navigator.clipboard.writeText(text); }
   catch {
@@ -1276,7 +1318,8 @@ function init() {
   });
   $("#body").addEventListener("click", async e => {
     const b = e.target.closest(".copypid"); if (!b) return;
-    await copyText(b.dataset.pid); toast("PID copiado");
+    const pl = state.players.find(x => String(x.pid) === String(b.dataset.pid));
+    await copyText(pl ? playerBB(pl) : String(b.dataset.pid)); toast(pl ? "Información copiada" : "PID copiado");
   });
   $("#pwForm").addEventListener("submit", ev => {
     ev.preventDefault();

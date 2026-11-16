@@ -1,231 +1,39 @@
-# Mi equipo
+# Mi equipo (equipo.html)
 
-Página con la tabla de **los jugadores de tu propio equipo en Sokker**. Es una página estática (un solo `index.html`) publicada en GitHub Pages. Los datos se generan en tu computador con un script y se publican **cifrados**.
+Página separada de CYMRU U21 con la tabla de **tus propios jugadores**. Usa el mismo diseño, y vive en el mismo repositorio, junto a `index.html`.
 
 ## Archivos
 
-- `index.html`: la página del plantel.
-- `juveniles.html`: la página de juveniles.
-- `alineaciones.html`: la página de alineaciones.
-- `entrenamiento.html`: la página de entrenamiento (historial semanal de cada jugador).
-- `cifrar-entrenamiento.mjs` y `entrenamiento-datos.json`: se usan **una sola vez** en tu computador para cifrar el historial inicial (ver «Página de entrenamiento»). No subas `entrenamiento-datos.json` al repositorio: está sin cifrar.
-- `data/training.enc.json`: el historial inicial de entrenamiento, cifrado (lo crea `cifrar-entrenamiento.mjs`).
-- `logo.png`: el escudo que se muestra junto al título (opcional: si falta, la página se ve igual, sin escudo).
-- `config.js`: configuración propia (dirección del servicio que sincroniza la columna «Pos.» entre dispositivos). No hace falta tocarlo al actualizar `index.html`.
+- `equipo.html`: la página.
 - `fetch-team.mjs`: script que se ejecuta en tu computador, inicia sesión en Sokker y genera los datos.
-- `data/team.enc.json` y `data/team.prev.enc.json`: los datos cifrados del plantel (los crea el script).
-- `data/juniors.enc.json` y `data/juniors.prev.enc.json`: los datos cifrados de los juveniles y su respaldo de la semana anterior (los crea el script).
+- `data/team.enc.json` y `data/team.prev.enc.json`: los datos cifrados (los crea el script).
 
 ## Puesta en marcha
 
 1. Instala Node 18 o superior.
-2. En la carpeta del proyecto ejecuta `node fetch-team.mjs`. Te pide tu usuario de Sokker, tu contraseña de Sokker y la contraseña de la página (mínimo 8 caracteres, mejor una frase larga). Ninguna se guarda en un archivo.
+2. En la carpeta del proyecto ejecuta `node fetch-team.mjs`. Te pide tu usuario de Sokker, tu contraseña de Sokker y la contraseña de la página (mínimo 8 caracteres). Ninguna se guarda en un archivo.
    - También puedes pasarlas solo para esa ejecución. Mac o Linux: `SOKKER_USER="..." SOKKER_PASS="..." SITE_PASSWORD="..." node fetch-team.mjs`. En PowerShell: `$env:SOKKER_USER="..."; $env:SOKKER_PASS="..."; $env:SITE_PASSWORD="..."; node fetch-team.mjs`.
-   - Si el script no encuentra el ID de tu equipo, agrega la variable `SOKKER_TEAM_ID` con tu ID de equipo.
-3. Sube a la carpeta `data` del repositorio `team.enc.json`, `juniors.enc.json` (y `team.prev.enc.json` y `juniors.prev.enc.json` si existen).
-4. En el repositorio: Settings → Pages → «Deploy from a branch» → rama `main`, carpeta `/ (root)`. La página queda en `https://TU_USUARIO.github.io/NOMBRE_DEL_REPO/`.
+   - Si el script no encuentra el ID de tu equipo, agrega `SOKKER_TEAM_ID` con tu ID de equipo.
+3. Sube a la carpeta `data` del repositorio `team.enc.json` (y `team.prev.enc.json` si existe).
+4. Abre `https://TU_USUARIO.github.io/NOMBRE_DEL_REPO/equipo.html`.
 
-Para actualizar los datos, repite los pasos 2 y 3.
+## Qué muestra
 
-## Temporada y semana
+- Las 8 skills de cada jugador. La API las entrega completas porque son tus jugadores y el script inicia sesión con tu usuario.
+- Columnas Suma, DEF, DEFside, MID, ATT y ATTside, igual que en la otra página, más el salario (Salario). Si la API no entrega el campo con un nombre que la página reconozca, un aviso arriba de la tabla lista los campos disponibles.
+- Edad, valor, forma, lesión (con días restantes) e insignia SEL si el jugador está citado a la selección.
+- Filtros: búsqueda, rango de edad (mín. y máx.), posición asignada, Lesionados y Selección. El botón **CSV** copia la tabla visible.
 
-Si la API entrega la temporada y la semana actuales, ambas páginas las muestran bajo el título («Temporada 87 · Semana 5»). Si no se encuentran, la línea no aparece y el script avisa al ejecutarse con los campos relacionados que vio. Se actualiza al ejecutar `node fetch-team.mjs`.
+## Cambios semanales (▲▼)
 
-## Menú de secciones
+La semana va de jueves a miércoles. El primer día que ejecutas el script en cada semana, la versión anterior pasa a `team.prev.enc.json`, y la página marca con ▲ o ▼ las skills que cambiaron. Puedes ejecutar el script varias veces en la semana sin perder la comparación. La primera comparación aparece después de la segunda semana de ejecuciones.
 
-Arriba a la derecha, junto al botón de tema, hay un menú desplegable con cuatro opciones: **Plantel** (`index.html`), **Juveniles** (`juveniles.html`), **Alineaciones** (`alineaciones.html`) y **Entrenamiento** (`entrenamiento.html`). La contraseña se escribe una sola vez: las páginas la comparten en el mismo navegador.
+## Contraseña
 
-## Qué muestra el plantel
+Los datos se publican cifrados y la página pide la contraseña al abrirla; el navegador la recuerda y el botón **Bloquear** la olvida. Si cambias la contraseña, ese cambio hace que esa semana no haya flechas.
 
-- Las 8 skills de cada jugador (la API las entrega completas porque son tus jugadores y el script inicia sesión con tu usuario), más **Suma**, **DEF**, **DEFside**, **MID**, **ATT** y **ATTside** (sumas simples de skills; si falta alguna, la celda muestra «—»).
-- Edad, **Valor**, **Salario** (a la derecha de Valor) y forma.
-- Junto al nombre: insignia **SEL** si el jugador está citado a la selección, cruz roja con los días restantes si está lesionado, y una **tarjeta roja** si está suspendido (campo `stats.cards.red`, la suspensión actual).
-- Flechas ▲▼ en las skills que cambiaron respecto a la semana anterior; además la celda completa se destaca (verde si subió, rojo si bajó).
+## Asignación GK / DEF / MID / ATT
 
-### Filtros y botones
+La columna **Pos.** (GK, DEF, MID, ATT y ENT, cada una con su botón de filtro) se guarda en el navegador. Si `config.js` (el mismo de CYMRU U21) tiene la dirección `estUrl` del Apps Script, la página también sincroniza las asignaciones entre dispositivos usando ese servicio. Para que el servicio acepte la clave, usa **la misma contraseña de página** que en CYMRU U21.
 
-- Búsqueda por nombre o PID, rango de edad (mín. y máx.), botones por posición asignada, **Lesionados**, **Suspendidos**, **Cambios** (solo los jugadores con alguna skill que subió o bajó respecto a la semana anterior) y **Selección**.
-- **Ocultar Val/Sal** oculta las columnas Valor y Salario (queda recordado en cada dispositivo).
-- **CSV** copia la tabla visible como texto separado por tabulaciones, para pegar en una planilla; incluye una columna **PID** a la derecha de Jugador.
-- El botón redondo de la esquina cambia entre modo claro y oscuro.
-- El orden por defecto es por **Valor, de mayor a menor**; al pulsar el encabezado **#** se vuelve a ese orden. El resto de los encabezados ordenan como siempre (el orden elegido se recuerda en cada dispositivo).
-- Al hacer scroll horizontal quedan inmovilizadas las primeras columnas (en pantallas angostas, menos).
-
-### Cuadro de resumen (esquina superior derecha)
-
-Se muestra siempre y cuenta a todo el equipo, sin importar los filtros ni los botones:
-
-- **Finanzas**: dinero disponible en tu cuenta. Sigue al botón **Ocultar Val/Sal**: muestra «-» mientras Valor y Salario están ocultos.
-- **Jugadores**: cantidad de jugadores del equipo principal.
-- **Valor Total** y **Salario Total**: suma de todos los jugadores.
-- **Edad Titulares**: promedio de edad de los marcados GK, DEF, MID y ATT (todos juntos).
-- **Edad Entrenables**: promedio de edad de los marcados ENT.
-- **Subidas Entrenables**: cantidad de skills que subieron (▲) respecto a la semana anterior entre los jugadores marcados ENT.
-- **Lesionados** y **Suspendidos**: cantidad de jugadores.
-
-Finanzas y Salario dependen de los nombres de campo que entregue la API de Sokker. Al pasar el mouse sobre la cifra de Finanzas se ve qué campo se usó y cuáles otros se encontraron. Si la fila queda en «—», la página muestra un aviso con los nombres de los campos disponibles.
-
-## Página de juveniles
-
-Al hacer scroll horizontal quedan inmovilizadas las columnas hasta Nivel (#, Pos., Juvenil, Edad y Nivel; en pantallas angostas, menos). Tabla (con una línea vertical a la izquierda de Edad, otra a la izquierda de Edad Final otra a la derecha de Nivel Final y otra a la derecha de Semanas Entrenadas) con los juveniles de la academia del equipo: nombre, edad, **Nivel** (campo `skill`), **Semanas Restantes** (semanas que le faltan; «Listo» cuando terminó la academia y puede ascender), **Semanas Entrenadas** (`weeksIn`), y **Talento** (`talent`). Se puede buscar por nombre, mostrar solo a los **Talentosos** (los que tienen ★★★), ordenar por cualquier columna y copiar como CSV.
-
-La API entrega los datos de los juveniles bajo nombres de campo que la página busca de forma flexible. Si no encuentra edad, semanas, skill o talento, muestra un aviso con los nombres de los campos disponibles, para poder ajustarla. La última columna, **Progreso**, es un campo de texto libre (hasta 200 caracteres) para anotar lo que quieras de cada juvenil. Se guarda en el navegador y, con `estUrl` configurado en `config.js`, se sincroniza entre dispositivos con el mismo servicio de Apps Script que las asignaciones «Pos.»: usa la misma contraseña de página y la versión actual de `est-sync.gs` (acepta claves `j…` para los juveniles y textos más largos). Tras pegar el nuevo `est-sync.gs` hay que publicarlo como **nueva versión** (Implementar → Administrar implementaciones → editar → Versión nueva) para que la URL siga siendo la misma. **Cuadro resumen de la escuela (esquina superior derecha):** Plazas (`size`), Juveniles (cantidad), Talentosos (juveniles con ★★★), Nivel Escuela (`averageSkill`), Entrenador, Salario DT y Costo Escuela (`weeklyCost` + salario del entrenador). Los datos de la escuela los junta `fetch-team.mjs` (de `/junior`, incluida su lista `trainers`, de `GET /trainer` —la lista de entrenadores del equipo— y de otros endpoints candidatos; si hay varios entrenadores se elige el asignado a la escuela o, si no se distingue, el primero) en `juniors.enc.json` y la página los busca por nombre de campo; si falta alguno la fila queda en «—», al pasar el mouse se ve qué campo se usó y, si algo no se encontró, aparece un aviso con los campos disponibles. El cuadro no depende de los filtros.
-
-**Tipo:** el valor del campo `formation` aparece como una pequeña marca junto al nombre de cada juvenil (ya no es una columna). No depende del botón Simplificar. La marca «GK» se muestra en amarillo.
-
-**Columna «Batería» (marca de cada juvenil):** a la izquierda del nombre hay un desplegable con las opciones, en este orden: vacío, una **batería de 4 barras (azul)**, de **3 (verde)**, de **2 (amarillo)**, de **1 (naranjo)** y una **vacía (roja)**. Se guarda en el navegador y se sincroniza como Progreso. Al pulsar el encabezado «Batería» se ordena en ese mismo orden. Junto a los botones de la barra hay cinco **filtros** (las mismas baterías, más **Sin Asignar**, a la derecha de la última, que muestra solo los juveniles sin batería) para mostrar solo los juveniles con esa marca; se pueden combinar varios y volver a pulsarlos para quitarlos. La página Alineaciones muestra esta marca junto a cada juvenil. (Las marcas GK/DEF/MID/ATT que había antes ya no existen en esta columna.)
-
-**Nivel automático en Progreso:** una vez por semana de datos (la semana va de jueves a miércoles), al abrir la página con la sincronización ya al día y los datos de esa semana (los de `fetch-team.mjs` ejecutado el jueves o después), la página añade el Nivel actual al final del Progreso de cada juvenil (separado por coma) y avisa cuántos y cuáles actualizó (el aviso queda visible hasta recargar). Ya no depende de Semanas Entrenadas. La semana procesada se guarda en la nube (clave `j2000000000007`), así que no se repite aunque abras la página varias veces o desde otros dispositivos. Los juveniles con Progreso vacío (por ejemplo, los recién llegados) también reciben su Nivel actual como primer valor. En el aviso amarillo se destacan en **morado** para que los distingas. Los que pasarían de 200 caracteres no se tocan y se nombran en el aviso. Si una semana ya estaba procesada sin los juveniles nuevos, la página completa una sola vez los que tengan Progreso vacío. La primera vez que se usa no hay semana guardada, así que se aplica a la semana actual.
-
-**Columnas de regresión:** a partir de los elementos de Progreso (y = valor de cada elemento, x = su posición 0, 1, 2…) la página calcula, a la derecha de Progreso: **Talento Estimado** (1 / pendiente), **R2** (coeficiente de determinación) y **Regresión** (la recta, por ejemplo `y = 2,00x + 10,0`; el número junto a x es la pendiente, lo que sube el Nivel por semana). Los elementos no numéricos se omiten; con menos de 2 numéricos, o con pendiente 0 (Talento Estimado) o valores todos iguales (R2), se muestra «—». Se recalculan mientras escribes y todas se pueden ordenar. **Talento Estimado** se resalta en verde cuando vale 4,5 o menos (incluye valores negativos) y **R2** cuando vale 0,7 o más; los umbrales están en `HI_TREAL` y `HI_R2` en `juveniles.html`.
-
-**Nivel Inicial:** a la derecha de Nivel; muestra el primer elemento de Progreso (se actualiza mientras escribes).
-
-**Nivel Final:** (a la derecha de Nivel) = último elemento de Progreso + Semanas Restantes / divisor. El divisor es **3,5** si Semanas Entrenadas < 10, o si Talento Estimado es menor que 0 o mayor que 10; en cualquier otro caso es el **Talento Estimado**. Muestra «—» si falta el último elemento numérico de Progreso, las Semanas Restantes o las Semanas Entrenadas (o el Talento Estimado cuando hace falta). Al pasar el mouse indica qué fórmula se usó. Cada valor lleva una marca según la **Edad Final**: ★ dorada si Edad Final 16 (siempre), 17 con Nivel Final ≥ 5, 18 con ≥ 8, 19 con ≥ 11 o 20 con ≥ 14 (se compara el valor tal como se ve, con 1 decimal); en cualquier otro caso, ! roja (incluye edades finales sin criterio y cuando falta la Edad Final). Los mínimos están en `LF_MIN` en `juveniles.html`. **Tres estrellas junto al nombre:** el juvenil lleva ★★★ junto a su nombre cuando su Nivel Final tiene ★ dorada y su Talento Estimado está entre 3 y 4,3 (ambos incluidos; límites `TRIPLE_MIN` y `TRIPLE_MAX`).
-
-**Edad Final:** a la derecha de Edad. Se suma la semana actual de la temporada (`seasonweek`, la que entrega el script) y las Semanas Restantes; hasta 13 → Edad; 14–26 → Edad+1; 27–39 → Edad+2; 40–52 → Edad+3 (y así cada 13 semanas más). Cada edad tiene su propio color (16 naranjo, 17 rosado, 18 verde turquesa, 19 amarillo, 20 índigo, 21 celeste; las demás sin color; tabla `AGE_HUES` en `juveniles.html`) y **Sem. Final** usa el mismo color que **Edad Final** del mismo juvenil. Fijos: 16 naranjo y 18 verde (`AGE_HUES` en `juveniles.html`). Si falta la semana, la edad o las semanas restantes, muestra «—».
-
-**Sem. Final:** (a la derecha de Edad Final) número de semana de la temporada (1 a 13) en que las Semanas Restantes llegan a 0: (semana actual + Semanas Restantes) con temporadas de 13 semanas. Al pasar el mouse indica si ocurre en la temporada actual, la próxima o más adelante. Ordena por fecha real de salida. Si falta la semana actual o las semanas restantes, muestra «—».
-
-**Egresados:** cuando un juvenil llega a «Listo», la página lo guarda **una sola vez** en una pestaña aparte de tu hoja de Google llamada `EGRESADOS`, con su **nombre, edad final, nivel inicial, nivel final** (el que tenía en el momento de quedar «Listo»), **Progreso**; la tabla añade **Semanas Entrenadas** (cantidad de elementos del Progreso menos 1), **Talento Estimado** y **R2**, que se calculan al abrir la ventana a partir del Progreso (así también aparecen en los egresados antiguos y siguen la fórmula vigente), más la fecha de los datos. Ocurre al abrir la página con la sincronización al día (después de la actualización semanal del Progreso), avisa con un mensaje y no se repite ni se sobrescribe, aunque abras la página en otro dispositivo. Esos datos **no se descargan al abrir la página**: solo al pulsar el botón **Egresados**, que muestra una tabla con buscador (los más recientes primero) y un botón **Copiar** para pegarla en una planilla. Requiere `est-sync.gs` versión 6 o posterior (la página avisa si el publicado es antiguo). Los juveniles que ya salieron antes de activar esto no tienen datos guardados; sí se guardan los que estén en «Listo» al primer uso. El orden de columnas es Nombre, Edad Final, Nivel Final, Nivel Inicial…, y las tres primeras quedan fijas al desplazar la tabla hacia los lados. Cada fila tiene un botón **Copiar** (todos sus datos) y un botón pequeño ⧉ junto al nombre que copia solo **Nombre y Progreso**. Al abrir la ventana no se enfoca el buscador (para que no se abra el teclado en el móvil). No requiere actualizar `est-sync.gs`.
-
-**Botones Simplificar y Calculadora:** **Simplificar** oculta las columnas Progreso, Regresión y Recuento de Entrenos (el botón pasa a «Mostrar todo»; se recuerda en cada dispositivo y el CSV copia solo las columnas visibles). **Calculadora** oculta todas las filas y deja visibles solo las últimas cinco columnas (desde Progreso: Progreso, Talento Estimado, R2, Regresión y Recuento de Entrenos), con una sola fila vacía donde escribes el Progreso; el resto se calcula al escribir (el ✓/✗ del Recuento no aparece, porque no hay Semanas Entrenadas). Mientras está activa, Simplificar y CSV se desactivan. Esa fila vive solo en memoria: nada se guarda ni se sincroniza, y siempre empieza vacía.
-
-**Flechas ▲▼ en Nivel:** igual que en Plantel, el script guarda cada jueves un respaldo de los juveniles (`juniors.prev.enc.json`) y la página marca con ▲ o ▼ los juveniles cuyo Nivel subió o bajó respecto a la semana anterior (se compara por id). La primera comparación aparece después de la segunda semana de ejecuciones; sube los dos archivos a `data`. Un juvenil que no estaba la semana anterior no lleva flecha.
-
-Los textos se identifican por el id del juvenil. Si pegas (o escribes) números separados por espacios, la página pone una coma entre ellos automáticamente («10 12 14» queda «10,12,14»). Junto a Progreso, la columna **Recuento de Entrenos** cuenta cuántos elementos tiene el texto (separados por coma, sin espacios) y le resta 1 (nunca baja de 0) y se actualiza mientras escribes. Muestra ✓ si el número coincide con **Semanas Entrenadas** y ✗ si no.
-
-Para actualizar esta página hay que volver a ejecutar `node fetch-team.mjs` y subir `data/juniors.enc.json`.
-
-## Página de entrenamiento
-
-Reproduce tu planilla «Entrenamiento Khalil Gibran»: una vista **Resumen** y una vista por jugador, que se eligen con los botones de arriba (en orden alfabético).
-
-- **Resumen:** Entreno Alineaciones, Entreno Actual, Jugador, Edad, DEF, DEFside, MID, ATT, ATTside y las skills (Condición, Rapidez, Técnica, Pases, Defensa, Creación, Anotación) de la **última semana registrada**. Las celdas no llevan color; junto a cada skill que cambió respecto a la semana anterior aparece una flecha (▲ verde si subió, ▼ roja si bajó), como en Plantel. Al ordenar por DEF, DEFside, MID, ATT o ATTside se resaltan en amarillo esa columna y las skills que entran en su cálculo. Por defecto se ordena por edad de mayor a menor y, a igual edad, por apellido; pulsa un encabezado para ordenar por otra columna. **Entreno Alineaciones** es lo que entrena el jugador según la página Alineaciones: el entrenamiento asignado (en «Entrenamiento por posición») a la posición del puesto en que aparece en las alineaciones de titulares, en la primera en que esté; se muestra con los colores de esa página y se lee de lo que guarda en este navegador (se actualiza cuando la abres ahí). Si no aparece en ninguna alineación, o esa posición no tiene entrenamiento, muestra —. Si lo que entrena según Alineaciones es distinto de su Entreno Actual (sin entreno = GK), aparece una **!** roja al lado. **Entreno Actual** se elige en la misma tabla (o en la vista del jugador) y es el que se guarda en la semana nueva de la actualización del jueves.
-- **Cuadro de arriba a la derecha:** primer entreno de la temporada, último entreno, entrenos actuales y **Velocidad de entreno** (8). Es fija y no se puede modificar.
-- **Vista de un jugador:** una fila por semana, la más reciente arriba, con Fecha, TEMP, SEM, EDAD, ENT. F, Entrenamiento, cada skill con su **gt** (puntos acumulados desde la última subida), **Sumas** (DEF, DEFside, MID, ATT y ATTside, las mismas cinco columnas del final de la tabla de Plantel), **Talento por skill** (RAP, TEC, PAS, DEF, CRE y ATT; las casillas con valor se pintan con el color de la skill) y **Acumulado**. El gt y el acumulado usan las fórmulas de tu planilla (se comprobaron fila por fila con tus datos). Puedes corregir el Entrenamiento y ENT. F de cualquier semana. Los colores van de más suave (valor bajo) a más fuerte (valor alto).
-- **Subida Limpia:** subida de una skill que ocurre sin que se haya entrenado esa skill (la semana en que subió, el Entrenamiento era otro). Se marca con un asterisco amarillo en la esquina de la casilla.
-- **Talento por skill** (solo RAP, TEC, PAS, DEF y CRE): en cada subida es (acumulado en esa subida − acumulado en el nivel de partida) ÷ Velocidad de entreno ÷ niveles entre ambos. El nivel de partida depende de las Subidas Limpias de los niveles L−2, L−1 y L (L = nivel nuevo): **[1]** si ninguna fue limpia, entre L−3 y L (tres cambios; por ejemplo, de 7 a 8, del nivel 5 al 8); **[2]** si L fue limpia y L−1 no, entre L−2 y L (dos cambios); **[3]** si L no fue limpia y L−2 sí, entre L−2 y L (dos cambios); **[4]** si L−1 y L fueron limpias, entre L−1 y L (un cambio). En cualquier otro caso, o si falta historial, la casilla queda vacía. Al pasar el cursor por la casilla se ve entre qué niveles se calculó.
-- **Actualización del jueves:** al abrir la página con los datos de un jueves nuevo, se agrega **sola** la semana nueva a cada jugador, con las skills de ese día (se busca al jugador por su apellido en el plantel) y el **Entreno Actual** que tenía. Después del jueves, elige el entreno de la semana siguiente. Si un jugador no se encuentra, un aviso lo dice. Abre la página al menos una vez entre jueves y miércoles: no puede reconstruir semanas en las que no se abrió.
-- **Dónde se guardan los datos:** en el navegador y **en la nube**, con el mismo servicio de Apps Script (`estUrl` de `config.js`) y la misma contraseña que las demás páginas, cifrados igual que el resto. Se guarda todo: el historial de cada jugador, Entreno Actual, ENT. F, la columna Entrenamiento de cada semana y los jugadores agregados o quitados. Cada jugador es un registro aparte (clave `ent…`) y gana el cambio más reciente de ese jugador; las semanas nuevas del jueves son iguales en todos los dispositivos, así que no chocan. Los cambios se suben solos unos segundos después de hacerlos (bajo los botones aparece «Entrenamiento sincronizado»); sin conexión quedan pendientes y se suben al volver. Al abrir la página o volver a ella se trae lo guardado. **No hace falta cambiar `est-sync.gs`.** La velocidad de entreno es fija (8) y ya no se puede cambiar.
-- **Restablecer:** vuelve al historial inicial de `data/training.enc.json` más la semana actual, **y lo escribe también en la nube**, sobrescribiendo lo que había (y en tus otros dispositivos, que lo recibirán al abrir la página). Pide dos confirmaciones y hay que escribir RESTABLECER.
-- **Aviso en Alineaciones:** en la página Alineaciones, un jugador colocado en una posición donde se entrena algo distinto de su Entreno Actual de la página Entrenamiento muestra una **!** roja al lado del nombre (pasa el cursor para ver el detalle). Se lee de lo que la página Entrenamiento tiene guardado en este navegador (que se sincroniza con la nube); si la posición no tiene entrenamiento asignado, no hay aviso.
-- **Agregar y quitar jugadores:** **Agregar jugador** (arriba a la derecha) tiene un selector «Lista»: **Entrenables** (primera opción; jugadores con la marca ENT de la página Plantel que aún no están en el seguimiento), **Plantel** (todo el plantel) y **Registro Histórico** (jugadores quitados cuyo historial sigue en la nube; ahí puedes **Recuperar** o **Eliminar registro**, este último con confirmación y sin vuelta atrás). Al agregar a alguien del plantel la página pregunta si quieres **guardarlo en la nube**; si eliges «No», queda solo en ese dispositivo (no se sube nada, no aparece en los otros y, al quitarlo, se pierde). Su historial parte con las skills de la última actualización del jueves y se completa solo desde la semana siguiente (elige su Entreno Actual). **Quitar jugador** saca del seguimiento a uno guardado en la nube pero **conserva su historial** (queda en Registro Histórico). La marca ENT se lee de lo que guardaste en Plantel (en este navegador y en la nube). Si un jugador ya no está en el plantel, la actualización del jueves avisa que no pudo agregarlo.
-- **Copiar:** copia la tabla visible para pegarla en una planilla.
-
-**Primera vez:** el historial inicial (hasta el 12-11-2026) viene de tu planilla en `entrenamiento-datos.json`. En tu computador, en esa carpeta, ejecuta `node cifrar-entrenamiento.mjs` (pide la contraseña de la página) y sube a la carpeta `data` del repositorio el archivo `data/training.enc.json` que se crea. Después sube `entrenamiento.html`. No subas `entrenamiento-datos.json`. De la planilla no se incluyó la tabla de planificación de la derecha del Resumen.
-
-## Página de alineaciones
-
-**Juveniles:** bajo el cuadro de entrenamiento hay dos botones, **Titulares** y **Juveniles** (se recuerda el último en cada dispositivo). «Juveniles» muestra una sola alineación de 11 puestos, con su propia lista de juveniles a la derecha (la alineación y la lista quedan juntas y centradas) (de `data/juniors.enc.json`). Cada juvenil muestra **Nivel · Edad · Semanas Entrenadas** y la marca («Batería») que le diste en la página Juveniles; al tocar su nombre se abre un cuadro con esos mismos datos. Tiene lo mismo que las otras: rival y fecha (el día es siempre **Martes**), puestos con posición editable, sustitutos y minutos, y se guarda con «Guardar Datos». En su lista, al lado de «Sin alinear», hay los mismos cinco filtros por marca. Solo admite juveniles (los titulares no se pueden mezclar). Su fecha también **avanza 7 días cada jueves**, igual que las demás.
-
-En pantallas anchas, la lista **Jugadores** queda a la derecha, con scroll propio; en pantallas angostas (teléfono vertical) sigue arriba.
-
-`alineaciones.html` (sección **Alineaciones** del menú) arma cuatro alineaciones de 11 puestos con los jugadores del plantel: **Copa Internacional** (viernes), **Liga 1** (domingo), **Copa/Amistoso** (lunes) y **Liga 2** (miércoles). Cada una tiene, bajo el título, el día, un campo para el **rival** y otro para la **fecha**.
-
-- **Armar:** arrastra un apellido (junto con sus marcas ✚ lesión y tarjeta roja, que siempre lo acompañan) desde la lista «Jugadores» a un puesto; la posición y el contador de la lista no se mueven. En el celular el arrastre se hace desde el asa ⠿, que está a la izquierda del apellido. También puedes tocar el espacio a la derecha del apellido para seleccionar al jugador y luego tocar el puesto (la selección se mantiene para ponerlo en otras alineaciones).
-- **Entrenamiento por posición:** sobre las alineaciones hay un cuadro con GK, DEF, MID y ATT y, a la derecha de cada una, un desplegable con el entrenamiento: RAP (celeste), TEC (violeta), PAS (rosado), GK (amarillo), DEF (naranjo), CRE (rojo) o ATT (gris). Los jugadores marcados **ENT** en el Plantel se ven con el fondo del color del entrenamiento asignado a la posición del puesto en que están (si el puesto o la posición no tienen entrenamiento, sin color). Bajo el cuadro hay un selector de **color para cada entrenamiento** (por defecto los de siempre). Los colores elegidos también se guardan y se cargan igual que las alineaciones.
-- **Sustitutos y minutos:** cada número puede tener hasta 3 jugadores (titular y dos sustitutos, que aparecen debajo). Con el botón **＋** del número (o soltando a un jugador sobre él, o seleccionándolo y tocando ＋) se agrega un sustituto. Soltar un jugador sobre otro dentro de la alineación los intercambia. Junto a cada apellido hay un campo con los **minutos** que jugará: se calculan solos: el titular juega 90 si está solo (45 si tiene sustitutos) y los sustitutos reciben **los minutos que le faltan al titular para completar 90**; con dos sustitutos ese resto se reparte entre ambos (si uno tiene minutos escritos a mano, el otro recibe lo que quede; por ejemplo, titular 60 → sustitutos 15 y 15). También se pueden escribir a mano (el campo queda en negrita; si lo vacías vuelve al automático). En la lista de Jugadores, la marca con ′ muestra los **minutos acumulados** del jugador en todas las alineaciones. Los minutos se guardan y sincronizan con la alineación.
-- **Ocultar alineaciones:** cada alineación tiene un botón **Ocultar**; la que está al lado (en la misma fila) pasa a ocupar todo el espacio, y arriba aparece un botón «Mostrar …» para volver a verla. Es una preferencia de cada dispositivo (no se sincroniza).
-- **Actualización semanal (jueves):** la semana de Sokker va de jueves a miércoles. Cuando la página carga datos de una semana nueva (los de `fetch-team.mjs` ejecutado en un jueves o después), **la fecha de cada alineación avanza 7 días** (7 por cada semana transcurrida). El campo **Rival** no se toca (la API no entrega los rivales). Ocurre una sola vez por semana, solo después de cargar lo guardado en la nube, y queda como cambio sin guardar (aparece un aviso; presiona «Guardar Datos»). La primera vez solo se anota la semana de cada alineación, sin cambiar nada. Si cambias una fecha a mano, esa alineación toma la semana de los datos actuales.
-- **Skills:** al tocar un apellido se abre un cuadro con Forma, Condición, Rapidez, Técnica y Pases (primera columna) y Portería, Defensa, Creación y Anotación (segunda). Se cierra con ✕, Escape o tocando fuera.
-- **Posición de cada puesto:** cada número tiene un desplegable (GK, DEF, MID, ATT o vacío), por defecto 1 GK, 4 DEF, 4 MID y 2 ATT. Es independiente del jugador, se cambia a mano y se guarda y sincroniza con la alineación.
-- **Mover:** dentro de una alineación, arrastrar sobre otro puesto los intercambia; al arrastrar un jugador de una alineación a otra, **se mueve** (deja de estar en la de origen). Los jugadores sí pueden repetirse entre alineaciones si los arrastras desde la lista de jugadores, pero no dentro de una. Para quitarlo: la ✕ del puesto, o soltarlo sobre la lista de jugadores. **Vaciar** limpia una alineación.
-- **Exportar:** el botón **Exportar** (a la derecha de Titulares/Juveniles) copia todas las alineaciones, titulares y juveniles, como texto separado por tabulaciones para pegarlo en una planilla: una fila por jugador con Alineación, Día, Rival, Fecha, N°, Pos., Rol (Titular o Sust.), PID, Jugador y Minutos. Los puestos vacíos llevan una fila sin jugador.
-- **Filtrar la lista:** bajo el buscador hay botones **GK, DEF, MID, ATT, ENT y EXT** para mostrar solo a los jugadores con esa marca del Plantel (se pueden combinar varios). La lista es un poco más ancha para que no se corten los apellidos.
-- **Contador:** cada jugador muestra en cuántas de las 4 alineaciones está (0 a 4). **Sin alinear** muestra solo a los que están en 0. Debajo hay botones **GK, DEF, MID, ATT, ENT y EXT** para filtrar la lista por la posición que tiene cada jugador en el Plantel (se pueden combinar varios). Si dos jugadores comparten apellido, se agrega la inicial del nombre.
-- **Marcas:** en la lista de jugadores aparece su posición asignada en el Plantel (GK, DEF, MID, ATT, ENT, EXT; solo lectura). Junto al apellido, en la lista y en los puestos, ✚ con los días de lesión (por ejemplo «4 d») y una tarjeta roja si está suspendido.
-- **Guardar Datos:** al guardar con éxito, el botón se pone **verde** («✓ Guardado») unos segundos, y el mensaje bajo el título indica la **hora** («Datos guardados en la nube a las 23:30»).
-- **Guardar y cargar:** al abrir la página se cargan los datos guardados en la nube (si el servicio de `config.js` está disponible), y reemplazan a los de este dispositivo. Los cambios que haces se guardan en el navegador, pero solo suben a la nube cuando presionas **Guardar Datos** (arriba de la lista de jugadores), que reemplaza lo anterior con lo que ves en pantalla. Mientras haya cambios sin subir, bajo el título aparece un aviso; si recargas sin guardar, se pierden y vuelve lo de la nube. Usa el mismo servicio que Progreso (claves `j2…`; no hace falta cambiar `est-sync.gs`).
-
-## Columna «Pos.»
-
-Cada jugador tiene una lista con las opciones **GK**, **DEF**, **MID**, **ATT**, **ENT** (entrenables) y **EXT**, cada una con su botón de filtro. La asignación se guarda en el navegador y, si configuraste el servicio de sincronización, también se comparte entre tus dispositivos.
-
-Las marcas son ovaladas. En la fila **Colores de las marcas** (bajo los filtros) puedes elegir el color de cada una (GK, DEF, MID, ATT, ENT, EXT); el cambio se guarda en la nube junto a las asignaciones y también lo usan Juveniles y Alineaciones.
-
-Debajo, en **Colores del resaltado**, puedes elegir tres colores del Plantel: la **columna resaltada** (amarillo), las skills que **subieron** y las que **bajaron**. Si una celda que cambió cae en una columna resaltada, gana el color de la columna. Cada modo (claro y oscuro) tiene su propia paleta: la que ves es la del modo activo, y al cambiar de modo se muestra la otra. Se guardan en la nube junto con los colores de las marcas.
-
-## Cambios semanales (flechas ▲▼)
-
-La semana va de **jueves a miércoles**. El primer día que ejecutas el script en cada semana, la versión anterior pasa a `team.prev.enc.json`, y la página compara ambos archivos. Puedes ejecutar el script varias veces en la semana sin perder la comparación. La primera comparación aparece después de la segunda semana de ejecuciones. Sube **los dos archivos** a la carpeta `data`.
-
-## Contraseña de la página
-
-Los datos se publican **cifrados**. Quien abra la página debe escribir la contraseña; el navegador la recuerda en ese dispositivo y el botón **Bloquear** la olvida.
-
-- Para cambiarla, ejecuta `node fetch-team.mjs` con la nueva y sube el archivo. Esa semana no habrá flechas ▲▼ (el respaldo anterior ya no se puede leer) y los dispositivos que tengan la contraseña vieja guardada pedirán la nueva.
-- Sube solo archivos `.enc.json`. GitHub conserva el historial: lo que alguna vez se publicó sin cifrar sigue siendo recuperable desde commits antiguos.
-- El cifrado protege los datos, no el código de la página. Una contraseña corta se puede adivinar por fuerza bruta.
-
-## Sincronizar las asignaciones entre dispositivos
-
-Sin configurar nada, las asignaciones de «Pos.» se guardan solo en el navegador donde las haces. Para compartirlas se usa un pequeño servicio de Google Apps Script en tu hoja de Google (una sola vez):
-
-1. Abre tu hoja de Google → **Extensiones → Apps Script**. Borra lo que haya y pega el contenido de `est-sync.gs`. Guarda.
-2. **Implementar → Nueva implementación → Aplicación web**. *Ejecutar como*: **Yo**; *Quién tiene acceso*: **Cualquier persona**. Autoriza cuando Google lo pida.
-3. Copia la **URL de la aplicación web** (termina en `/exec`) y pégala en `config.js`, en `estUrl`. Sube `config.js` al repositorio, junto a `index.html`.
-
-**Para actualizar el script más adelante** (sin cambiar la URL): pega el nuevo contenido, guarda, y luego **Implementar → Administrar implementaciones →** lápiz de la implementación existente **→ Versión: Nueva versión → Implementar**. Pegar y guardar **no basta**: la aplicación web sigue ejecutando la última versión *publicada*. Si eliges «Nueva implementación» se crea otra URL y la de `config.js` sigue con el script antiguo. El script actual acepta cualquier clave y valores de hasta 8000 caracteres, así que las páginas nuevas no deberían obligarte a actualizarlo otra vez. Para saber qué versión está publicada, abre la URL `/exec` en el navegador: debe mostrar `"version":6`.
-
-Qué tener en cuenta:
-
-- Los valores viajan **cifrados** con la contraseña de la página y se guardan en una pestaña `EST` de tu hoja.
-- Usa **la misma contraseña** de página en todas las páginas que compartan el servicio: la clave de escritura se fija la primera vez que se guarda algo. Si cambias la contraseña, ejecuta una vez la función `reiniciarClave` en el editor de Apps Script.
-- Si dos dispositivos cambian al mismo jugador, gana el cambio más reciente. El servicio ignora sin avisar un cambio con una hora anterior a la que ya guarda; la página lo evita usando siempre una hora mayor que la conocida.
-- Arriba, junto a la fecha de los datos, la página indica si las asignaciones están sincronizadas o pendientes.
-
-## Si algo no se ve como esperas
-
-- **Un dispositivo muestra una versión antigua** (por ejemplo, una opción de «Pos.» que no aparece o no se sincroniza): el navegador guardó la página en memoria. Abre la dirección con algo al final, como `?v=2`, o borra los datos del sitio. Si la instalaste como acceso directo, ábrela desde el navegador.
-- **Diagnóstico de sincronización**: abre la página con `?diag=1` al final. Aparece un botón **Diagnóstico** que compara lo que hay en el dispositivo con lo que hay en el servicio. Cópialo con el botón **Copiar**.
-- **La página aparece en blanco con solo un título**: falta `index.html` en la raíz del repositorio.
-- **Una página abierta como archivo local no muestra datos**: el navegador bloquea la lectura de `data/` desde un archivo. Usa GitHub Pages o, en esta carpeta, `python -m http.server` y entra a `http://localhost:8000/`.
-- **El script trae menos jugadores de los que tienes**: la API entrega la plantilla por páginas; el script ya las pide todas.
-
-
-**Cuadro informativo de Entrenamiento:** Primer Entreno, Entreno Actual (última actualización), Entreno Final (Primer Entreno + 12 semanas), Entrenos Temporada (semanas transcurridas), Jugadores Entrenando (jugadores en seguimiento), Subidas Semana Actual (skills que subieron en la última actualización) y Velocidad de entreno.
-
-**Modo Edición (vista de cada jugador):** el botón «Modo Edición» convierte las celdas de la tabla en campos editables: fecha, temporada, semana, edad, ENT. F, entrenamiento, las siete skills y los gt. Los cambios quedan en un borrador hasta que pulses «Guardar cambios» (o «Cancelar» para descartarlos). Al guardar se validan los datos (fechas de más antigua a más reciente sin repetirse, semana 1–13, skills 0–30, etc.) y se recalculan las sumas, el Talento por skill y el Acumulado. Un gt que modifiques queda como valor escrito a mano para esa fila (las filas siguientes se calculan a partir de él); si lo dejas como estaba, sigue calculándose solo. El cambio se guarda en la nube como el resto.
-
-**Planificación:** en la vista de cada jugador, bajo el título, hay una tabla con el mismo formato que la de Entrenamiento, con las **próximas 13 semanas** en filas: la del **Entreno Actual** (el mismo dato que el selector de arriba) queda **abajo, con la fecha resaltada en amarillo**, justo encima del historial, y las semanas futuras suben hacia arriba y los grupos **Semana** (fecha, temporada, semana), **Entrenamiento** (lo eliges tú), **Skills y avance (gt)** y **Acumulado**. Las dos últimas son una **proyección** según el plan: nivel y puntos (gt) de cada skill y puntos acumulados semana a semana (entrenada +velocidad, no entrenada +1, LESIÓN +0). Se marca ▲ la semana en que se estima que la skill subiría, cuando el gt alcanza los puntos que suele necesitar por nivel. Una semana marcada «↳» sigue con el entrenamiento de la anterior. Cada jueves, la semana que llega se registra con lo planificado y la siguiente pasa a ser el Entreno Actual (ENT. F se marca después en la tabla). Atajos: **Repetir semana 1**, **Patrón…** (por ejemplo `RAP 3, TEC 2`, que se repite hasta completar 13 semanas; códigos RAP, TEC, PAS, DEF, CRE, ATT, CON, LES, GK), **Copiar a otros jugadores…** y **Limpiar**. El botón «Mostrar/Ocultar planificación» guarda tu preferencia en este navegador. Todo se guarda en la nube junto con el jugador.
-
-**Talento para la proyección:** la proyección usa el **último** Talento por skill calculado (el más actual, en las mismas unidades de la columna «Talento por skill» × velocidad). En «Talento por skill para la proyección» (bajo la tabla) puedes ingresar a mano el talento de RAP a ATT. Reglas: si la skill aún no tiene talento calculado, se usa el manual; cuando ya hay uno calculado, el manual **no se usa** y aparece con una marca «!»; si el último talento calculado tiene **más de 13 semanas**, se da prioridad al manual (si lo hay). Sin ningún dato, la skill no se proyecta. Es solo una estimación.
-
-**Planificación del equipo:** en la pestaña Resumen, una tabla con lo que entrenará cada jugador en las próximas 13 semanas (editable ahí mismo) y, abajo, cuántos jugadores entrenan cada skill en cada semana, para repartir la carga.
-
-**Acumulado:** la sección ya no se muestra en ninguna tabla (ni existe el botón para ocultarla), pero sigue calculándose: al pulsar **Copiar** en la vista de un jugador, las columnas de Acumulado salen a la derecha del resto, como antes.
-
-**Planificación de cada jugador (Venta, Sumas y Condición):** a la izquierda de Fecha hay una columna **Venta** con un campo de texto por semana y «M$» a su derecha, para anotar un posible precio de venta; se guarda por fecha en la nube junto con el jugador y no se copia a otros jugadores. Además hay un grupo **Sumas** (DEF, DEFside, MID, ATT, ATTside) proyectado semana a semana, y **Condición** también se proyecta: se asume que sube cuando su gt llega a 8. En el Resumen, la tabla de planificación ya no tiene la fila CON.
-
-**Resumen:** bajo la tabla hay una tabla de **Talentos por skill** (RAP a ATT, cada columna con el color de su skill) con el talento que usa la proyección de cada jugador: el último calculado del historial (con la marca «real») o, si no hay uno calculado reciente, el ingresado a mano (sin marca). La **Planificación del equipo** es compacta (skills abreviadas RAP, TEC, PAS, DEF, CRE, ATT, CON, LES y GK; fechas día-mes; la primera columna es el Entreno Actual) para que quepa sin desplazarse. La Velocidad de entreno (8, fija) está en «Cómo se calcula».
-
-**Resumen (orden y títulos):** TABLA RESUMEN (con la última semana registrada encima), TABLA DE PLANIFICACIÓN (siempre visible) y TABLA DE TALENTOS, en ese orden. En la planificación de cada jugador se agregó la columna EDAD, y las columnas TEMP, SEM y EDAD se colorean según la temporada (un color para las impares y otro para las pares).
-
-**Edad:** cambia en la semana 1 de cada temporada. Si un historial antiguo la tenía cambiando en otra semana, se corrige solo al abrir la página (a partir de la edad más reciente) y se guarda en la nube. En el Modo Edición no se acepta una edad que cambie fuera de la semana 1.
-
-**Resumen (botones por tabla):** arriba hay un botón por tabla (Tabla Resumen, Tabla de Planificación y Tabla de Talentos), todos encendidos por defecto; cada uno muestra u oculta su tabla (para ver solo una, apaga las otras dos). Cada tabla tiene su propio color de fondo (azul, verde y morado). Tu elección se recuerda en este navegador. La Tabla de Talentos es compacta y las celdas sin dato («—») están centradas.
-
-- Resumen: la última fila de conteo de la Tabla de Planificación ahora es «—» (no entrenas portería), las filas de conteo usan el color de su skill y la marca «real» de la Tabla de Talentos es más chica y está más arriba.
-
-**Posición Preferida, fondo y copiar fila (vista de cada jugador):** junto al nombre hay un selector **Posición Preferida** (Ninguna, Defensor, Medio, Atacante) que decide qué columnas de **Sumas** se ven en la Tabla de Planificación y en la de Entrenamiento: Ninguna = todas; Defensor = DEF y DEFside; Medio = MID; Delantero = ATT y ATTside. Se guarda en la nube con el jugador. La Tabla de Planificación individual tiene fondo verde (como la del Resumen), el texto de Venta va en verde oscuro y centrado, y cada fila tiene un botón **Copiar** que copia solo esa fila (Venta, fecha, entrenamiento, skills, gt y las sumas visibles).
-
-**Cambios de botones y color:** el botón rojo «Copiar» de la barra superior ahora se llama **CSV** (hace lo mismo: copia la tabla visible). El botón «Copiar» de cada fila de la Tabla de Planificación individual copia solo SEM, EDAD, CON, RAP, TEC, PAS, DEF, CRE, ATT y las columnas visibles de Sumas. El selector Posición Preferida es café chocolate y el fondo de la Tabla de Planificación (individual y Resumen) es amarillo.
-
-**Ajuste:** el botón por fila de la Tabla de Planificación individual es el icono ⧉ (como en Egresados) y copia solo 9 datos (SEM, EDAD, CON, RAP, TEC, PAS, DEF, CRE, ATT). El fondo de las Tablas de Planificación (individual y Resumen) ahora es rosado.
-
-**Ajuste:** las Tablas de Planificación (individual y Resumen) vuelven a los colores por defecto y solo su borde es rosado.
-
-**Ajuste:** los bordes de las celdas de las Tablas de Planificación (individual y Resumen) son rosados.
-
-**Ajuste:** en la Tabla Resumen las flechas de subida/bajada flotan a la derecha del número (los números quedan alineados), el fondo es el por defecto y los bordes de la tabla y de las celdas son azules.
-
-**Cambios Múltiples y Ciclos (planificación de cada jugador):** «Repetir semana 1» se quitó y «Patrón» pasó a llamarse **Ciclos**. Al hacer clic en una fila de la tabla se marca la semana donde empieza lo que ingreses (por defecto, el Entreno Actual). **Cambios Múltiples** programa solo lo ingresado, sin repetir (RAP 5 desde la 3ª fila = 5 semanas de rapidez); **Ciclos** repite el ciclo desde esa semana hasta completar las 13. Además, los títulos y textos de las tablas Resumen y Planificación van en el color de su tabla, y la marca «real» de Talentos usa letras rosadas sobre fondo oscuro.
-
-**Tabla Resumen — Tasación y Posición Preferida:** la tabla tiene dos columnas nuevas: **Tasación** (a la izquierda de Entreno Alineaciones; el valor anotado en «Venta» de la semana más cercana a la actual) y **Posición Preferida** (a la izquierda de Jugador). Las sumas que no corresponden a la posición del jugador se muestran con una raya y, al ordenar, quedan al final. Bajo «Última semana registrada» aparece **Tasación Más Actual**, la suma de las tasaciones numéricas. Las tablas de planificación se titulan **PLANIFICACIÓN SEMANAL**; en la del Resumen las columnas dicen «Semana N» y una línea marca el fin de la semana 13 (si no es la última columna). En Talentos, el talento real se marca con una «R» verde.
-
-**Ajustes de nombres:** «Tasación Total» (antes «Tasación Más Actual»); «RESUMEN POR SKILL» (antes «Jugadores por entrenamiento»); la posición «Delantero» ahora se llama **Atacante** (los jugadores que la tenían guardada pasan a Atacante solos); en la vista de cada jugador, la celda de encabezado que unía Venta y Semana muestra el nombre completo en mayúsculas, y en la Tabla de Entrenamiento la celda «Semana» también.
-
-**Historial de tasaciones:** todo lo que anotas en la columna Venta ahora se conserva (con el jugador, en la nube), aunque la semana ya haya pasado; se ve en «Historial de tasaciones» bajo la Tabla de Planificación de cada jugador, donde también puedes quitar una tasación con ✕ (se guardan las 150 más recientes). En el Resumen, la Tasación usa el valor más cercano a la fecha actual, sea de una semana futura o ya pasada.
-
-**Historial de tasaciones (completo):** cada tasación muestra, en este orden, Tasación, Semana del, Temp, Sem, Edad, RAP, TEC, PAS, DEF, CRE, ATT y las sumas que corresponden a la Posición Preferida del jugador. Las skills y la edad son las reales cuando esa semana ya tiene fila en el historial, y las proyectadas cuando es futura; si no hay datos para esa fecha se ve «-». El botón ⧉ de cada fila de la planificación copia ahora: nombre completo, TEMP, SEM, EDAD, CON, RAP, TEC, PAS, DEF, CRE, ATT.
+**Copiar información del jugador:** el botón de copiar junto al nombre de cada jugador (antes copiaba el PID) ahora copia su ficha en el formato del foro de Sokker (nombre con [pid], edad, altura, valor, salario, club con [tid], país, forma, disciplina táctica y las seis skills con su nivel en inglés). Lo que no esté en los datos queda con una raya.
