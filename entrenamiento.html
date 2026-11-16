@@ -520,6 +520,17 @@ section.rtab.r1 td.dash { text-align: center; color: var(--muted); font-weight: 
 /* «R»: pegada al número, que sigue centrado */
 .tal td .tn { position: relative; display: inline-block; }
 .tal td .real { position: absolute; top: -1px; right: auto; left: 100%; margin-left: 1px; }
+/* historial de tasaciones */
+details.salehist { margin: 10px 0 4px; }
+details.salehist summary { cursor: pointer; font-weight: 700; color: #0b5d2b; }
+:root[data-theme="dark"] details.salehist summary { color: #62d08a; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) details.salehist summary { color: #62d08a; } }
+details.salehist table { border-collapse: collapse; margin-top: 6px; }
+details.salehist th, details.salehist td { padding: 3px 12px; text-align: center; border-bottom: 1px solid var(--line); }
+details.salehist td.tas { font-weight: 700; color: #0b5d2b; }
+details.salehist .l { text-align: left; }
+details.salehist .tablewrap { display: inline-block; max-width: 100%; }
+details.salehist td, details.salehist th { padding: 3px 14px; }
 </style>
 </head>
 <body>
@@ -1216,7 +1227,6 @@ function autoAppend() {
     const nx = tr.pl && tr.pl[addDays(wk, 7)];
     if (nx) tr.plan = nx.f;
     if (tr.pl) for (const d of Object.keys(tr.pl)) if (d <= addDays(wk, 7)) delete tr.pl[d];
-    if (tr.sv) for (const d of Object.keys(tr.sv)) if (d < addDays(wk, 7)) delete tr.sv[d];
     res.added.push(tr.k); changed = true; touch(tr, true);
   }
   if (changed) { saveT(); schedulePush(); }
@@ -1260,8 +1270,16 @@ function renderTabs() {
   $("#tabs").innerHTML = ["Resumen", ...live().map(p => p.k).sort((a, b) => a.localeCompare(b, "es"))].map(k => `<button type="button" data-tab="${esc(k)}" aria-pressed="${k === view.tab}">${esc(k)}</button>`).join("");
 }
 
-// Tasación: el valor de venta anotado (Venta) en la semana más cercana a la actual, es decir, la primera con dato
-const saleOf = tr => { const ks = Object.keys(tr.sv || {}).filter(d => String(tr.sv[d]).trim()).sort(); return ks.length ? String(tr.sv[ks[0]]).trim() : ""; };
+// Tasación: el valor de venta anotado (Venta, o ya guardado en el historial de tasaciones) en la fecha más cercana a la actual
+const saleOf = tr => {
+  const ref = Date.parse(tr.rows[tr.rows.length - 1].d); let best = null;
+  for (const [d, v] of Object.entries(tr.sv || {})) {
+    const s = String(v).trim(); if (!s) continue;
+    const gap = Math.abs(Date.parse(d) - ref);
+    if (!best || gap < best.gap || (gap === best.gap && d > best.d)) best = { d, s, gap };
+  }
+  return best ? best.s : "";
+};
 const saleNum = s => { const mt = /-?\d+(?:[.,]\d+)?/.exec(s || ""); return mt ? Number(mt[0].replace(",", ".")) : null; };
 function resumenData() {
   return live().map(tr => {
@@ -1371,6 +1389,14 @@ function projectPlayer(tr, eff) {
 const fmtTal = v => v == null ? "" : nf2.format(v);
 const pkOf = tr => view.pkTab === tr.id ? Math.min(Math.max(view.pk | 0, 0), PLAN_WEEKS - 1) : 0;   // semana marcada (0 = Entreno Actual)
 const fullName = tr => String((matchPlayer(tr) || {}).name || tr.k).trim().toLocaleUpperCase("es");   // nombre completo del jugador, en mayúsculas
+// Historial de tasaciones: todo lo anotado en «Venta» queda guardado (con el jugador, en la nube) aunque la semana ya haya pasado
+function saleHistHtml(tr) {
+  const ks = Object.keys(tr.sv || {}).filter(d => String(tr.sv[d]).trim()).sort().reverse();
+  const rows = ks.map(d => { const c = calAt(d); return `<tr><td class="l">${esc(dmy(d))}</td><td>${c ? `${c.t} · ${c.s}` : ""}</td><td class="tas">${esc(String(tr.sv[d]).trim())}${/^[\d.,\s]+$/.test(String(tr.sv[d]).trim()) ? " M$" : ""}</td><td><button class="btn mini" type="button" data-svdel="${esc(d)}" title="Quitar esta tasación" aria-label="Quitar la tasación del ${esc(dmy(d))}">✕</button></td></tr>`; }).join("");
+  return `<details class="salehist"${view.shOpen ? " open" : ""}><summary>Historial de tasaciones (${ks.length})</summary>${ks.length
+    ? `<div class="tablewrap"><table><thead><tr><th class="l">Semana del</th><th title="Temporada · semana">Temp · Sem</th><th>Tasación</th><th></th></tr></thead><tbody>${rows}</tbody></table></div><p class="hint">Se guarda todo lo que anotas en la columna Venta, también las semanas que ya pasaron. En el Resumen, la Tasación usa el valor más cercano a la fecha actual.</p>`
+    : `<p class="hint">Aún no hay tasaciones. Lo que anotes en la columna Venta quedará guardado aquí.</p>`}</details>`;
+}
 function planHtml(tr) {
   const last = tr.rows[tr.rows.length - 1], eff = planEff(tr), pj = projectPlayer(tr, eff), pk = pkOf(tr);
   const groups = [[fullName(tr), 5, ""], ["Entrenamiento", 1, "sep"], ["Skills y avance (gt)", 14, "sep"], ["Sumas", ppIdx(tr).length, "sep"], ["", 1, "sep"]].map(([n, c, s]) => `<th colspan="${c}" class="${s}">${n}</th>`).join("");
@@ -1402,6 +1428,7 @@ function planHtml(tr) {
       <button class="btn" type="button" data-plact="copy" title="Copia esta planificación a otros jugadores">Copiar a otros jugadores…</button>
       <button class="btn" type="button" data-plact="clear" title="Deja las semanas 2 a 13 sin definir">Limpiar</button></div>
     <div class="tablewrap ent dense planwrap"><table id="planTbl"><thead class="two"><tr class="grp">${groups}</tr><tr class="cols">${th}</tr></thead><tbody>${body}</tbody></table></div>
+    ${saleHistHtml(tr)}
     <details class="tm"${pj.ti.some(x => x.manual != null || x.use === null) ? " open" : ""}><summary>Talento por skill para la proyección</summary>
       <p class="hint">La proyección usa el último Talento por skill calculado (el más actual, en las mismas unidades de la columna «Talento por skill»: semanas de entreno por nivel). Si una skill aún no tiene uno, puedes ingresarlo a mano. Cuando ya hay un talento calculado, el valor manual no se usa y aparece con «!». Si el último calculado tiene más de 13 semanas, se da prioridad al manual (si lo hay).</p>
       <div class="tmgrid">${tal}</div></details></section>`;
@@ -1746,6 +1773,7 @@ function init() {
     view.hlOff = false;
     render();
   });
+  $("#view").addEventListener("toggle", e => { if (e.target.classList && e.target.classList.contains("salehist")) view.shOpen = e.target.open; }, true);
   $("#view").addEventListener("click", e => {
     const row = e.target.closest("#planTbl tbody tr[data-pk]");
     if (row && !e.target.closest("button, input, select, a, label")) {   // marca la semana donde empiezan Cambios Múltiples y Ciclos
@@ -1755,6 +1783,10 @@ function init() {
     const b = e.target.closest("button"); if (!b || !T) return;
     const tr = live().find(p => p.k === view.tab);
     if (b.dataset.rtab != null) { view.rt[b.dataset.rtab] = !view.rt[b.dataset.rtab]; try { localStorage.setItem("entrenamiento:restabs", JSON.stringify(view.rt)); } catch {} render(); return; }
+    if (b.dataset.svdel != null) {
+      const tr = live().find(p => p.k === view.tab); if (!tr || !tr.sv) return;
+      delete tr.sv[b.dataset.svdel]; view.shOpen = true; touch(tr); render(); return;
+    }
     if (b.dataset.cprow != null) { copyRow(b.closest("tr")); return; }
     if (b.dataset.planbtn != null) { view.showPlan = !view.showPlan; try { localStorage.setItem("entrenamiento:showplan", view.showPlan ? "1" : "0"); } catch {} render(); }
     else if (b.dataset.plact != null && tr) planAction(tr, b.dataset.plact);
@@ -1782,6 +1814,7 @@ function init() {
       const tr = live().find(p => p.k === view.tab); if (!tr) return;
       const v = t.value.trim().slice(0, 14); tr.sv = tr.sv || {};
       if (v) tr.sv[t.dataset.sv] = v; else delete tr.sv[t.dataset.sv];
+      const old = Object.keys(tr.sv).sort(); while (old.length > 150) delete tr.sv[old.shift()];   // tope: las 150 tasaciones más recientes
       touch(tr); return;   // sin volver a dibujar, para no perder el cursor al pasar de un campo a otro
     }
     if (t.dataset.tm != null) {   // talento ingresado a mano
