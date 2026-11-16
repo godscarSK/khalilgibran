@@ -531,6 +531,8 @@ details.salehist td.tas { font-weight: 700; color: #0b5d2b; }
 details.salehist .l { text-align: left; }
 details.salehist .tablewrap { display: inline-block; max-width: 100%; }
 details.salehist td, details.salehist th { padding: 3px 14px; }
+details.salehist td.dash { color: var(--muted); }
+details.salehist th.nk-rap, details.salehist th.nk-tec, details.salehist th.nk-pas, details.salehist th.nk-def, details.salehist th.nk-cre, details.salehist th.nk-ata { background: transparent; }
 </style>
 </head>
 <body>
@@ -1392,9 +1394,29 @@ const fullName = tr => String((matchPlayer(tr) || {}).name || tr.k).trim().toLoc
 // Historial de tasaciones: todo lo anotado en «Venta» queda guardado (con el jugador, en la nube) aunque la semana ya haya pasado
 function saleHistHtml(tr) {
   const ks = Object.keys(tr.sv || {}).filter(d => String(tr.sv[d]).trim()).sort().reverse();
-  const rows = ks.map(d => { const c = calAt(d); return `<tr><td class="l">${esc(dmy(d))}</td><td>${c ? `${c.t} · ${c.s}` : ""}</td><td class="tas">${esc(String(tr.sv[d]).trim())}${/^[\d.,\s]+$/.test(String(tr.sv[d]).trim()) ? " M$" : ""}</td><td><button class="btn mini" type="button" data-svdel="${esc(d)}" title="Quitar esta tasación" aria-label="Quitar la tasación del ${esc(dmy(d))}">✕</button></td></tr>`; }).join("");
+  const last = tr.rows[tr.rows.length - 1], pj = ks.length ? projectPlayer(tr, planEff(tr)) : null, pi = ppIdx(tr);
+  // datos del jugador en cada fecha: reales si la semana ya tiene fila en el historial; proyectados si es futura
+  const stateAt = d => {
+    const r = tr.rows.find(x => x.d === d);
+    if (r) return { t: r.t, s: r.s, a: r.a, lvl: r.k };
+    const k = Math.round((Date.parse(d) - Date.parse(last.d)) / 604800000) - 1;
+    if (k < 0 || k >= PLAN_WEEKS) return null;
+    let s = last.s, t = last.t, a = last.a;
+    for (let q = 0; q <= k; q++) if (++s > 13) { s = 1; t++; a++; }
+    return { t, s, a, lvl: pj.weeks[k].lvl, proy: true };
+  };
+  const dash = '<td class="dash">-</td>';
+  const rows = ks.map(d => {
+    const v = String(tr.sv[d]).trim(), st = stateAt(d);
+    const c = st || calAt(d);
+    return `<tr><td class="tas">${esc(v)}${/^[\d.,\s]+$/.test(v) ? " M$" : ""}</td><td class="l">${esc(dmy(d))}</td><td>${c ? c.t : ""}</td><td>${c ? c.s : ""}</td>`
+      + (st ? `<td>${st.a}</td>${SK_COLS.slice(1).map((sk, q) => `<td class="sum nk-${sk.id}">${st.lvl[q + 1]}</td>`).join("")}${pi.map(j => `<td class="sum">${COMPOS[j][1].reduce((x, i) => x + st.lvl[i], 0)}</td>`).join("")}` : dash.repeat(1 + 6 + pi.length))
+      + `<td><button class="btn mini" type="button" data-svdel="${esc(d)}" title="Quitar esta tasación" aria-label="Quitar la tasación del ${esc(dmy(d))}">✕</button></td></tr>`;
+  }).join("");
+  const head = ["Tasación", "Semana del", "Temp", "Sem", "Edad", ...SK_COLS.slice(1).map(s => s.lab), ...pi.map(j => COMPOS[j][0]), ""];
+  const th = head.map((h, i) => `<th class="${i === 1 ? "l" : ""}${i >= 5 && i <= 10 ? " nk-" + SK_COLS[i - 4].id : ""}">${esc(h)}</th>`).join("");
   return `<details class="salehist"${view.shOpen ? " open" : ""}><summary>Historial de tasaciones (${ks.length})</summary>${ks.length
-    ? `<div class="tablewrap"><table><thead><tr><th class="l">Semana del</th><th title="Temporada · semana">Temp · Sem</th><th>Tasación</th><th></th></tr></thead><tbody>${rows}</tbody></table></div><p class="hint">Se guarda todo lo que anotas en la columna Venta, también las semanas que ya pasaron. En el Resumen, la Tasación usa el valor más cercano a la fecha actual.</p>`
+    ? `<div class="tablewrap"><table><thead><tr>${th}</tr></thead><tbody>${rows}</tbody></table></div><p class="hint">Se guarda todo lo que anotas en la columna Venta, también las semanas que ya pasaron, con la edad y las skills del jugador en esa semana (las reales si la semana ya ocurrió; las proyectadas si es futura) y las sumas de su Posición Preferida. En el Resumen, la Tasación usa el valor más cercano a la fecha actual.</p>`
     : `<p class="hint">Aún no hay tasaciones. Lo que anotes en la columna Venta quedará guardado aquí.</p>`}</details>`;
 }
 function planHtml(tr) {
@@ -1408,12 +1430,12 @@ function planHtml(tr) {
   const body = eff.map((w, k) => {
     if (++s > 13) { s = 1; t++; age++; }
     const p = pj.weeks[k], prev = k ? pj.weeks[k - 1] : null;
-    const cells = [`<td class="vc"><input class="ed sv" type="text" maxlength="14" autocomplete="off" data-sv="${esc(w.d)}" value="${esc(sv[w.d] || "")}" aria-label="Venta ${esc(dmy(w.d))}"><span class="mus">M$</span></td>`, `<td class="fc sep${k ? "" : " now"}" title="${esc(dmy(w.d))}${k ? "" : " · Entreno Actual"}">${esc(dmys(w.d))}</td>`, `<td class="${sn(t)}">${t}</td>`, `<td class="${sn(t)}" data-cp>${s}</td>`, `<td class="${sn(t)}" data-cp>${age}</td>`,
+    const cells = [`<td class="vc"><input class="ed sv" type="text" maxlength="14" autocomplete="off" data-sv="${esc(w.d)}" value="${esc(sv[w.d] || "")}" aria-label="Venta ${esc(dmy(w.d))}"><span class="mus">M$</span></td>`, `<td class="fc sep${k ? "" : " now"}" title="${esc(dmy(w.d))}${k ? "" : " · Entreno Actual"}">${esc(dmys(w.d))}</td>`, `<td class="${sn(t)}" data-cp>${t}</td>`, `<td class="${sn(t)}" data-cp>${s}</td>`, `<td class="${sn(t)}" data-cp>${age}</td>`,
       `<td class="sep">${planSel(w, k, `data-pf="${k}" aria-label="Entrenamiento ${esc(dmy(w.d))}"`)}</td>`];
     SK_COLS.forEach((sk, i) => cells.push(`<td data-cp class="sum nk-${sk.id}${i === 0 ? " sep" : ""}${p.rise[i] ? " rise" : ""}">${p.lvl[i]}${p.rise[i] ? ' <span class="chg up" title="Se estima que sube esta semana">▲</span>' : ""}</td><td class="gt gtk${i === 6 ? " last" : ""}">${p.gt[i]}</td>`));
     ppIdx(tr).forEach((j, q) => cells.push(`<td class="sum${q === 0 ? " sep" : ""}">${COMPOS[j][1].reduce((x, i) => x + p.lvl[i], 0)}</td>`));
-    cells.push(`<td class="sep cpc"><button class="btn mini" type="button" data-cprow title="Copiar SEM, EDAD, CON, RAP, TEC, PAS, DEF, CRE y ATT de esta fila" aria-label="Copiar datos de esta fila">⧉</button></td>`);
-    return `<tr data-pk="${k}"${k === pk ? ' class="picked"' : ""}>${cells.join("")}</tr>`;
+    cells.push(`<td class="sep cpc"><button class="btn mini" type="button" data-cprow title="Copiar nombre completo, TEMP, SEM, EDAD, CON, RAP, TEC, PAS, DEF, CRE y ATT de esta fila" aria-label="Copiar datos de esta fila">⧉</button></td>`);
+    return `<tr data-pk="${k}" data-nm="${esc(fullName(tr))}"${k === pk ? ' class="picked"' : ""}>${cells.join("")}</tr>`;
   }).reverse().join("");   // la semana actual (Entreno Actual) queda abajo, justo encima del historial
   const tal = pj.ti.map(x => {
     const sk = SK_COLS[x.i];
@@ -1662,8 +1684,8 @@ async function copyText(text) {
 }
 let toastTimer = 0;
 function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 2200); }
-function copyRow(row) {   // copia de la fila de planificación: SEM, EDAD y CON…ATT (9 datos)
-  const cells = [...row.querySelectorAll("td[data-cp]")].map(c => c.textContent.replace(/[▲▼]/g, "").trim());
+function copyRow(row) {   // copia de la fila de planificación: nombre completo, TEMP, SEM, EDAD y CON…ATT (11 datos)
+  const cells = [row.dataset.nm || "", ...[...row.querySelectorAll("td[data-cp]")].map(c => c.textContent.replace(/[▲▼]/g, "").trim())];
   copyText(cells.join("\t")).then(() => toast("Fila copiada"));
 }
 function copyView() {
