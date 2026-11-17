@@ -199,6 +199,17 @@ td.pos { min-width: 3rem; }
 td.sk { min-width: 2.4rem; }
 td.sk, td.pos { padding-left: 4px; padding-right: 4px; }
 table.no-val .c-val { display: none; }
+table.no-tas .c-tas { display: none; }
+:root { --venta: #0b5d2b; }
+:root[data-theme="dark"] { --venta: #62d08a; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --venta: #62d08a; } }
+td.c-tas { white-space: nowrap; text-align: center; }
+td.c-tas input.tas { width: 4.6em; text-align: center; font: inherit; font-weight: 700; color: var(--venta); background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 2px 3px; }
+td.c-tas .mus { margin-left: 2px; font-size: .8em; font-weight: 700; color: var(--venta); }
+#copymenu { position: fixed; z-index: 60; display: none; flex-direction: column; min-width: 12.5rem; background: var(--panel); color: var(--ink); border: 1px solid var(--ink); border-radius: 6px; box-shadow: 0 4px 14px rgba(0,0,0,.3); padding: 4px; }
+#copymenu.open { display: flex; }
+#copymenu button { text-align: left; font: inherit; font-size: .85rem; color: var(--ink); background: transparent; border: 0; border-radius: 4px; padding: 7px 10px; cursor: pointer; }
+#copymenu button:hover, #copymenu button:focus-visible { background: var(--zebra); outline: 2px solid var(--focus); outline-offset: -2px; }
 th.sepl, td.sepl { border-left: 1px solid var(--muted); }
 th.sepr, td.sepr { border-right: 1px solid var(--muted); }
 .chg { font-size: .7em; vertical-align: 4px; }
@@ -288,6 +299,7 @@ dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
       <button class="btn" id="diagBtn" type="button" hidden title="Compara las asignaciones de este dispositivo con las del servicio">Diagnóstico</button>
       <button class="btn" id="forgetPw" type="button" hidden title="Olvidar la contraseña en este navegador">Bloquear</button>
       <button class="btn" id="hideVal" type="button" aria-pressed="false" title="Ocultar o mostrar las columnas Valor y Salario">Ocultar Val/Sal</button>
+      <button class="btn" id="hideTas" type="button" aria-pressed="true" title="Mostrar u ocultar la columna Tasación">Mostrar Tasación</button>
       <button class="btn" id="onlyInjured" type="button" aria-pressed="false" title="Mostrar solo los jugadores lesionados">Lesionados</button>
       <button class="btn" id="onlySusp" type="button" aria-pressed="false" title="Mostrar solo los jugadores con tarjeta roja">Suspendidos</button>
       <button class="btn" id="onlyChg" type="button" aria-pressed="false" title="Mostrar solo los jugadores con alguna skill que subió o bajó respecto a la semana anterior">Cambios</button>
@@ -391,6 +403,7 @@ const COLS = [
   { key: "n",        label: "#",     cls: "c-n", left: true, title: "Número de fila. Al pulsarlo vuelves al orden por Valor, de mayor a menor." },
   { key: "est",      label: "Pos.",  cls: "c-est", title: "Tu asignación para cada jugador: GK, DEF, MID o ATT" },
   { key: "name",     label: "Jugador", cls: "c-name", left: true },
+  { key: "tas",      label: "Tasación", cls: "c-tas", ctr: true, title: "Tasación (M$) que tú ingresas para cada jugador. Se guarda con la fecha en que la escribes." },
   { key: "age",      label: "Edad" },
   { key: "value",    label: "Valor", cls: "c-val" },
   { key: "wage",     label: "Salario", cls: "c-val", title: "Salario" },
@@ -539,7 +552,7 @@ function normalize(row, api) {
 
 /* ─────────────── Estado ─────────────── */
 const state = {
-  players: [], pos: new Set(), hideVal: false, onlyInjured: false, onlyChg: false, onlySusp: false, onlySel: false, q: "",
+  players: [], pos: new Set(), hideVal: false, hideTas: true, onlyInjured: false, onlyChg: false, onlySusp: false, onlySel: false, q: "",
   ageMin: null, ageMax: null, sort: { key: "value", dir: -1 }, stamp: null, prevStamp: null, teamName: ""
 };
 
@@ -711,6 +724,27 @@ try {
 /* ─────────────── Colores de las marcas de posición ───────────────
    Se eligen en la página Plantel y viajan por el servicio con la clave j2000000000006 (las otras páginas solo los leen). */
 const POSCOL_KEY = "j2000000000006";
+/* Tasaciones del plantel: un solo valor en la nube (clave j2000000000010) con {pid: [texto, fecha]} */
+const TAS_KEY = "j2000000000010";
+let tasMap = {};
+function parseTas(txt) {
+  let o = null; try { o = JSON.parse(txt); } catch {}
+  const m = {};
+  if (o && typeof o === "object") for (const [k, a] of Object.entries(o)) if (Array.isArray(a) && typeof a[0] === "string" && a[0].trim()) m[k] = [a[0].slice(0, 14), /^\d{4}-\d{2}-\d{2}$/.test(a[1] || "") ? a[1] : ""];
+  return m;
+}
+const tasNum = s => { const mt = /-?\d+(?:[.,]\d+)?/.exec(s || ""); return mt ? Number(mt[0].replace(",", ".")) : null; };
+const todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+const dmyIso = d => d ? d.split("-").reverse().join("-") : "—";
+function setTas(pid, txt) {
+  const v = txt.trim().slice(0, 14), old = tasMap[pid];
+  if ((old ? old[0] : "") === v) return false;
+  if (v) tasMap[pid] = [v, todayISO()]; else delete tasMap[pid];
+  estMap[TAS_KEY] = { v: JSON.stringify(tasMap), t: nextT(TAS_KEY) };
+  sync.dirty.add(TAS_KEY); saveEst();
+  pushDirty();
+  return true;
+}
 const POS_LIST = ["GK", "DEF", "MID", "ATT", "ENT", "EXT"];
 const POS_DEF = { light: { GK: "#fbefc2", DEF: "#bfe3c4", MID: "#e3b0bf", ATT: "#b5c3e6", ENT: "#e6dcf5", EXT: "#d3eef0" },
                   dark:  { GK: "#4a3f12", DEF: "#1b4a28", MID: "#4a1626", ATT: "#172447", ENT: "#33224f", EXT: "#17383d" } };
@@ -895,6 +929,14 @@ async function pullEst() {
         else if (loc.t > t) sync.dirty.add(pid);
         continue;
       }
+      if (pid === TAS_KEY) {             // tasaciones del plantel
+        remote.add(pid); remoteT[pid] = Math.max(remoteT[pid] || 0, t);
+        let v; try { v = await decV(it.v); } catch { continue; }
+        const loc = estMap[pid];
+        if (!loc || t > loc.t) { estMap[pid] = { v, t }; sync.dirty.delete(pid); tasMap = parseTas(v); changed = true; }
+        else if (loc.t > t) sync.dirty.add(pid);
+        continue;
+      }
       if (!/^\d+$/.test(pid)) continue;   // claves «j…»: son los Progresos de la página de juveniles
       remote.add(pid); remoteT[pid] = Math.max(remoteT[pid] || 0, t);
       let v;
@@ -968,6 +1010,7 @@ function buildHead() {
 }
 
 function sortValue(p, key) {
+  if (key === "tas") { const a = tasMap[String(p.pid)]; return a ? tasNum(a[0]) : null; }
   if (key === "est") { const i = EST_OPTS.indexOf(estOf(p)); return i < 0 ? null : i; }
   if (key.startsWith("sk_")) { const s = p.skills?.[key.slice(3)]; return Number.isFinite(s) ? s : null; }
   if (key.startsWith("c_")) return compositeValue(p, compOf(key));
@@ -1003,6 +1046,7 @@ function visibleRows() {
 function cellText(p, key) {
   switch (key) {
     case "est": return estOf(p);
+    case "tas": { const a = tasMap[String(p.pid)]; return a ? a[0] : ""; }
     case "value": return p.value == null ? "" : nf.format(p.value) + (p.currency ? " " + p.currency : "");
     case "wage": return p.wage == null ? "" : nf.format(p.wage) + (p.wageCurrency ? " " + p.wageCurrency : "");
     default: {
@@ -1044,7 +1088,7 @@ function savePrefs() {
   try {
     localStorage.setItem(PREFS_KEY, JSON.stringify({
       ageMin: state.ageMin, ageMax: state.ageMax, pos: [...state.pos], onlyInjured: state.onlyInjured, onlyChg: state.onlyChg,
-      onlySel: state.onlySel, onlySusp: state.onlySusp, hideVal: state.hideVal, sort: state.sort
+      onlySel: state.onlySel, onlySusp: state.onlySusp, hideVal: state.hideVal, hideTas: state.hideTas, sort: state.sort
     }));
   } catch {}
 }
@@ -1063,6 +1107,7 @@ function loadPrefs() {
   state.onlySel = p.onlySel === true;
   if (p.sort && p.sort.key !== "n" && COLS.some(c => c.key === p.sort.key) && (p.sort.dir === 1 || p.sort.dir === -1)) state.sort = { key: p.sort.key, dir: p.sort.dir };
   if (p.hideVal === true) setHideVal(true);
+  if (p.hideTas === false) setHideTas(false);
   $("#onlyInjured").setAttribute("aria-pressed", String(state.onlyInjured));
   $("#onlyChg").setAttribute("aria-pressed", String(state.onlyChg));
   $("#onlySusp").setAttribute("aria-pressed", String(state.onlySusp));
@@ -1081,9 +1126,13 @@ function render() {
         const v = estOf(p);
         return `<td class="c-est"><select class="est" data-pid="${esc(p.pid)}" data-v="${v}" aria-label="Asignación de ${esc(p.name || p.pid)}"><option value=""${v ? "" : " selected"}>—</option>${EST_OPTS.map(o => `<option${o === v ? " selected" : ""}>${o}</option>`).join("")}</select></td>`;
       }
+      if (c.key === "tas") {
+        const a = tasMap[String(p.pid)];
+        return `<td class="c-tas"><input class="tas" type="text" maxlength="14" autocomplete="off" data-pid="${esc(p.pid)}" value="${esc(a ? a[0] : "")}" title="${a && a[1] ? "Ingresada el " + dmyIso(a[1]) : "Sin tasación"}" aria-label="Tasación de ${esc(p.name || p.pid)}"><span class="mus">M$</span></td>`;
+      }
       if (c.key === "name") {
         return `<td class="l c-name"><a href="${esc(p.link)}" target="_blank" rel="noopener">${esc(p.name || p.pid)}</a>`
-          + `<button type="button" class="copypid" data-pid="${esc(p.pid)}" title="Copiar la información de ${esc(p.name || p.pid)} (formato foro)" aria-label="Copiar la información de ${esc(p.name || p.pid)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>`
+          + `<button type="button" class="copypid" data-pid="${esc(p.pid)}" title="Copiar datos de ${esc(p.name || p.pid)} (foro, fila CSV o PID)" aria-label="Copiar la información de ${esc(p.name || p.pid)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>`
           + (p.callUp ? `<span class="sel" title="Citado a la selección">SEL</span>` : "")
           + (p.injury ? `<span class="inj" title="Lesionado: ${p.injury} ${p.injury === 1 ? "día" : "días"}" aria-label="Lesionado, ${p.injury} ${p.injury === 1 ? "día" : "días"}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 2h6v7h7v6h-7v7H9v-7H2V9h7z"/></svg>${p.injury} d</span>` : "")
           + (p.red ? `<span class="redcard" title="Tarjeta roja: suspendido" aria-label="Tarjeta roja, suspendido" role="img"></span>` : "")
@@ -1175,6 +1224,8 @@ function renderSummary() {
     : (state.finance ? "No se encontró el dinero disponible en los datos de la API." : "Vuelve a ejecutar node fetch-team.mjs para obtener las finanzas.");
   // Este cuadro se muestra siempre y no depende de los filtros; solo Finanzas sigue al botón Ocultar Val/Sal.
   const rows = [["Finanzas", state.hideVal ? "-" : (fin ? money(fin.best.value, fin.best.currency || cur) : "—"), state.hideVal ? "" : finTip],
+    ["Tasación del Plantel", (() => { const v = ps.map(p => tasMap[String(p.pid)]).filter(Boolean).map(a => tasNum(a[0])).filter(Number.isFinite); return v.length ? nf.format(v.reduce((a, b) => a + b, 0)) + " M$" : "—"; })(), "Suma de las tasaciones ingresadas"],
+    ["Última Tasación", (() => { const d = ps.map(p => tasMap[String(p.pid)]).filter(a => a && a[1]).map(a => a[1]).sort(); return d.length ? dmyIso(d[d.length - 1]) : "—"; })(), "Fecha del último valor ingresado en la columna Tasación"],
     ["Jugadores", String(ps.length)], ["Valor Total", money(total(p => p.value), cur)], ["Salario Total", money(total(p => p.wage), wcur)]];
   rows.push(["Edad Titulares", avgAge(starters)], ["Edad Entrenables", avgAge(trainees)],
     ["Subidas Entrenables", String(trainees.reduce((n, p) => n + SKILL_COLUMNS.filter(c => c.skill && Number.isFinite(p.skills?.[c.skill]) && Number.isFinite(p.prev?.[c.skill]) && p.skills[c.skill] > p.prev[c.skill]).length, 0)), "Cantidad de skills que subieron (▲) respecto a la semana anterior en los jugadores marcados ENT"],
@@ -1182,6 +1233,13 @@ function renderSummary() {
   el.innerHTML = `<dl>${rows.map(([k, v, tip]) => `<dt>${k}</dt><dd${tip ? ` title="${esc(tip)}"` : ""}>${esc(v)}</dd>`).join("")}</dl>`;
 }
 
+function setHideTas(on) {
+  state.hideTas = on;
+  document.querySelector("table").classList.toggle("no-tas", on);
+  const b = $("#hideTas");
+  b.setAttribute("aria-pressed", String(on));
+  b.textContent = on ? "Mostrar Tasación" : "Ocultar Tasación";
+}
 function setHideVal(on) {
   state.hideVal = on;
   document.querySelector("table").classList.toggle("no-val", on);
@@ -1228,9 +1286,13 @@ async function copyText(text) {
     ta.remove();
   }
 }
+const copyCols = () => COLS.filter(c => !((c.key === "value" || c.key === "wage") && state.hideVal) && !(c.key === "tas" && state.hideTas));
+function playerCsv(p) {   // la fila entera, igual que el botón CSV (columnas separadas por tabulaciones; sin el número de fila)
+  return copyCols().filter(c => c.key !== "n").flatMap(c => c.key === "name" ? [p.name || p.pid, p.pid ?? ""] : [cellText(p, c.key).replace(/\t|\n/g, " ")]).join("\t");
+}
 async function copyTable() {
   const rows = visibleRows();
-  const cols = COLS.filter(c => !((c.key === "value" || c.key === "wage") && state.hideVal));
+  const cols = copyCols();
   const lines = [cols.flatMap(c => c.key === "name" ? [c.label, "PID"] : [c.label === "#" ? "N" : c.label]).join("\t")];
   rows.forEach((p, i) => {
     lines.push(cols.flatMap(c => c.key === "n" ? [i + 1] : c.key === "name" ? [p.name || p.pid, p.pid ?? ""] : [cellText(p, c.key).replace(/\t|\n/g, " ")]).join("\t"));
@@ -1309,6 +1371,7 @@ function init() {
   $("#poscol").addEventListener("input", e => { const c = e.target.closest("[data-pcol]"); if (c) { posCol[c.dataset.pcol] = c.value.toLowerCase(); applyPosColors(); } });
   $("#poscol").addEventListener("change", e => { const c = e.target.closest("[data-pcol]"); if (c) { posCol[c.dataset.pcol] = c.value.toLowerCase(); applyPosColors(); setPosColor(); } });
   $("#hideVal").addEventListener("click", () => { setHideVal(!state.hideVal); render(); });
+  $("#hideTas").addEventListener("click", () => { setHideTas(!state.hideTas); render(); });
   $("#body").addEventListener("change", e => {
     const sel = e.target.closest("select.est"); if (!sel) return;
     setEst(sel.dataset.pid, sel.value);
@@ -1316,10 +1379,34 @@ function init() {
     renderSummary();
     if (state.sort.key === "est" || state.pos.size) render();
   });
-  $("#body").addEventListener("click", async e => {
+  const menu = document.createElement("div");
+  menu.id = "copymenu"; menu.setAttribute("role", "menu");
+  menu.innerHTML = `<button type="button" role="menuitem" data-mode="bb">Datos para el foro</button><button type="button" role="menuitem" data-mode="csv">Fila entera (CSV)</button><button type="button" role="menuitem" data-mode="pid">Solo el PID</button>`;
+  document.body.appendChild(menu);
+  const closeMenu = () => { menu.classList.remove("open"); menu.dataset.pid = ""; };
+  $("#body").addEventListener("click", e => {
     const b = e.target.closest(".copypid"); if (!b) return;
-    const pl = state.players.find(x => String(x.pid) === String(b.dataset.pid));
-    await copyText(pl ? playerBB(pl) : String(b.dataset.pid)); toast(pl ? "Información copiada" : "PID copiado");
+    e.stopPropagation();
+    if (menu.classList.contains("open") && menu.dataset.pid === b.dataset.pid) { closeMenu(); return; }
+    menu.dataset.pid = b.dataset.pid; menu.classList.add("open");
+    const r = b.getBoundingClientRect(), mw = menu.offsetWidth, mh = menu.offsetHeight;
+    menu.style.left = Math.max(6, Math.min(r.left, innerWidth - mw - 6)) + "px";
+    menu.style.top = (r.bottom + mh + 8 > innerHeight ? Math.max(6, r.top - mh - 4) : r.bottom + 4) + "px";
+    menu.querySelector("button").focus();
+  });
+  menu.addEventListener("click", async e => {
+    const mb = e.target.closest("button[data-mode]"); if (!mb) return;
+    const pid = menu.dataset.pid, pl = state.players.find(x => String(x.pid) === String(pid)); closeMenu();
+    if (mb.dataset.mode === "pid" || !pl) { await copyText(String(pid)); toast("PID copiado"); }
+    else if (mb.dataset.mode === "csv") { await copyText(playerCsv(pl)); toast("Fila copiada"); }
+    else { await copyText(playerBB(pl)); toast("Información copiada"); }
+  });
+  document.addEventListener("click", e => { if (!e.target.closest("#copymenu")) closeMenu(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") closeMenu(); });
+  window.addEventListener("scroll", closeMenu, true);
+  $("#body").addEventListener("change", e => {
+    const t = e.target.closest("input.tas"); if (!t) return;
+    if (setTas(String(t.dataset.pid), t.value)) { t.title = t.value.trim() ? "Ingresada el " + dmyIso(todayISO()) : "Sin tasación"; renderSummary(); if (state.sort.key === "tas") render(); }
   });
   $("#pwForm").addEventListener("submit", ev => {
     ev.preventDefault();
@@ -1335,8 +1422,8 @@ function init() {
     $("#diagBtn").addEventListener("click", runDiag);
     $("#diagCopy").addEventListener("click", async () => { await copyText($("#diagText").textContent); toast("Diagnóstico copiado"); });
   }
-  posCol = parsePosCol(estMap[POSCOL_KEY] && estMap[POSCOL_KEY].v); hlCol = parseHl(estMap[POSCOL_KEY] && estMap[POSCOL_KEY].v); applyPosColors(); applyHlColors(); renderPosCol();
-  loadPrefs();
+  tasMap = parseTas(estMap[TAS_KEY] && estMap[TAS_KEY].v); posCol = parsePosCol(estMap[POSCOL_KEY] && estMap[POSCOL_KEY].v); hlCol = parseHl(estMap[POSCOL_KEY] && estMap[POSCOL_KEY].v); applyPosColors(); applyHlColors(); renderPosCol();
+  setHideTas(true); loadPrefs();
   render();
   load(false);
 }

@@ -550,6 +550,9 @@ details.salehist th.nk-rap, details.salehist th.nk-tec, details.salehist th.nk-p
 #tbl tbody tr.selrow > td { background-image: linear-gradient(rgba(59,120,201,.22), rgba(59,120,201,.22)); }
 #tbl tbody tr.selrow > td.fc { box-shadow: inset 3px 0 0 #3b78c9; }
 .ent td.sk.rise { background: color-mix(in srgb, #2e9e4f 35%, var(--panel)); }
+/* flechas de subida: pegadas al número (que queda centrado y alineado) y en la parte alta de la celda */
+.plan td.sum, .ent td.sk, section.rtab.r1 td.sum { position: relative; }
+.plan td.sum .chg, .ent td.sk .chg.up, section.rtab.r1 td.sum .chg { position: absolute; left: calc(50% + 8px); right: auto; top: 3px; transform: none; font-size: .6em; line-height: 1; }
 </style>
 </head>
 <body>
@@ -1474,8 +1477,8 @@ function planHtml(tr) {
       `<td class="sep">${planSel(w, k, `data-pf="${k}" aria-label="Entrenamiento ${esc(dmy(w.d))}"`)}</td>`];
     SK_COLS.forEach((sk, i) => cells.push(`<td data-cp class="sum nk-${sk.id}${i === 0 ? " sep" : ""}${p.rise[i] ? " rise" : ""}">${p.lvl[i]}${p.rise[i] ? ' <span class="chg up" title="Se estima que sube esta semana">▲</span>' : ""}</td><td class="gt gtk${i === 6 ? " last" : ""}">${p.gt[i]}</td>`));
     ppIdx(tr).forEach((j, q) => cells.push(`<td class="sum${q === 0 ? " sep" : ""}">${COMPOS[j][1].reduce((x, i) => x + p.lvl[i], 0)}</td>`));
-    cells.push(`<td class="sep cpc"><button class="btn mini" type="button" data-cprow title="Copiar nombre completo, TEMP, SEM, EDAD, CON, RAP, TEC, PAS, DEF, CRE y ATT de esta fila" aria-label="Copiar datos de esta fila">⧉</button></td>`);
-    return `<tr data-pk="${k}" data-nm="${esc(fullName(tr))}"${pkSet && k === pk ? ' class="picked"' : ""}>${cells.join("")}</tr>`;
+    cells.push(`<td class="sep cpc"><button class="btn mini" type="button" data-cprow title="Copiar nombre completo, PID, TEMP, SEM, EDAD, CON, RAP, TEC, PAS, DEF, CRE y ATT de esta fila" aria-label="Copiar datos de esta fila">⧉</button></td>`);
+    return `<tr data-pk="${k}" data-nm="${esc(fullName(tr))}" data-pid="${esc(pidOf(tr) || "")}"${pkSet && k === pk ? ' class="picked"' : ""}>${cells.join("")}</tr>`;
   }).reverse().join("");   // la semana actual (Entreno Actual) queda abajo, justo encima del historial
   const tal = pj.ti.map(x => {
     const sk = SK_COLS[x.i];
@@ -1538,7 +1541,7 @@ function rangeText(tr, sel) {
   if (!sel || sel.b == null) return sel ? "marca una segunda fila" : "marca dos filas de la tabla";
   const lo = Math.min(sel.a, sel.b), hi = Math.max(sel.a, sel.b), ra = risesAtOf(tr);
   let s = 0; for (let n = lo + 1; n <= hi; n++) s += ra[n];
-  return `<b>${s}</b> <span class="muted">(del ${esc(dmy(tr.rows[lo].d))} al ${esc(dmy(tr.rows[hi].d))})</span>`;
+  return `<b>${s}</b> <span class="muted">(${hi - lo} ${hi - lo === 1 ? "semana" : "semanas"})</span>`;
 }
 function trainInfoHtml(tr, sel) {
   const trained = tr.rows.filter(r => r.f).length, total = risesAtOf(tr).reduce((a, b) => a + b, 0);
@@ -1744,8 +1747,8 @@ async function copyText(text) {
 }
 let toastTimer = 0;
 function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 2200); }
-function copyRow(row) {   // copia de la fila de planificación: nombre completo, TEMP, SEM, EDAD y CON…ATT (11 datos)
-  const cells = [row.dataset.nm || "", ...[...row.querySelectorAll("td[data-cp]")].map(c => c.textContent.replace(/[▲▼]/g, "").trim())];
+function copyRow(row) {   // copia de la fila de planificación: nombre completo, PID, TEMP, SEM, EDAD y CON…ATT (11 datos)
+  const cells = [row.dataset.nm || "", row.dataset.pid || "", ...[...row.querySelectorAll("td[data-cp]")].map(c => c.textContent.replace(/[▲▼]/g, "").trim())];
   copyText(cells.join("\t")).then(() => toast("Fila copiada"));
 }
 function copyView() {

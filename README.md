@@ -238,3 +238,8 @@ Qué tener en cuenta:
 - Tabla Resumen: bajo "Tasación Total" aparece "Fechas de Tasación: entre el … y el …" (fecha mínima y máxima de las tasaciones de la tabla).
 - Tabla de Entrenamiento individual: todas las subidas (también las limpias) llevan el mismo sombreado verde que en Planificación.
 - Sobre la tabla: "Semanas Entrenadas", "Subidas Relevantes" (skills de la posición preferida; las seis sin CON si es "Ninguna") y "Subidas en Rango Seleccionado" (toca dos filas; una tercera reinicia la selección, tocar la misma la quita, tocar fuera borra el resaltado).
+
+### v36 · Entrenamiento
+- El botón ⧉ de la Planificación individual copia ahora: nombre completo, PID, TEMP, SEM, EDAD, CON…ATT.
+- Flechas verdes (Entrenamiento, Planificación y Resumen): pegadas al número y más arriba; los números quedan alineados.
+- "Subidas en Rango Seleccionado" informa las semanas del rango sin contar la inicial (filas 5 y 9 → 4 semanas).
