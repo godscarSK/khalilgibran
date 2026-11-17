@@ -753,11 +753,27 @@ function keyPaths(o, prefix = "", depth = 0, out = []) {
   return out;
 }
 
+// Busca en los datos un campo por nombre (hasta 3 niveles) y lo convierte con «conv».
+function findDeep(o, re, conv) {
+  const queue = [[o, 0]];
+  for (let guard = 0; queue.length && guard < 300; guard++) {
+    const [x, d] = queue.shift();
+    if (!x || typeof x !== "object") continue;
+    for (const [k, v] of Object.entries(x)) {
+      if (re.test(k)) { const r = conv(v); if (r !== null && r !== undefined && r !== "") return r; }
+      if (v && typeof v === "object" && !Array.isArray(v) && d < 3) queue.push([v, d + 1]);
+    }
+  }
+  return null;
+}
+const countryName = v => typeof v === "string" ? v.trim() : (v && typeof v === "object" ? String(v.name ?? v.fullName ?? v.code ?? v.id ?? "").trim() : (typeof v === "number" ? String(v) : ""));
+const findCountry = info => findDeep(info, /^(country|nationality)$/i, countryName) || "";
 function normalize(row, api) {
   const p = {
     n: row.n, name: row.name, pid: row.pid, link: "https://sokker.org/player/PID/" + row.pid,
     loaded: false, age: null, callUp: false, value: null, currency: "",
-    form: null, wage: null, wageCurrency: "", injury: 0, red: 0, skills: null, skillKeys: []
+    form: null, wage: null, wageCurrency: "", injury: 0, red: 0, skills: null, skillKeys: [],
+    height: null, disc: null, country: "", tid: null, tname: ""
   };
   const i = api && api.info;
   if (i) {
@@ -769,6 +785,11 @@ function normalize(row, api) {
     p.currency = i.value?.currency || "";
     const s = i.skills || {};
     p.form = num(s.form);
+    p.height = num(i.characteristics?.height) ?? findDeep(i, /^height$/i, num);
+    p.disc = findDeep(s, /^(tactical_?discipline|discipline|tactics)$/i, num) ?? findDeep(i, /^tactical_?discipline$/i, num);
+    p.country = findCountry(i);
+    p.tid = num(i.team?.id) ?? num(i.teamId);
+    p.tname = (typeof i.team?.name === "string" && i.team.name) || "";
     const w = findWage(i);
     if (w) { p.wage = w.value; p.wageCurrency = w.currency || p.currency; }
     p.injury = num(i.injury?.daysRemaining) > 0 ? i.injury.daysRemaining : 0;
@@ -1280,7 +1301,7 @@ const saleOf = tr => {
     const gap = Math.abs(Date.parse(d) - ref);
     if (!best || gap < best.gap || (gap === best.gap && d > best.d)) best = { d, s, gap };
   }
-  return best ? best.s : "";
+  return best;
 };
 const saleNum = s => { const mt = /-?\d+(?:[.,]\d+)?/.exec(s || ""); return mt ? Number(mt[0].replace(",", ".")) : null; };
 function resumenData() {
@@ -1288,8 +1309,8 @@ function resumenData() {
     const r = tr.rows[tr.rows.length - 1]; if (!r) return null;
     const k = r.k, sum = a => a.reduce((x, i) => x + k[i], 0);
     const pk = tr.rows.length > 1 ? tr.rows[tr.rows.length - 2].k : null;
-    const sale = saleOf(tr), sn = saleNum(sale), pi = ppIdx(tr);
-    return { tr, r, pk, sale, sn, hid: new Set([0, 1, 2, 3, 4].filter(j => !pi.includes(j))), cells: [sn == null ? -1 : sn, alTrn(tr).v, tr.plan, Math.max(0, PP_OPTS.indexOf(ppOf(tr))), tr.k, r.a, k[0], k[1], k[2], k[3], k[4], k[5], k[6], sum([1, 4]), sum([2, 3, 5]), sum([1, 2, 3, 5]), sum([1, 2, 6]), sum([3, 4, 5])] };
+    const sl = saleOf(tr), sale = sl ? sl.s : "", sn = saleNum(sale), pi = ppIdx(tr);
+    return { tr, r, pk, sale, saleD: sl ? sl.d : "", sn, hid: new Set([0, 1, 2, 3, 4].filter(j => !pi.includes(j))), cells: [sn == null ? -1 : sn, alTrn(tr).v, tr.plan, Math.max(0, PP_OPTS.indexOf(ppOf(tr))), tr.k, r.a, k[0], k[1], k[2], k[3], k[4], k[5], k[6], sum([1, 4]), sum([2, 3, 5]), sum([1, 2, 3, 5]), sum([1, 2, 6]), sum([3, 4, 5])] };
   }).filter(Boolean);
 }
 const RES_COLS = [   // [etiqueta, ayuda, clase de skill]
@@ -1306,7 +1327,7 @@ function renderResumen() {
   const hl = new Set(si >= 13 && !view.hlOff ? [si, ...COMPOS[si - 13][1].map(i => 6 + i)] : []);   // al ordenar por una suma se resaltan las skills que entran en ella
   const head = RES_COLS.map(([lab, tip], i) => `<th class="sortable${RES_COLS[i][2] ? " nk-" + RES_COLS[i][2] : ""}${i === 4 ? " l" : ""}${i === 6 || i === 13 ? " sep" : ""}${hl.has(i) ? " hl" : ""}" data-sort="${i}" title="${esc(tip ? tip + " (ordenar)" : "Ordenar por " + lab)}">${esc(lab)}${si === i ? `<span class="arr">${sd > 0 ? "▲" : "▼"}</span>` : ""}</th>`).join("");
   const body = rows.map(x => `<tr>${x.cells.map((c, i) => {
-    if (i === 0) return `<td class="sum tas">${x.sale ? esc(x.sale) : "—"}</td>`;
+    if (i === 0) return `<td class="sum tas"${x.saleD ? ` title="Tasación de la semana del ${esc(dmy(x.saleD))}"` : ""}>${x.sale ? esc(x.sale) : "—"}</td>`;
     if (i === 1) return `<td>${alChip(x.tr)}</td>`;
     if (i === 2) return `<td>${trnSelect(c, `data-plan="${esc(x.tr.k)}" aria-label="Entreno actual de ${esc(x.tr.k)}"`)}</td>`;
     if (i === 3) return `<td class="ppc">${esc(PP_OPTS[c])}</td>`;
@@ -1420,7 +1441,7 @@ function saleHistHtml(tr) {
     : `<p class="hint">Aún no hay tasaciones. Lo que anotes en la columna Venta quedará guardado aquí.</p>`}</details>`;
 }
 function planHtml(tr) {
-  const last = tr.rows[tr.rows.length - 1], eff = planEff(tr), pj = projectPlayer(tr, eff), pk = pkOf(tr);
+  const last = tr.rows[tr.rows.length - 1], eff = planEff(tr), pj = projectPlayer(tr, eff), pk = pkOf(tr), pkSet = view.pkTab === tr.id && view.pk != null;
   const groups = [[fullName(tr), 5, ""], ["Entrenamiento", 1, "sep"], ["Skills y avance (gt)", 14, "sep"], ["Sumas", ppIdx(tr).length, "sep"], ["", 1, "sep"]].map(([n, c, s]) => `<th colspan="${c}" class="${s}">${n}</th>`).join("");
   const cols = ["Venta", "Fecha", "TEMP", "SEM", "EDAD", "Entrenamiento", ...SK_COLS.flatMap(s => [s.lab, "gt"]), ...ppIdx(tr).map(j => COMPOS[j][0]), ""], sepAt = new Set([1, 5, 6, 20, 20 + ppIdx(tr).length]);
   const skh = i => i >= 6 && i <= 19 ? ((i - 6) % 2 ? " gtk" + (i === 19 ? " last" : "") : " nk-" + SK_COLS[(i - 6) / 2].id) : "";
@@ -1435,7 +1456,7 @@ function planHtml(tr) {
     SK_COLS.forEach((sk, i) => cells.push(`<td data-cp class="sum nk-${sk.id}${i === 0 ? " sep" : ""}${p.rise[i] ? " rise" : ""}">${p.lvl[i]}${p.rise[i] ? ' <span class="chg up" title="Se estima que sube esta semana">▲</span>' : ""}</td><td class="gt gtk${i === 6 ? " last" : ""}">${p.gt[i]}</td>`));
     ppIdx(tr).forEach((j, q) => cells.push(`<td class="sum${q === 0 ? " sep" : ""}">${COMPOS[j][1].reduce((x, i) => x + p.lvl[i], 0)}</td>`));
     cells.push(`<td class="sep cpc"><button class="btn mini" type="button" data-cprow title="Copiar nombre completo, TEMP, SEM, EDAD, CON, RAP, TEC, PAS, DEF, CRE y ATT de esta fila" aria-label="Copiar datos de esta fila">⧉</button></td>`);
-    return `<tr data-pk="${k}" data-nm="${esc(fullName(tr))}"${k === pk ? ' class="picked"' : ""}>${cells.join("")}</tr>`;
+    return `<tr data-pk="${k}" data-nm="${esc(fullName(tr))}"${pkSet && k === pk ? ' class="picked"' : ""}>${cells.join("")}</tr>`;
   }).reverse().join("");   // la semana actual (Entreno Actual) queda abajo, justo encima del historial
   const tal = pj.ti.map(x => {
     const sk = SK_COLS[x.i];
@@ -1796,11 +1817,19 @@ function init() {
     render();
   });
   $("#view").addEventListener("toggle", e => { if (e.target.classList && e.target.classList.contains("salehist")) view.shOpen = e.target.open; }, true);
+  document.addEventListener("click", e => {   // tocar fuera de la tabla y de sus botones desmarca la semana
+    if (view.pk == null || e.target.closest("#planTbl, .planbtns")) return;
+    view.pk = null; document.querySelectorAll("#planTbl tr.picked").forEach(x => x.classList.remove("picked"));
+  });
   $("#view").addEventListener("click", e => {
     const row = e.target.closest("#planTbl tbody tr[data-pk]");
     if (row && !e.target.closest("button, input, select, a, label")) {   // marca la semana donde empiezan Cambios Múltiples y Ciclos
       const tr0 = live().find(p => p.k === view.tab);
-      if (tr0) { view.pkTab = tr0.id; view.pk = Number(row.dataset.pk); row.parentNode.querySelectorAll("tr.picked").forEach(x => x.classList.remove("picked")); row.classList.add("picked"); }
+      if (tr0) {
+        const was = row.classList.contains("picked");   // tocar de nuevo la fila marcada la desmarca
+        row.parentNode.querySelectorAll("tr.picked").forEach(x => x.classList.remove("picked"));
+        if (was) { view.pk = null; } else { view.pkTab = tr0.id; view.pk = Number(row.dataset.pk); row.classList.add("picked"); }
+      }
     }
     const b = e.target.closest("button"); if (!b || !T) return;
     const tr = live().find(p => p.k === view.tab);
