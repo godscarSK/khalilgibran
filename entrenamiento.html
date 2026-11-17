@@ -266,7 +266,7 @@ dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
 .ent td.l, .ent th.l { text-align: left; }
 .ent td.sep, .ent th.sep { border-left: 2px solid var(--line); }
 .ent td.gt { color: var(--muted); font-size: .86rem; }
-.ent td.sk { font-weight: 700; background: color-mix(in srgb, var(--hh) calc(var(--p, 0) * 0.55%), var(--panel)); }
+.ent td.sk { font-weight: 700; position: relative; }
 .ent td.sum { font-weight: 700; }
 .ent td.fc { position: sticky; left: 0; z-index: 1; background: var(--panel); font-weight: 600; }
 .ent th.fc { position: sticky; left: 0; z-index: 3; }
@@ -315,7 +315,7 @@ i.cl::before { content: "*"; }
 .ent .rm { margin-left: auto; }
 .warn { display: inline-flex; align-items: center; justify-content: center; width: 1.2rem; height: 1.2rem; border-radius: 50%; background: #d11a1a; color: #fff; font-weight: 800; font-size: .85rem; line-height: 1; cursor: help; vertical-align: middle; }
 .syncmsg { margin: 4px 0 0; font-size: .8rem; color: var(--muted); min-height: 1em; }
-.ent td.tal { font-weight: 700; background: color-mix(in srgb, var(--hh) 62%, var(--panel)); }
+.ent td.tal { font-weight: 700; }
 /* números de la tabla Resumen: un color fijo por skill */
 :root { --n-con: #2e6b17; --n-rap: #1155cc; --n-tec: #7a4fd1; --n-pas: #a87800; --n-def: #c96f12; --n-cre: #cc2f2f; --n-ata: #666666; }
 :root[data-theme="dark"] { --n-con: #7fd35a; --n-rap: #6aaeff; --n-tec: #b69cff; --n-pas: #f0c640; --n-def: #ffa95a; --n-cre: #ff7b73; --n-ata: #b5b5b5; }
@@ -486,12 +486,12 @@ section.rtab.r1 td.sum { position: relative; }
 section.rtab.r1 td.sum .chg { position: absolute; right: 3px; top: 50%; transform: translateY(-50%); font-size: .7em; line-height: 1; }
 /* títulos y textos en el color de su tabla */
 section.rtab.r1 h2, section.rtab.r1 .lastweek, section.rtab.r1 .lastweek b { color: #2f6fc4; }
-section.rtab.r2 h3, section.rtab.r2 h3 small, section.rtab.r2 .hint { color: #c9457f; }
+section.rtab.r2 h3 { color: #c9457f; }
 :root[data-theme="dark"] section.rtab.r1 h2, :root[data-theme="dark"] section.rtab.r1 .lastweek, :root[data-theme="dark"] section.rtab.r1 .lastweek b { color: #8db6f0; }
-:root[data-theme="dark"] section.rtab.r2 h3, :root[data-theme="dark"] section.rtab.r2 h3 small, :root[data-theme="dark"] section.rtab.r2 .hint { color: #f29cc3; }
+:root[data-theme="dark"] section.rtab.r2 h3 { color: #f29cc3; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) section.rtab.r1 h2, :root:not([data-theme="light"]) section.rtab.r1 .lastweek, :root:not([data-theme="light"]) section.rtab.r1 .lastweek b { color: #8db6f0; }
-  :root:not([data-theme="light"]) section.rtab.r2 h3, :root:not([data-theme="light"]) section.rtab.r2 h3 small, :root:not([data-theme="light"]) section.rtab.r2 .hint { color: #f29cc3; }
+  :root:not([data-theme="light"]) section.rtab.r2 h3 { color: #f29cc3; }
 }
 /* semana marcada en la planificación individual */
 #planTbl tbody tr { cursor: pointer; }
@@ -533,6 +533,15 @@ details.salehist .tablewrap { display: inline-block; max-width: 100%; }
 details.salehist td, details.salehist th { padding: 3px 14px; }
 details.salehist td.dash { color: var(--muted); }
 details.salehist th.nk-rap, details.salehist th.nk-tec, details.salehist th.nk-pas, details.salehist th.nk-def, details.salehist th.nk-cre, details.salehist th.nk-ata { background: transparent; }
+
+/* nombre del jugador resaltado en los encabezados de las tablas individuales */
+.ent thead tr.grp th.pname { background: #1f4e8c; color: #fff; font-weight: 800; font-size: .82rem; letter-spacing: .06em; text-align: center; border-bottom-color: #1f4e8c; }
+:root[data-theme="dark"] .ent thead tr.grp th.pname { background: #3b6fbd; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .ent thead tr.grp th.pname { background: #3b6fbd; } }
+/* Tabla de Entrenamiento: sin celdas coloreadas; número del color de su skill y flecha verde de subida */
+.ent td.sk .chg.up { position: absolute; right: 2px; top: 50%; transform: translateY(-50%); font-size: .62em; line-height: 1; color: #1f9d46; font-weight: 800; }
+:root[data-theme="dark"] .ent td.sk .chg.up { color: #5ee08a; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .ent td.sk .chg.up { color: #5ee08a; } }
 </style>
 </head>
 <body>
@@ -1442,7 +1451,7 @@ function saleHistHtml(tr) {
 }
 function planHtml(tr) {
   const last = tr.rows[tr.rows.length - 1], eff = planEff(tr), pj = projectPlayer(tr, eff), pk = pkOf(tr), pkSet = view.pkTab === tr.id && view.pk != null;
-  const groups = [[fullName(tr), 5, ""], ["Entrenamiento", 1, "sep"], ["Skills y avance (gt)", 14, "sep"], ["Sumas", ppIdx(tr).length, "sep"], ["", 1, "sep"]].map(([n, c, s]) => `<th colspan="${c}" class="${s}">${n}</th>`).join("");
+  const groups = [[fullName(tr), 5, "pname"], ["Entrenamiento", 1, "sep"], ["Skills y avance (gt)", 14, "sep"], ["Sumas", ppIdx(tr).length, "sep"], ["", 1, "sep"]].map(([n, c, s]) => `<th colspan="${c}" class="${s}">${n}</th>`).join("");
   const cols = ["Venta", "Fecha", "TEMP", "SEM", "EDAD", "Entrenamiento", ...SK_COLS.flatMap(s => [s.lab, "gt"]), ...ppIdx(tr).map(j => COMPOS[j][0]), ""], sepAt = new Set([1, 5, 6, 20, 20 + ppIdx(tr).length]);
   const skh = i => i >= 6 && i <= 19 ? ((i - 6) % 2 ? " gtk" + (i === 19 ? " last" : "") : " nk-" + SK_COLS[(i - 6) / 2].id) : "";
   const th = cols.map((c, i) => `<th class="${i === 0 ? "vc " : i === 1 ? "fc " : ""}${sepAt.has(i) ? "sep" : ""}${skh(i)}" title="${esc(c === "Venta" ? "Posible precio de venta, en M$ (texto libre)" : COMPOS_TIP[c] || "")}">${esc(c)}</th>`).join("");
@@ -1518,7 +1527,7 @@ function renderPlayer(tr) {
   const mm = SK_COLS.map((_, i) => { const v = rowsSrc.map(r => r.k[i]); return [Math.min(...v), Math.max(...v)]; });
   const ni = (n, f, v, mn, mx, i) => `<input class="ed" type="number" inputmode="numeric" step="1" min="${mn}" max="${mx}" data-ed="${n}|${f}${i != null ? "|" + i : ""}" value="${esc(v)}" aria-label="${esc(f)} fila ${n + 1}">`;
   const pi = ppIdx(tr), ns = pi.length;
-  const groups = PL_GROUPS().map(([n, c, s]) => `<th colspan="${n === "Sumas" ? ns : c}" class="${s}">${n === "Semana" ? esc(fullName(tr)) : n}</th>`).join("");
+  const groups = PL_GROUPS().map(([n, c, s]) => `<th colspan="${n === "Sumas" ? ns : c}" class="${n === "Semana" ? "pname" : s}">${n === "Semana" ? esc(fullName(tr)) : n}</th>`).join("");
   const cols = ["Fecha", "TEMP", "SEM", "EDAD", "ENT. F", "Entrenamiento", ...SK_COLS.flatMap(s => [s.lab, "gt"]),
     ...pi.map(j => COMPOS[j][0]), "RAP", "TEC", "PAS", "DEF", "CRE", "ATT", "RAP", "TEC", "PAS", "DEF", "CRE", "ATT"];   // las últimas 6 (Acumulado) no se ven: solo se incluyen al copiar
   const tips = { ...COMPOS_TIP, "ENT. F": "Si está marcada, la skill entrenada suma 2 en lugar de la Velocidad de entreno", gt: "Puntos de entrenamiento acumulados desde la última subida de la skill: suma la Velocidad de entreno si se entrenó, 2 con ENT. F, 1 si no se entrenó y 0 en LESIÓN. Vuelve a 0 cuando la skill sube" };
@@ -1536,10 +1545,11 @@ function renderPlayer(tr) {
       `<td>${trnSelect(r.f, `data-rf="${n}" aria-label="Entrenamiento ${esc(dmy(r.d))}"`)}</td>`];
     SK_COLS.forEach((s, i) => {
       if (ed) { const gv = ed.gtIn[n + ":" + i]; cells.push(`<td class="sk${i === 0 ? " sep" : ""}">${ni(n, "k", r.k[i], 0, 30, i)}</td><td class="gt gtk${i === 6 ? " last" : ""}">${ni(n, "g", gv != null ? gv : c.gt[i], 0, 999, i)}</td>`); return; }
-      cells.push(`<td class="sk sk-${s.id}${i === 0 ? " sep" : ""}${c.clean[i] ? " clean" : ""}" style="--p:${scaleP(r.k[i], mm[i][0], mm[i][1])}"${c.clean[i] ? ' title="Subida Limpia: subió sin haber sido entrenada"' : ""}>${r.k[i]}</td><td class="gt gtk${i === 6 ? " last" : ""}">${c.gt[i]}</td>`);
+      const pv = n > 0 ? rowsSrc[n - 1].k[i] : null, up = pv != null && r.k[i] > pv && !c.clean[i];   // subida «normal» (la Limpia lleva su propia marca)
+      cells.push(`<td class="sk nk-${s.id}${i === 0 ? " sep" : ""}${c.clean[i] ? " clean" : ""}"${c.clean[i] ? ' title="Subida Limpia: subió sin haber sido entrenada"' : ""}>${r.k[i]}${up ? `<span class="chg up" title="Subió: antes ${pv}" aria-label="subió, antes ${pv}">▲</span>` : ""}</td><td class="gt gtk${i === 6 ? " last" : ""}">${c.gt[i]}</td>`);
     });
     pi.forEach((j, q) => cells.push(`<td class="sum${q === 0 ? " sep" : ""}">${COMPOS[j][1].reduce((x, i) => x + r.k[i], 0)}</td>`));
-    c.tw.forEach((t, i) => cells.push(`<td class="${i === 0 ? "sep" : ""}${t ? " tal sk-" + SK_COLS[i + 1].id : ""}"${t ? ` title="Niveles ${t.from} → ${t.to} (${t.m} ${t.m === 1 ? "cambio" : "cambios"})"` : ""}>${t ? nf2.format(t.v) : ""}</td>`));
+    c.tw.forEach((t, i) => cells.push(`<td class="${i === 0 ? "sep" : ""}${t ? " tal nk-" + SK_COLS[i + 1].id : ""}"${t ? ` title="Niveles ${t.from} → ${t.to} (${t.m} ${t.m === 1 ? "cambio" : "cambios"})"` : ""}>${t ? nf2.format(t.v) : ""}</td>`));
     c.cum.forEach((v, i) => cells.push(`<td class="gt cumc${i === 0 ? " sep" : ""}">${v}</td>`));   // Acumulado: oculto, solo se copia
     rowsHtml.push(`<tr${n === lastIdx ? ' class="newest"' : ""}>${cells.join("")}</tr>`);
   }
