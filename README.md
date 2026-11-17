@@ -233,3 +233,8 @@ Qué tener en cuenta:
 **Ajustes:** en la planificación de cada jugador la semana marcada se desmarca tocándola de nuevo o tocando fuera de la tabla (los botones Cambios Múltiples y Ciclos no la desmarcan); sin marca, empiezan en el Entreno Actual. En la Tabla Resumen, al pasar el cursor sobre una Tasación se ve la fecha de la semana a la que corresponde.
 
 **Ajustes de color (vista de cada jugador):** la celda con el nombre del jugador va resaltada en azul en los encabezados de la Tabla de Entrenamiento y de la de Planificación; en las Tablas de Planificación solo el título es rosado; y en la Tabla de Entrenamiento las celdas ya no se colorean: los números van con el color de su skill, las subidas normales llevan una flecha verde ▲ y las Subidas Limpias mantienen su marca propia (el asterisco amarillo).
+
+### v35 · Entrenamiento
+- Tabla Resumen: bajo "Tasación Total" aparece "Fechas de Tasación: entre el … y el …" (fecha mínima y máxima de las tasaciones de la tabla).
+- Tabla de Entrenamiento individual: todas las subidas (también las limpias) llevan el mismo sombreado verde que en Planificación.
+- Sobre la tabla: "Semanas Entrenadas", "Subidas Relevantes" (skills de la posición preferida; las seis sin CON si es "Ninguna") y "Subidas en Rango Seleccionado" (toca dos filas; una tercera reinicia la selección, tocar la misma la quita, tocar fuera borra el resaltado).
