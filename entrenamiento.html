@@ -199,6 +199,17 @@ td.pos { min-width: 3rem; }
 td.sk { min-width: 2.4rem; }
 td.sk, td.pos { padding-left: 4px; padding-right: 4px; }
 table.no-val .c-val { display: none; }
+table.no-tas .c-tas { display: none; }
+:root { --venta: #0b5d2b; }
+:root[data-theme="dark"] { --venta: #62d08a; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --venta: #62d08a; } }
+td.c-tas { white-space: nowrap; text-align: center; }
+td.c-tas input.tas { width: 4.6em; text-align: center; font: inherit; font-weight: 700; color: var(--venta); background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 2px 3px; }
+td.c-tas .mus { margin-left: 2px; font-size: .8em; font-weight: 700; color: var(--venta); }
+#copymenu { position: fixed; z-index: 60; display: none; flex-direction: column; min-width: 12.5rem; background: var(--panel); color: var(--ink); border: 1px solid var(--ink); border-radius: 6px; box-shadow: 0 4px 14px rgba(0,0,0,.3); padding: 4px; }
+#copymenu.open { display: flex; }
+#copymenu button { text-align: left; font: inherit; font-size: .85rem; color: var(--ink); background: transparent; border: 0; border-radius: 4px; padding: 7px 10px; cursor: pointer; }
+#copymenu button:hover, #copymenu button:focus-visible { background: var(--zebra); outline: 2px solid var(--focus); outline-offset: -2px; }
 th.sepl, td.sepl { border-left: 1px solid var(--muted); }
 th.sepr, td.sepr { border-right: 1px solid var(--muted); }
 .chg { font-size: .7em; vertical-align: 4px; }
@@ -553,6 +564,20 @@ details.salehist th.nk-rap, details.salehist th.nk-tec, details.salehist th.nk-p
 /* flechas de subida: pegadas al número (que queda centrado y alineado) y en la parte alta de la celda */
 .plan td.sum, .ent td.sk, section.rtab.r1 td.sum { position: relative; }
 .plan td.sum .chg, .ent td.sk .chg.up, section.rtab.r1 td.sum .chg { position: absolute; left: calc(50% + 8px); right: auto; top: 3px; transform: none; font-size: .6em; line-height: 1; }
+/* v37: botón ⧉ de los cuadros informativos, columna Entrenamiento de solo lectura, Modo Edición amarillo a la derecha, talento editable */
+.infobox, #summary { position: relative; }
+.cpinfo { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; padding: 0; line-height: 1; font-size: .8rem; cursor: pointer; color: var(--muted); background: var(--panel); border: 1px solid var(--line); border-radius: 5px; }
+.cpinfo:hover, .cpinfo:focus-visible { color: var(--ink); border-color: var(--ink); }
+.infobox { padding-right: 32px; }
+#summary .cpinfo { top: 6px; right: 6px; }
+select.trn.trnro:disabled { opacity: 1; cursor: default; pointer-events: none; color: var(--ink); }
+select.trn.trnro[data-t=""]:disabled { color: var(--muted); }
+.view-title .edgrp { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; }
+.btn.edon { background: #ffd43b; color: #3a2f00; border-color: #c9a100; font-weight: 700; }
+.btn.edon:hover { background: #ffca1a; }
+.ent td input.ed.tv { width: 4.4em; }
+.ent td.tvm { text-decoration: underline dotted; }
+#summary dl { margin-right: 24px; }
 </style>
 </head>
 <body>
@@ -823,7 +848,7 @@ function normalize(row, api) {
 
 /* ─────────────── Estado ─────────────── */
 const state = {
-  players: [], pos: new Set(), hideVal: false, onlyInjured: false, onlyChg: false, onlySusp: false, onlySel: false, q: "",
+  players: [], pos: new Set(), hideVal: false, hideTas: true, onlyInjured: false, onlyChg: false, onlySusp: false, onlySel: false, q: "",
   ageMin: null, ageMax: null, sort: { key: "value", dir: -1 }, stamp: null, prevStamp: null, teamName: ""
 };
 
@@ -954,6 +979,10 @@ function computeRows(rows, speed) {
       else if (a1 && a2 && !a1.clean && !c0 && !a2.clean) m = 3;
       const ref = m ? a[L - m] : null;
       if (ref && ref.row < n) tw[i - 1] = { v: (cum[i - 1] - out[ref.row].cum[i - 1]) / speed / m, m, from: L - m, to: L };
+    }
+    if (r.tv) for (let i = 1; i <= 6; i++) {   // r.tv = Talento por skill escrito a mano (Modo Edición); reemplaza al calculado de esa fila
+      const x = r.tv[i - 1];
+      if (Number.isFinite(x) && x > 0) { const q = tw[i - 1]; tw[i - 1] = { v: x, m: q ? q.m : 0, from: q ? q.from : null, to: q ? q.to : null, manual: true }; }
     }
     out.push({ gt, cum: cum.slice(), tw, clean });
   });
@@ -1287,6 +1316,7 @@ const scaleP = (v, a, b) => b > a ? Math.round((v - a) / (b - a) * 100) : 0;
 const trnSelect = (val, attrs) => `<select class="trn" data-t="${esc(val)}" ${attrs}><option value=""${val === "" ? " selected" : ""}>—</option>${TRN_OPTS.map(o => `<option${o === val ? " selected" : ""}>${o}</option>`).join("")}</select>`;
 const calcOf = tr => computeRows(tr.rows, SPEED);
 
+const CPBTN = `<button class="cpinfo" type="button" data-cpinfo title="Copiar esta información" aria-label="Copiar esta información">⧉</button>`;
 function renderSummaryBox() {
   const rows = live().flatMap(p => p.rows);
   const box = $("#summary");
@@ -1298,11 +1328,11 @@ function renderSummaryBox() {
   const fin = new Date(Date.parse(first) + 12 * 604800000).toISOString().slice(0, 10);   // 12 semanas después del primer entreno
   let rises = 0;
   for (const p of live()) { const n = p.rows.length; if (n > 1 && p.rows[n - 1].d === last) for (let i = 0; i < 7; i++) if (p.rows[n - 1].k[i] > p.rows[n - 2].k[i]) rises++; }
-  box.innerHTML = `<dl>
+  box.innerHTML = `${CPBTN}<dl>
     <dt>Primer Entreno</dt><dd>${esc(dmy(first))}</dd>
     <dt>Entreno Actual</dt><dd>${esc(dmy(last))}</dd>
     <dt>Entreno Final</dt><dd>${esc(dmy(fin))}</dd>
-    <dt>Entrenos Temporada</dt><dd>${weeks}</dd>
+    <dt>Semanas Entrenadas</dt><dd>${weeks}</dd>
     <dt>Jugadores Entrenando</dt><dd>${live().length}</dd>
     <dt title="Skills que subieron en la última actualización del jueves">Subidas Semana Actual</dt><dd>${rises}</dd>
   </dl>`;
@@ -1368,9 +1398,9 @@ function renderResumen() {
   const togs = [["r1", "Tabla Resumen"], ["r2", "Tabla de Planificación"], ["r3", "Tabla de Talentos"]].map(([k, n]) => `<button class="btn rt ${k}" type="button" data-rtab="${k}" aria-pressed="${!!view.rt[k]}" title="Muestra u oculta la ${n.toLowerCase()}">${n}</button>`).join("");
   return `<div class="restoggles" role="group" aria-label="Tablas visibles">${togs}</div>
     ${view.rt.r1 ? `<section class="rtab r1" aria-label="Tabla Resumen"><div class="view-title"><h2>TABLA RESUMEN</h2></div>
-    <p class="lastweek">Última semana registrada: <b>${lastWeek}</b></p>
+    <div class="infobox" data-cpbox>${CPBTN}<p class="lastweek">Última semana registrada: <b>${lastWeek}</b></p>
     <p class="lastweek">Tasación Total: <b>${saleTotal}</b></p>
-    <p class="lastweek">Fechas de Tasación: ${saleDates}</p>
+    <p class="lastweek">Fechas de Tasación: ${saleDates}</p></div>
     <div class="tablewrap ent"><table id="tbl"><thead><tr class="cols">${head}</tr></thead><tbody>${body}</tbody></table></div></section>` : ""}
     ${view.rt.r2 ? teamPlanHtml() : ""}
     ${view.rt.r3 ? talentosHtml() : ""}
@@ -1545,7 +1575,7 @@ function rangeText(tr, sel) {
 }
 function trainInfoHtml(tr, sel) {
   const trained = tr.rows.filter(r => r.f).length, total = risesAtOf(tr).reduce((a, b) => a + b, 0);
-  return `<div class="traininfo">
+  return `<div class="traininfo infobox" data-cpbox>${CPBTN}
     <p>Semanas Entrenadas: <b>${trained}</b>${trained !== tr.rows.length ? ` <span class="muted">(de ${tr.rows.length} registradas)</span>` : ""}</p>
     <p title="Subidas en las skills que usan las sumas de la Posición Preferida (con «Ninguna», las seis skills)">Subidas Relevantes: <b>${total}</b></p>
     <p>Subidas en Rango Seleccionado: <span id="selRange">${rangeText(tr, sel)}</span></p></div>`;
@@ -1573,29 +1603,29 @@ function renderPlayer(tr) {
       `<td>${trnSelect(r.f, `data-ed="${n}|f" aria-label="Entrenamiento fila ${n + 1}"`)}</td>`]
     : [`<td class="fc" title="${esc(dmy(r.d))}">${esc(dmys(r.d))}</td>`, `<td class="${sn(r.t)}">${r.t}</td>`, `<td class="${sn(r.t)}">${r.s}</td>`, `<td class="${sn(r.t)}">${r.a}</td>`,
       `<td class="sep"><input type="checkbox" data-ef="${n}" aria-label="ENT. F ${esc(dmy(r.d))}"${r.e ? " checked" : ""}></td>`,
-      `<td>${trnSelect(r.f, `data-rf="${n}" aria-label="Entrenamiento ${esc(dmy(r.d))}"`)}</td>`];
+      `<td><select class="trn trnro" data-t="${esc(r.f)}" disabled tabindex="-1" aria-label="Entrenamiento ${esc(dmy(r.d))}: ${esc(r.f || "ninguno")}"><option selected>${esc(r.f || "—")}</option></select></td>`];
     SK_COLS.forEach((s, i) => {
       if (ed) { const gv = ed.gtIn[n + ":" + i]; cells.push(`<td class="sk${i === 0 ? " sep" : ""}">${ni(n, "k", r.k[i], 0, 30, i)}</td><td class="gt gtk${i === 6 ? " last" : ""}">${ni(n, "g", gv != null ? gv : c.gt[i], 0, 999, i)}</td>`); return; }
       const pv = n > 0 ? rowsSrc[n - 1].k[i] : null, rs = pv != null && r.k[i] > pv, up = rs && !c.clean[i];   // subida «normal» (la Limpia lleva su propia marca)
       cells.push(`<td class="sk nk-${s.id}${i === 0 ? " sep" : ""}${c.clean[i] ? " clean" : ""}${rs ? " rise" : ""}"${c.clean[i] ? ' title="Subida Limpia: subió sin haber sido entrenada"' : ""}>${r.k[i]}${up ? `<span class="chg up" title="Subió: antes ${pv}" aria-label="subió, antes ${pv}">▲</span>` : ""}</td><td class="gt gtk${i === 6 ? " last" : ""}">${c.gt[i]}</td>`);
     });
     pi.forEach((j, q) => cells.push(`<td class="sum${q === 0 ? " sep" : ""}">${COMPOS[j][1].reduce((x, i) => x + r.k[i], 0)}</td>`));
-    c.tw.forEach((t, i) => cells.push(`<td class="${i === 0 ? "sep" : ""}${t ? " tal nk-" + SK_COLS[i + 1].id : ""}"${t ? ` title="Niveles ${t.from} → ${t.to} (${t.m} ${t.m === 1 ? "cambio" : "cambios"})"` : ""}>${t ? nf2.format(t.v) : ""}</td>`));
+    c.tw.forEach((t, i) => cells.push(ed ? `<td class="${i === 0 ? "sep" : ""}${t ? " tal nk-" + SK_COLS[i + 1].id : ""}"><input class="ed tv" type="number" inputmode="decimal" step="0.01" min="0" max="999" data-ed="${n}|tv|${i}" value="${t ? esc(String(Math.round(t.v * 100) / 100)) : ""}" aria-label="Talento ${esc(SK_COLS[i + 1].lab)} fila ${n + 1}"></td>` : `<td class="${i === 0 ? "sep" : ""}${t ? " tal nk-" + SK_COLS[i + 1].id : ""}${t && t.manual ? " tvm" : ""}"${t ? (t.manual ? ' title="Talento editado a mano en el Modo Edición"' : ` title="Niveles ${t.from} → ${t.to} (${t.m} ${t.m === 1 ? "cambio" : "cambios"})"`) : ""}>${t ? nf2.format(t.v) : ""}</td>`));
     c.cum.forEach((v, i) => cells.push(`<td class="gt cumc${i === 0 ? " sep" : ""}">${v}</td>`));   // Acumulado: oculto, solo se copia
     const isSel = !ed && sel && (n === sel.a || n === sel.b);
     rowsHtml.push(`<tr data-n="${n}"${n === lastIdx || isSel ? ` class="${[n === lastIdx ? "newest" : "", isSel ? "selrow" : ""].join(" ").trim()}"` : ""}>${cells.join("")}</tr>`);
   }
   const edBtns = ed
-    ? `<button class="btn primary" type="button" data-edsave>Guardar cambios</button><button class="btn" type="button" data-edcancel>Cancelar</button><span class="lbl" id="edMsg" role="status"></span>`
-    : `<button class="btn" type="button" data-edon title="Cambiar a mano cualquier celda de la tabla (con botón para guardar)">Modo Edición</button>`;
+    ? `<span class="edgrp"><span class="lbl" id="edMsg" role="status"></span><button class="btn primary" type="button" data-edsave>Guardar cambios</button><button class="btn" type="button" data-edcancel>Cancelar</button></span>`
+    : `<span class="edgrp"><button class="btn edon" type="button" data-edon title="Cambiar a mano cualquier celda de la tabla (con botón para guardar)">Modo Edición</button></span>`;
   const planBtn = `<button class="btn" type="button" data-planbtn aria-pressed="${view.showPlan}">${view.showPlan ? "Ocultar" : "Mostrar"} planificación</button>`;
   return `<div class="view-title"><h2>${esc(tr.k)}</h2><span class="lbl">Entreno Alineaciones ${alChip(tr)}</span>
       <label class="lbl ppl">Posición Preferida <select class="pp" data-pp="${esc(tr.k)}" aria-label="Posición Preferida de ${esc(tr.k)}">${PP_OPTS.map(o => `<option value="${o}"${ppOf(tr) === o ? " selected" : ""}>${o}</option>`).join("")}</select></label>
       <label class="lbl">Entreno actual ${trnSelect(tr.plan, `data-plan="${esc(tr.k)}" aria-label="Entreno actual de ${esc(tr.k)}"`)}</label>
       <span class="lbl"><i class="cl"></i> Subida Limpia</span>
-      ${planBtn}${edBtns}
-      <button class="btn rm" type="button" data-rm="${esc(tr.k)}" title="Quitar a este jugador del seguimiento (por ejemplo, si lo vendiste)">Quitar jugador</button></div>
-    ${ed ? `<p class="hint edhint">Modo Edición: cambia las celdas que quieras y pulsa «Guardar cambios». Fecha, temporada, semana, edad, ENT. F, entrenamiento, skills y gt se pueden editar; las sumas, el Talento por skill y el Acumulado (que solo aparece al copiar) se recalculan solos al guardar. Si dejas un gt como estaba, se sigue calculando solo.</p>` : ""}
+      ${planBtn}
+      <button class="btn rm" type="button" data-rm="${esc(tr.k)}" title="Quitar a este jugador del seguimiento (por ejemplo, si lo vendiste)">Quitar jugador</button>${edBtns}</div>
+    ${ed ? `<p class="hint edhint">Modo Edición: cambia las celdas que quieras y pulsa «Guardar cambios». Fecha, temporada, semana, edad, ENT. F, entrenamiento, skills, gt y Talento por skill se pueden editar; las sumas y el Acumulado (que solo aparece al copiar) se recalculan solos al guardar. Si dejas un gt o un talento como estaba, se sigue calculando solo; si vacías un talento editado, vuelve al calculado.</p>` : ""}
     ${view.showPlan ? planHtml(tr) : ""}
     ${ed ? "" : trainInfoHtml(tr, sel)}
     <div class="tablewrap ent dense nocum"><table id="tbl"><thead class="two"><tr class="grp">${groups}</tr><tr class="cols">${th}</tr></thead><tbody>${rowsHtml.join("")}</tbody></table></div>`;
@@ -1679,6 +1709,17 @@ function saveEdit(tr) {
     if (!r.k.every(v => inRange(v, 0, 30))) return msg(`${at}: cada skill debe ser un entero entre 0 y 30.`);
   }
   const out = JSON.parse(JSON.stringify(rows));
+  const base = computeRows(rows.map(r => ({ ...r, tv: null })), SPEED);   // talento calculado, sin los valores escritos a mano
+  for (let n = 0; n < out.length; n++) {
+    const tv = out[n].tv; if (!tv) continue;
+    for (let i = 0; i < 6; i++) {
+      const x = tv[i];
+      if (x == null) { tv[i] = null; continue; }
+      if (!Number.isFinite(x) || x <= 0 || x > 999) return msg(`Fila ${n + 1}: el Talento por skill debe ser un número mayor que 0 y hasta 999.`);
+      const b0 = base[n].tw[i]; tv[i] = b0 && Math.abs(b0.v - x) < 0.005 ? null : Math.round(x * 100) / 100;   // igual al calculado: no se guarda
+    }
+    if (tv.every(v => v == null)) delete out[n].tv;
+  }
   for (const [key, val] of Object.entries(ed.gtIn)) {
     const [n, i] = key.split(":").map(Number);
     if (String(val).trim() === "") continue;
@@ -1735,6 +1776,14 @@ function openAdd() {
 }
 
 /* ─────────────── Copiar la vista ─────────────── */
+document.addEventListener("click", e => {   // botón ⧉ de los cuadros informativos
+  const b = e.target.closest("[data-cpinfo]"); if (!b) return;
+  const box = b.closest("[data-cpbox], #summary"); if (!box) return;
+  const clean = x => x.textContent.replace(/\s+/g, " ").trim();
+  const dl = box.querySelector("dl");
+  const lines = dl ? [...dl.querySelectorAll("dt")].map(dt => clean(dt) + ": " + clean(dt.nextElementSibling)) : [...box.querySelectorAll("p")].map(clean);
+  copyText(lines.join("\n")).then(() => toast("Información copiada"));
+});
 async function copyText(text) {
   try { await navigator.clipboard.writeText(text); }
   catch {
@@ -1916,6 +1965,7 @@ function init() {
       const [n, f, i] = t.dataset.ed.split("|"), r = view.ed.rows[Number(n)]; if (!r) return;
       if (f === "e") r.e = t.checked; else if (f === "f") r.f = t.value; else if (f === "d") r.d = t.value;
       else if (f === "g") view.ed.gtIn[n + ":" + i] = t.value;
+      else if (f === "tv") { r.tv = r.tv || [null, null, null, null, null, null]; const x = t.value.trim() === "" ? null : Number(t.value.replace(",", ".")); r.tv[Number(i)] = Number.isFinite(x) ? x : null; }
       else if (f === "k") r.k[Number(i)] = t.value === "" ? NaN : Number(t.value);
       else r[f] = t.value === "" ? NaN : Number(t.value);
       return;

@@ -243,3 +243,13 @@ Qué tener en cuenta:
 - El botón ⧉ de la Planificación individual copia ahora: nombre completo, PID, TEMP, SEM, EDAD, CON…ATT.
 - Flechas verdes (Entrenamiento, Planificación y Resumen): pegadas al número y más arriba; los números quedan alineados.
 - "Subidas en Rango Seleccionado" informa las semanas del rango sin contar la inicial (filas 5 y 9 → 4 semanas).
+
+### v37 · Entrenamiento
+- «Entrenos Temporada» → «Semanas Entrenadas». Botón ⧉ en cada cuadro informativo (datos de la temporada, resumen de la Tabla Resumen y textos sobre la tabla individual) que copia su contenido.
+- Columna Entrenamiento de la tabla individual: solo lectura (misma estética); se edita en el Modo Edición.
+- Modo Edición ahora permite editar «Talento por skill» (se guarda por fila en `tv`; si coincide con el calculado, no se guarda; si se vacía, vuelve al calculado; las celdas editadas se subrayan con puntos). El botón Modo Edición es amarillo y está a la derecha, separado de los demás.
+
+### Juveniles
+- Estrella de Nivel Final más pequeña y más arriba; números y texto de la columna en rosado.
+- Cuadro informativo: «Cambios» (▲ subidas · ▼ bajadas respecto a la actualización anterior). Botón «Cambios»: muestra solo a los juveniles que subieron o bajaron de Nivel.
+- Botones de batería en una segunda fila, bajo los demás botones.
