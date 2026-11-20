@@ -162,6 +162,7 @@ td.c-name { text-align: left; }
 :root[data-theme="dark"] { --lfpink: #ff7eb6; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --lfpink: #ff7eb6; } }
 td.c-lf, th[data-key="lvlFinal"] button { color: var(--lfpink); }
+.leftcol { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
 .actwrap { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
 .actwrap .actions { margin-left: 0; }
 .summary dd .chg { font-size: .8em; vertical-align: baseline; }
@@ -350,9 +351,12 @@ dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
   </header>
 
   <section class="toolbar" aria-label="Filtros">
+    <div class="leftcol">
     <label class="field">Buscar
       <input type="search" id="q" placeholder="Nombre" autocomplete="off">
     </label>
+    <span class="mkf" id="mkf" role="group" aria-label="Filtrar por la marca de la columna «?»"></span>
+    </div>
     <div class="actwrap">
     <div class="actions" role="group" aria-label="Acciones">
       <button class="btn" id="stars" type="button" aria-pressed="false" title="Muestra solo a los juveniles con tres estrellas ★★★">Talentosos</button>
@@ -363,7 +367,6 @@ dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
       <button class="btn" id="forgetPw" type="button" hidden title="Olvidar la contraseña en este navegador">Bloquear</button>
       <button class="btn primary" id="copy" type="button" title="Copiar la tabla visible para pegarla en una planilla">CSV</button>
     </div>
-    <span class="mkf" id="mkf" role="group" aria-label="Filtrar por la marca de la columna «?»"></span>
     </div>
   </section>
 

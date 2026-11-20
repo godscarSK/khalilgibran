@@ -594,6 +594,16 @@ section.rtab.indplan thead tr th.pname { background: #c9457f; color: #fff; font-
 /* v40: marca ! de Entreno Alineaciones flotante (no desplaza al texto) */
 .alw { position: relative; display: inline-block; }
 .alw .warn { position: absolute; top: -6px; right: -10px; width: 1.25em; height: 1.25em; font-size: .6em; line-height: 1; }
+
+/* v41: cuadro informativo de la tabla de Entrenamiento (mismo formato que los demás, a la derecha) */
+.traininfo { display: block; width: max-content; min-width: 250px; margin: 6px 0 10px auto; padding: 10px 40px 10px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; font-variant-numeric: tabular-nums; }
+.traininfo dl { margin: 0; display: grid; grid-template-columns: auto auto; gap: 3px 22px; }
+.traininfo dt { color: var(--muted); font-size: .875rem; }
+.traininfo dd { margin: 0; text-align: right; font-weight: 600; white-space: nowrap; }
+.traininfo dd .muted { font-weight: 400; color: var(--muted); font-size: .85em; }
+.hlp { position: relative; cursor: help; border-bottom: 1px dotted var(--muted); }
+.hlp.open::after { content: attr(data-help); position: absolute; right: 0; bottom: calc(100% + 8px); z-index: 30; width: max-content; max-width: 16rem; white-space: normal; text-align: left; font-weight: 500; font-size: .8rem; color: var(--ink); background: var(--panel); border: 1px solid var(--ink); border-radius: 6px; padding: 6px 9px; box-shadow: 0 3px 10px rgba(0,0,0,.25); }
+.teamplan tr.cnt td { font-size: 1.1rem; }
 </style>
 </head>
 <body>
@@ -1604,17 +1614,17 @@ function risesAtOf(tr) {
   return tr.rows.map((r, n) => n ? rel.reduce((s, i) => s + Math.max(0, r.k[i] - tr.rows[n - 1].k[i]), 0) : 0);
 }
 function rangeText(tr, sel) {
-  if (!sel || sel.b == null) return sel ? "marca una segunda fila" : "marca dos filas de la tabla";
+  if (!sel || sel.b == null) return `<span class="hlp" tabindex="0" role="button" data-help="${sel ? "Marca una segunda fila de la tabla" : "Marca dos filas de la tabla"}">—</span>`;
   const lo = Math.min(sel.a, sel.b), hi = Math.max(sel.a, sel.b), ra = risesAtOf(tr);
   let s = 0; for (let n = lo + 1; n <= hi; n++) s += ra[n];
-  return `<b>${s}</b> <span class="muted">(${hi - lo} ${hi - lo === 1 ? "semana" : "semanas"})</span>`;
+  return `${s} <span class="muted">(${hi - lo} ${hi - lo === 1 ? "semana" : "semanas"})</span>`;
 }
 function trainInfoHtml(tr, sel) {
   const trained = tr.rows.filter(r => r.f).length, total = risesAtOf(tr).reduce((a, b) => a + b, 0);
-  return `<div class="traininfo infobox" data-cpbox>${CPBTN}
-    <p>Semanas Entrenadas: <b>${trained}</b>${trained !== tr.rows.length ? ` <span class="muted">(de ${tr.rows.length} registradas)</span>` : ""}</p>
-    <p title="Subidas en las skills que usan las sumas de la Posición Preferida (con «Ninguna», las seis skills)">Subidas Relevantes: <b>${total}</b></p>
-    <p>Subidas en Rango Seleccionado: <span id="selRange">${rangeText(tr, sel)}</span></p></div>`;
+  return `<div class="traininfo infobox" data-cpbox>${CPBTN}<dl>
+    <dt>Semanas Entrenadas</dt><dd>${trained}${trained !== tr.rows.length ? ` <span class="muted">(de ${tr.rows.length} registradas)</span>` : ""}</dd>
+    <dt title="Subidas en las skills que usan las sumas de la Posición Preferida (con «Ninguna», las seis skills)">Subidas Relevantes</dt><dd>${total}</dd>
+    <dt>Subidas en Rango Seleccionado</dt><dd id="selRange">${rangeText(tr, sel)}</dd></dl></div>`;
 }
 function renderPlayer(tr) {
   const ed = view.ed && view.ed.id === tr.id ? view.ed : null;
@@ -1840,6 +1850,12 @@ function openAdd() {
 }
 
 /* ─────────────── Copiar la vista ─────────────── */
+document.addEventListener("click", e => {   // ayuda al tocar un dato con «?»: se abre y se cierra
+  const h = e.target.closest(".hlp");
+  document.querySelectorAll(".hlp.open").forEach(x => { if (x !== h) x.classList.remove("open"); });
+  if (h) h.classList.toggle("open");
+});
+document.addEventListener("keydown", e => { if (e.key === "Escape") document.querySelectorAll(".hlp.open").forEach(x => x.classList.remove("open")); });
 document.addEventListener("click", e => {   // botón ⧉ de los cuadros informativos
   const b = e.target.closest("[data-cpinfo]"); if (!b) return;
   const box = b.closest("[data-cpbox], #summary"); if (!box) return;
