@@ -253,3 +253,8 @@ Qué tener en cuenta:
 - Estrella de Nivel Final más pequeña y más arriba; números y texto de la columna en rosado.
 - Cuadro informativo: «Cambios» (▲ subidas · ▼ bajadas respecto a la actualización anterior). Botón «Cambios»: muestra solo a los juveniles que subieron o bajaron de Nivel.
 - Botones de batería en una segunda fila, bajo los demás botones.
+
+### v38
+- Botón ⧉ para copiar el cuadro informativo también en Plantel y Juveniles.
+- Entrenamiento: botón «Guardar» en la Planificación individual (solo ese jugador) y en la del Resumen (todos). Muestra una ventana con los cambios desde el último «Guardar», con el formato «Andaur: RAPIDEZ cambia a DEFENSA en la semana 7.» (varias semanas seguidas: «en las semanas 4 a 9»; si cruza de temporada: «desde la semana 13 hasta la semana 9»). El botón muestra cuántos cambios hay pendientes, «Guardar (2)». La planificación se sigue guardando al instante; «Guardar» confirma y lista los cambios (la última versión confirmada queda en el campo `pc` de cada jugador, solo en este navegador).
+- La celda con el nombre del jugador en la Planificación individual va en rosado.

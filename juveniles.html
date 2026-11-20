@@ -77,6 +77,11 @@ h1 {
 .season { margin: 4px 0 0; font-weight: 700; color: var(--muted, inherit); letter-spacing: .04em; }
 .summary { flex: 0 0 auto; min-width: 250px; padding: 10px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; font-variant-numeric: tabular-nums; }
 .summary dl { margin: 0; display: grid; grid-template-columns: auto auto; gap: 3px 22px; }
+.summary { position: relative; }
+.summary dl { margin-right: 24px; }
+.cpinfo { position: absolute; top: 6px; right: 6px; width: 22px; height: 22px; padding: 0; line-height: 1; font-size: .8rem; cursor: pointer; color: var(--muted); background: var(--panel); border: 1px solid var(--line); border-radius: 5px; }
+.cpinfo:hover, .cpinfo:focus-visible { color: var(--ink); border-color: var(--ink); }
+
 .summary dt { color: var(--muted); font-size: .875rem; }
 .summary dd { margin: 0; text-align: right; font-weight: 600; white-space: nowrap; }
 @media (max-width: 640px) { .summary { margin-right: 0; width: 100%; } }
@@ -1253,6 +1258,13 @@ function schoolInfo(sc) {
   out.cur = out.cur || out.salCur || (sc && sc.currency) || "";
   return out;
 }
+const CPBTN = `<button class="cpinfo" type="button" data-cpinfo title="Copiar esta información" aria-label="Copiar esta información">⧉</button>`;
+document.addEventListener("click", e => {   // botón ⧉ del cuadro informativo
+  const bt = e.target.closest("[data-cpinfo]"); if (!bt) return;
+  const dl = bt.closest(".summary") && bt.closest(".summary").querySelector("dl"); if (!dl) return;
+  const clean = x => x.textContent.replace(/\s+/g, " ").trim();
+  copyText([...dl.querySelectorAll("dt")].map(dt => clean(dt) + ": " + clean(dt.nextElementSibling)).join("\n")).then(() => toast("Información copiada"));
+});
 function renderSummary() {
   const el = $("#summary"), ps = state.players;
   if (!ps.length && !state.school) { el.hidden = true; return; }
@@ -1271,7 +1283,7 @@ function renderSummary() {
     ["Salario DT", money(si.salary), tip("salary")],
     ["Costo Escuela", cost == null ? "—" : money(cost), si.value == null ? tip("value") : `${si.paths.value} + salario del DT${si.salary == null ? " (no encontrado: solo el costo)" : ""}`]
   ];
-  el.innerHTML = `<dl>${rows.map(([k, v, t]) => `<dt>${k}</dt><dd${t ? ` title="${esc(t)}"` : ""}>${v && v.h ? v.h : esc(v)}</dd>`).join("")}</dl>`;
+  el.innerHTML = `${CPBTN}<dl>${rows.map(([k, v, t]) => `<dt>${k}</dt><dd${t ? ` title="${esc(t)}"` : ""}>${v && v.h ? v.h : esc(v)}</dd>`).join("")}</dl>`;
 }
 
 /* ─────────────── Simplificar y Calculadora ─────────────── */

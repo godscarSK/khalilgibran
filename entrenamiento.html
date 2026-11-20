@@ -578,6 +578,13 @@ select.trn.trnro[data-t=""]:disabled { color: var(--muted); }
 .ent td input.ed.tv { width: 4.4em; }
 .ent td.tvm { text-decoration: underline dotted; }
 #summary dl { margin-right: 24px; }
+
+/* v38: Guardar planificación y nombre del jugador en rosado */
+.savelist { margin: 8px 0 14px; padding-left: 1.2rem; max-height: 50vh; overflow: auto; }
+.savelist li { margin: 3px 0; }
+section.rtab.indplan thead tr th.pname { background: #c9457f; color: #fff; font-weight: 800; letter-spacing: .06em; text-align: center; border-bottom-color: #c9457f; }
+:root[data-theme="dark"] section.rtab.indplan thead tr th.pname { background: #b8527f; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) section.rtab.indplan thead tr th.pname { background: #b8527f; } }
 </style>
 </head>
 <body>
@@ -664,6 +671,13 @@ select.trn.trnro[data-t=""]:disabled { color: var(--muted); }
     <button class="btn" id="cloudNo" type="button">No, solo en este dispositivo</button>
     <button class="btn primary" id="cloudYes" type="button">Sí, guardar en la nube</button>
   </div>
+</dialog>
+<dialog id="saveDlg" class="dlg" aria-labelledby="saveTitle">
+  <form method="dialog">
+    <h2 id="saveTitle">Cambios guardados</h2>
+    <ul id="saveList" class="savelist"></ul>
+    <div class="actions"><button class="btn primary" type="submit">Aceptar</button></div>
+  </form>
 </dialog>
 <dialog id="copyDlg" class="dlg" aria-labelledby="copyTitle">
   <form id="copyForm">
@@ -1516,7 +1530,7 @@ function planHtml(tr) {
     const mark = x.flag ? `<span class="warn" title="Ya hay un talento calculado (${esc(fmtTal(x.mean))}); el valor ingresado no se usa en la proyección">!</span>` : "";
     return `<label class="tmi nk-${sk.id}"><span>${sk.lab}</span><input class="ed tm" type="number" step="0.01" min="0" max="99" inputmode="decimal" data-tm="${x.i}" value="${x.manual != null ? esc(x.manual) : ""}" placeholder="—" aria-label="Talento manual ${esc(sk.lab)}">${mark}<small>${esc(st)}</small></label>`;
   }).join("");
-  return `<section class="plan rtab r2 indplan" aria-label="Planificación"><div class="view-title"><h2>PLANIFICACIÓN SEMANAL</h2></div>
+  return `<section class="plan rtab r2 indplan" aria-label="Planificación"><div class="view-title"><h2>PLANIFICACIÓN SEMANAL</h2>${planSaveBtn(tr.id, planChanges(tr).length)}</div>
     <p class="hint">Elige qué entrenará cada semana. Cada jueves, la semana que llega toma lo planificado y la siguiente pasa a ser el Entreno Actual. Una semana con «↳» sigue con el entrenamiento de la anterior. Haz clic en una fila para marcar la semana donde empiezan «Cambios Múltiples» y «Ciclos» (por defecto, el Entreno Actual). La fecha destacada es la del Entreno Actual (abajo) y las semanas futuras van hacia arriba. A la derecha se proyectan los niveles y los puntos (gt) según el plan: ▲ marca la semana en que se estima que la skill subiría (Condición se asume que sube cuando su gt llega a 8) y Sumas muestra las sumas de skills proyectadas (según la Posición Preferida del jugador). En «Venta» puedes anotar un posible precio de venta (M$) para cada semana.</p>
     <div class="planbtns"><button class="btn" type="button" data-plact="multi" title="Por ejemplo: RAP 3, DEF 2 programa solo esas 5 semanas, desde la semana marcada">Cambios Múltiples…</button>
       <button class="btn" type="button" data-plact="pattern" title="Por ejemplo: RAP 3, TEC 2 se repite desde la semana marcada hasta completar las 13 semanas">Ciclos…</button>
@@ -1558,7 +1572,7 @@ function teamPlanHtml() {
   const codes = [["RAP", "Rapidez"], ["TEC", "Técnica"], ["PAS", "Pases"], ["DEF", "Defensa"], ["CRE", "Creación"], ["ATT", "Anotación"], ["—", ""]];
   const CNT_ID = { RAP: "rap", TEC: "tec", PAS: "pas", DEF: "def", CRE: "cre", ATT: "ata", CON: "con" };
   const cnt = codes.map(([c, f]) => `<tr class="cnt${CNT_ID[c] ? " nk-" + CNT_ID[c] : ""}"><th class="l">${c}</th>${dates.map((_, k) => { const n = effs.filter(e => e[k].f === f).length; return `<td class="${n ? "" : "z"}${w13(k)}">${n || ""}</td>`; }).join("")}</tr>`).join("");
-  return `<section class="plan teamplan rtab r2" aria-label="Planificación del equipo"><div class="view-title"><h2>PLANIFICACIÓN SEMANAL</h2></div>
+  return `<section class="plan teamplan rtab r2" aria-label="Planificación del equipo"><div class="view-title"><h2>PLANIFICACIÓN SEMANAL</h2>${planSaveBtn("all", ps.reduce((a, p) => a + planChanges(p).length, 0))}</div>
     <p class="hint">Qué entrenará cada jugador semana a semana (puedes cambiarlo aquí mismo). Las filas de abajo cuentan cuántos jugadores entrenan cada skill en cada semana; «↳» sigue con el entrenamiento de la semana anterior. Cada columna es una semana de la temporada (pasa el cursor para ver su fecha); la primera es el Entreno Actual.</p>
     <div class="tablewrap"><table id="teamPlan"><thead><tr><th class="l">Jugador</th>${ths}</tr></thead><tbody>${body}<tr class="sepr"><th class="l" colspan="${PLAN_WEEKS + 1}">RESUMEN POR SKILL</th></tr>${cnt}</tbody></table></div></section>`;
 }
@@ -1631,8 +1645,34 @@ function renderPlayer(tr) {
     <div class="tablewrap ent dense nocum"><table id="tbl"><thead class="two"><tr class="grp">${groups}</tr><tr class="cols">${th}</tr></thead><tbody>${rowsHtml.join("")}</tbody></table></div>`;
 }
 
+// ── Guardar planificación: se compara lo planificado ahora con la última versión confirmada (tr.pc: fecha → entrenamiento)
+const planBase = tr => { tr.pc = tr.pc || {}; planEff(tr).forEach(w => { if (!(w.d in tr.pc)) tr.pc[w.d] = w.f; }); };
+const planLab = f => f ? f.toUpperCase() : "SIN ENTRENO";
+function planChanges(tr) {
+  planBase(tr);
+  const eff = planEff(tr), out = []; let run = null;
+  const flush = () => { if (!run) return; out.push(`${tr.k}: ${planLab(run.from)} cambia a ${planLab(run.to)} ${run.a === run.b ? "en la semana " + run.a : run.b > run.a ? "en las semanas " + run.a + " a " + run.b : "desde la semana " + run.a + " hasta la semana " + run.b}`); run = null; };
+  eff.forEach((w, k) => {
+    const from = tr.pc[w.d], sn = (calAt(w.d) || {}).s || k + 1;
+    if (from === w.f) { flush(); return; }
+    if (run && run.from === from && run.to === w.f) run.b = sn; else { flush(); run = { from, to: w.f, a: sn, b: sn }; }
+  });
+  flush(); return out;
+}
+const planSaveBtn = (id, n) => `<button class="btn primary plsave" type="button" data-plsave="${esc(id)}" title="Confirma los cambios hechos en esta tabla y te dice cuáles son">Guardar${n ? ` (${n})` : ""}</button>`;
+document.addEventListener("click", e => {
+  const bt = e.target.closest("[data-plsave]"); if (!bt || !T) return;
+  const ps = bt.dataset.plsave === "all" ? live() : live().filter(p => p.id === bt.dataset.plsave);
+  const lines = ps.flatMap(planChanges);
+  if (!lines.length) { toast("No hay cambios por guardar."); return; }
+  ps.forEach(p => { p.pc = {}; planEff(p).forEach(w => { p.pc[w.d] = w.f; }); });
+  saveT(); schedulePush();
+  $("#saveList").innerHTML = lines.map(l => `<li>${esc(l)}.</li>`).join("");
+  $("#saveDlg").showModal(); render();
+});
 function render() {
   readAlineaciones();
+  if (T) live().forEach(planBase);
   if (!T) { $("#view").innerHTML = ""; $("#summary").hidden = true; $("#tabs").innerHTML = ""; return; }
   view.tab = tabOf();
   renderSummaryBox(); renderTabs();
