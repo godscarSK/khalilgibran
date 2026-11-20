@@ -77,6 +77,11 @@ h1 {
 .season { margin: 4px 0 0; font-weight: 700; color: var(--muted, inherit); letter-spacing: .04em; }
 .summary { flex: 0 0 auto; min-width: 250px; padding: 10px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; font-variant-numeric: tabular-nums; }
 .summary dl { margin: 0; display: grid; grid-template-columns: auto auto; gap: 3px 22px; }
+.summary { position: relative; }
+.summary dl { margin-right: 24px; }
+.cpinfo { position: absolute; top: 6px; right: 6px; width: 22px; height: 22px; padding: 0; line-height: 1; font-size: .8rem; cursor: pointer; color: var(--muted); background: var(--panel); border: 1px solid var(--line); border-radius: 5px; }
+.cpinfo:hover, .cpinfo:focus-visible { color: var(--ink); border-color: var(--ink); }
+
 .summary dt { color: var(--muted); font-size: .875rem; }
 .summary dd { margin: 0; text-align: right; font-weight: 600; white-space: nowrap; }
 @media (max-width: 640px) { .summary { margin-right: 0; width: 100%; } }
@@ -674,9 +679,10 @@ section.rtab.indplan thead tr th.pname { background: #c9457f; color: #fff; font-
 </dialog>
 <dialog id="saveDlg" class="dlg" aria-labelledby="saveTitle">
   <form method="dialog">
-    <h2 id="saveTitle">Cambios guardados</h2>
+    <h2 id="saveTitle">Cambios en la planificación</h2>
+    <p class="hint">Estos cambios se sincronizan con la nube solo si los confirmas. Si cierras esta ventana sin elegir, quedan pendientes.</p>
     <ul id="saveList" class="savelist"></ul>
-    <div class="actions"><button class="btn primary" type="submit">Aceptar</button></div>
+    <div class="actions"><button class="btn" type="submit" value="cancel">Cancelar Cambios</button><button class="btn primary" type="submit" value="save">Confirmar y guardar</button></div>
   </form>
 </dialog>
 <dialog id="copyDlg" class="dlg" aria-labelledby="copyTitle">
@@ -1099,7 +1105,9 @@ async function estCall(params) {
   if (!j.ok) throw new Error(j.error || "error");
   return j;
 }
-const recOf = p => ({ k: p.k, lay: p.lay, plan: p.plan || "", pid: p.pid == null ? null : p.pid, rows: p.rows, ...(p.arch ? { arch: 1 } : {}), ...(p.pl && Object.keys(p.pl).length ? { pl: p.pl } : {}), ...(p.tm && Object.keys(p.tm).length ? { tm: p.tm } : {}), ...(p.sv && Object.keys(p.sv).length ? { sv: p.sv } : {}), ...(p.pp ? { pp: p.pp } : {}) });
+// la planificación que se sube a la nube es la última confirmada con «Guardar» (p.cf); lo pendiente queda solo en este navegador
+const cfOf = p => p.cf || p;
+const recOf = p => ({ k: p.k, lay: p.lay, plan: cfOf(p).plan || "", pid: p.pid == null ? null : p.pid, rows: p.rows, ...(p.arch ? { arch: 1 } : {}), ...(cfOf(p).pl && Object.keys(cfOf(p).pl).length ? { pl: cfOf(p).pl } : {}), ...(p.tm && Object.keys(p.tm).length ? { tm: p.tm } : {}), ...(p.sv && Object.keys(p.sv).length ? { sv: p.sv } : {}), ...(p.pp ? { pp: p.pp } : {}) });
 async function pushDirty() {
   if (!CONFIG.estUrl || !sync.key || sync.busy || !T || !T.dirty.length) return;
   sync.busy = true; setSyncState("pending");
@@ -1313,6 +1321,11 @@ function autoAppend() {
     const nx = tr.pl && tr.pl[addDays(wk, 7)];
     if (nx) tr.plan = nx.f;
     if (tr.pl) for (const d of Object.keys(tr.pl)) if (d <= addDays(wk, 7)) delete tr.pl[d];
+    if (tr.cf) {   // lo mismo con la planificación confirmada
+      const cx = tr.cf.pl && tr.cf.pl[addDays(wk, 7)];
+      if (cx) tr.cf.plan = cx.f;
+      if (tr.cf.pl) for (const d of Object.keys(tr.cf.pl)) if (d <= addDays(wk, 7)) delete tr.cf.pl[d];
+    }
     res.added.push(tr.k); changed = true; touch(tr, true);
   }
   if (changed) { saveT(); schedulePush(); }
@@ -1393,7 +1406,7 @@ function renderResumen() {
   const body = rows.map(x => `<tr>${x.cells.map((c, i) => {
     if (i === 0) return `<td class="sum tas"${x.saleD ? ` title="Tasación de la semana del ${esc(dmy(x.saleD))}"` : ""}>${x.sale ? esc(x.sale) : "—"}</td>`;
     if (i === 1) return `<td>${alChip(x.tr)}</td>`;
-    if (i === 2) return `<td>${trnSelect(c, `data-plan="${esc(x.tr.k)}" aria-label="Entreno actual de ${esc(x.tr.k)}"`)}</td>`;
+    if (i === 2) return `<td><select class="trn trnro" data-t="${esc(c)}" disabled tabindex="-1" aria-label="Entreno actual de ${esc(x.tr.k)}: ${esc(c || "ninguno")}"><option selected>${esc(c || "—")}</option></select></td>`;
     if (i === 3) return `<td class="ppc">${esc(PP_OPTS[c])}</td>`;
     if (i === 4) return `<td class="pn l"><a href="#${encodeURIComponent(c)}" data-tab="${esc(c)}">${esc(c)}</a></td>`;
     const h = hl.has(i) ? " hl" : "";
@@ -1424,15 +1437,20 @@ function renderResumen() {
 const PL_GROUPS = () => [["Semana", 4, ""], ["Entrenamiento", 2, "sep"], ["Skills y avance (gt)", 14, "sep"], ["Sumas", 5, "sep"], ["Talento por skill", 6, "sep"]];
 // Planificación: las próximas 13 semanas. La primera es el Entreno Actual (tr.plan); las demás se guardan en tr.pl (fecha → { f }).
 // Una semana «sin definir» sigue con el entrenamiento de la anterior.
-function planEff(tr) {
-  const last = tr.rows[tr.rows.length - 1]; let prev = tr.plan || "";
+function planEff(tr) { return planEffWith(tr, tr.plan, tr.pl); }
+function planEffWith(tr, plan, pl) {
+  const last = tr.rows[tr.rows.length - 1]; let prev = plan || "";
   return Array.from({ length: PLAN_WEEKS }, (_, k) => {
-    const d = addDays(last.d, 7 * (k + 1)), e = k ? tr.pl && tr.pl[d] : { f: tr.plan || "" };
+    const d = addDays(last.d, 7 * (k + 1)), e = k ? pl && pl[d] : { f: plan || "" };
     if (e) prev = e.f;
     return { d, f: prev, def: !!e };
   });
 }
+const cloneJ = o => JSON.parse(JSON.stringify(o || {}));
+const ensureCf = tr => { if (!tr.cf) tr.cf = { plan: tr.plan || "", pl: cloneJ(tr.pl) }; };   // última planificación confirmada
+const planTouch = tr => saveT();   // los cambios de planificación no se sincronizan hasta pulsar «Guardar»
 function setPlanWeek(tr, k, v) {
+  ensureCf(tr);
   if (k === 0) { tr.plan = v; return; }
   const d = addDays(tr.rows[tr.rows.length - 1].d, 7 * (k + 1)); tr.pl = tr.pl || {};
   if (v === "~") delete tr.pl[d]; else tr.pl[d] = { f: v };
@@ -1645,34 +1663,42 @@ function renderPlayer(tr) {
     <div class="tablewrap ent dense nocum"><table id="tbl"><thead class="two"><tr class="grp">${groups}</tr><tr class="cols">${th}</tr></thead><tbody>${rowsHtml.join("")}</tbody></table></div>`;
 }
 
-// ── Guardar planificación: se compara lo planificado ahora con la última versión confirmada (tr.pc: fecha → entrenamiento)
-const planBase = tr => { tr.pc = tr.pc || {}; planEff(tr).forEach(w => { if (!(w.d in tr.pc)) tr.pc[w.d] = w.f; }); };
+// ── Guardar planificación: lo planificado ahora se compara con la última versión confirmada (tr.cf)
 const planLab = f => f ? f.toUpperCase() : "SIN ENTRENO";
 function planChanges(tr) {
-  planBase(tr);
-  const eff = planEff(tr), out = []; let run = null;
+  ensureCf(tr);
+  const eff = planEff(tr), base = planEffWith(tr, tr.cf.plan, tr.cf.pl), out = []; let run = null;
   const flush = () => { if (!run) return; out.push(`${tr.k}: ${planLab(run.from)} cambia a ${planLab(run.to)} ${run.a === run.b ? "en la semana " + run.a : run.b > run.a ? "en las semanas " + run.a + " a " + run.b : "desde la semana " + run.a + " hasta la semana " + run.b}`); run = null; };
   eff.forEach((w, k) => {
-    const from = tr.pc[w.d], sn = (calAt(w.d) || {}).s || k + 1;
+    const from = base[k].f, sn = (calAt(w.d) || {}).s || k + 1;
     if (from === w.f) { flush(); return; }
     if (run && run.from === from && run.to === w.f) run.b = sn; else { flush(); run = { from, to: w.f, a: sn, b: sn }; }
   });
   flush(); return out;
 }
-const planSaveBtn = (id, n) => `<button class="btn primary plsave" type="button" data-plsave="${esc(id)}" title="Confirma los cambios hechos en esta tabla y te dice cuáles son">Guardar${n ? ` (${n})` : ""}</button>`;
+const planSaveBtn = (id, n) => `<button class="btn primary plsave" type="button" data-plsave="${esc(id)}" title="Muestra los cambios pendientes de esta tabla para confirmarlos o cancelarlos">Guardar${n ? ` (${n})` : ""}</button>`;
 document.addEventListener("click", e => {
   const bt = e.target.closest("[data-plsave]"); if (!bt || !T) return;
   const ps = bt.dataset.plsave === "all" ? live() : live().filter(p => p.id === bt.dataset.plsave);
   const lines = ps.flatMap(planChanges);
   if (!lines.length) { toast("No hay cambios por guardar."); return; }
-  ps.forEach(p => { p.pc = {}; planEff(p).forEach(w => { p.pc[w.d] = w.f; }); });
-  saveT(); schedulePush();
   $("#saveList").innerHTML = lines.map(l => `<li>${esc(l)}.</li>`).join("");
-  $("#saveDlg").showModal(); render();
+  $("#saveDlg")._ps = ps.map(p => p.id); $("#saveDlg").returnValue = ""; $("#saveDlg").showModal();
 });
+function planDlgClose() {
+  const dlg = $("#saveDlg"), v = dlg.returnValue, ps = (dlg._ps || []).map(id => live().find(p => p.id === id)).filter(Boolean); dlg._ps = null;
+  if (v === "save") {
+    ps.forEach(p => { p.cf = { plan: p.plan || "", pl: cloneJ(p.pl) }; touch(p); });
+    saveT(); schedulePush(); toast("Cambios guardados y sincronizados");
+  } else if (v === "cancel") {
+    ps.forEach(p => { ensureCf(p); p.plan = p.cf.plan; p.pl = cloneJ(p.cf.pl); });
+    saveT(); toast("Cambios cancelados: la planificación volvió a su estado anterior");
+  } else return;   // se cerró la ventana sin elegir: los cambios siguen pendientes
+  render();
+}
 function render() {
   readAlineaciones();
-  if (T) live().forEach(planBase);
+  if (T) live().forEach(ensureCf);
   if (!T) { $("#view").innerHTML = ""; $("#summary").hidden = true; $("#tabs").innerHTML = ""; return; }
   view.tab = tabOf();
   renderSummaryBox(); renderTabs();
@@ -1714,7 +1740,7 @@ function parsePattern(txt) {
 function planAction(tr, act) {
   const eff = planEff(tr);
   const k0 = pkOf(tr);
-  if (act === "clear") { if (!confirm(`¿Dejar «sin definir» las semanas 2 a 13 de ${tr.k}?`)) return; tr.pl = {}; touch(tr); render(); }
+  if (act === "clear") { if (!confirm(`¿Dejar «sin definir» las semanas 2 a 13 de ${tr.k}?`)) return; ensureCf(tr); tr.pl = {}; planTouch(tr); render(); }
   else if (act === "pattern" || act === "multi") {
     const wk = k0 ? ` (semana del ${dmy(eff[k0].d)})` : " (Entreno Actual)";
     const txt = prompt(act === "multi"
@@ -1728,7 +1754,7 @@ function planAction(tr, act) {
       if (act === "multi" && q >= seq.length) break;
       setPlanWeek(tr, k, seq[q % seq.length]); n++;
     }
-    touch(tr); render(); toast(act === "multi" ? `${n} semana${n === 1 ? "" : "s"} programada${n === 1 ? "" : "s"}` : "Ciclos aplicados");
+    planTouch(tr); render(); toast(act === "multi" ? `${n} semana${n === 1 ? "" : "s"} programada${n === 1 ? "" : "s"}` : "Ciclos aplicados");
   } else if (act === "copy") {
     const others = live().filter(p => p !== tr).sort((a, b) => a.k.localeCompare(b.k, "es"));
     if (!others.length) { toast("No hay otros jugadores en el seguimiento."); return; }
@@ -2034,9 +2060,9 @@ function init() {
       if (t.dataset.tp != null) { const [id, kk] = t.dataset.tp.split("|"); tr = live().find(p => p.id === id); k = Number(kk); }
       else { tr = live().find(p => p.k === view.tab); k = Number(t.dataset.pf); }
       if (!tr) return;
-      setPlanWeek(tr, k, t.value); touch(tr); setTimeout(render, 0); return;
+      setPlanWeek(tr, k, t.value); planTouch(tr); setTimeout(render, 0); return;
     }
-    if (t.dataset.plan != null) { const tr = live().find(p => p.k === t.dataset.plan); if (tr) { tr.plan = t.value; touch(tr); setTimeout(render, 0); } }
+    if (t.dataset.plan != null) { const tr = live().find(p => p.k === t.dataset.plan); if (tr) { ensureCf(tr); tr.plan = t.value; planTouch(tr); setTimeout(render, 0); } }
     else if (t.dataset.rf != null) { const tr = live().find(p => p.k === view.tab); if (tr) { tr.rows[Number(t.dataset.rf)].f = t.value; touch(tr); setTimeout(render, 0); } }
     else if (t.dataset.ef != null) { const tr = live().find(p => p.k === view.tab); if (tr) { tr.rows[Number(t.dataset.ef)].e = t.checked; touch(tr); setTimeout(render, 0); } }
   });
@@ -2053,6 +2079,7 @@ function init() {
   $("#cloudYes").addEventListener("click", () => { $("#cloudDlg").close(); if (pendingAdd) addPlayer(pendingAdd, true); pendingAdd = null; });
   $("#cloudNo").addEventListener("click", () => { $("#cloudDlg").close(); if (pendingAdd) addPlayer(pendingAdd, false); pendingAdd = null; });
   $("#cloudCancel").addEventListener("click", () => { $("#cloudDlg").close(); pendingAdd = null; });
+  $("#saveDlg").addEventListener("close", planDlgClose);
   $("#copyCancel").addEventListener("click", () => $("#copyDlg").close());
   $("#copyForm").addEventListener("submit", ev => {
     ev.preventDefault();
@@ -2062,7 +2089,7 @@ function init() {
     for (const id of ids) {
       const p = live().find(x => x.id === id); if (!p) continue;
       eff.forEach((w, k) => setPlanWeek(p, k, k && !w.def ? "~" : w.f));
-      touch(p); n++;
+      planTouch(p); n++;
     }
     render(); toast(`Planificación copiada a ${n} jugador${n === 1 ? "" : "es"}`);
   });

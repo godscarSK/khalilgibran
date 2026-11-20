@@ -258,3 +258,9 @@ Qué tener en cuenta:
 - Botón ⧉ para copiar el cuadro informativo también en Plantel y Juveniles.
 - Entrenamiento: botón «Guardar» en la Planificación individual (solo ese jugador) y en la del Resumen (todos). Muestra una ventana con los cambios desde el último «Guardar», con el formato «Andaur: RAPIDEZ cambia a DEFENSA en la semana 7.» (varias semanas seguidas: «en las semanas 4 a 9»; si cruza de temporada: «desde la semana 13 hasta la semana 9»). El botón muestra cuántos cambios hay pendientes, «Guardar (2)». La planificación se sigue guardando al instante; «Guardar» confirma y lista los cambios (la última versión confirmada queda en el campo `pc` de cada jugador, solo en este navegador).
 - La celda con el nombre del jugador en la Planificación individual va en rosado.
+
+### v39 · Planificación: guardar con confirmación
+- Los cambios en la Planificación (individual y Resumen, además de «Cambios Múltiples», «Ciclos», «Limpiar», «Copiar a otros jugadores» y el Entreno actual del jugador) quedan pendientes en este navegador y NO se sincronizan con la nube hasta confirmar con «Guardar». Lo que se sube siempre es la última versión confirmada (`cf` de cada jugador).
+- «Guardar» abre la lista de cambios con dos opciones: «Confirmar y guardar» (sincroniza) y «Cancelar Cambios» (la tabla vuelve a su estado anterior). Cerrar la ventana con Esc deja los cambios pendientes. El botón muestra cuántos hay: «Guardar (2)».
+- Tabla Resumen: la columna Entreno Actual es solo informativa (misma estética).
+- Cada jueves, al avanzar la semana, la planificación confirmada avanza igual que la actual.
