@@ -590,6 +590,10 @@ select.trn.trnro[data-t=""]:disabled { color: var(--muted); }
 section.rtab.indplan thead tr th.pname { background: #c9457f; color: #fff; font-weight: 800; letter-spacing: .06em; text-align: center; border-bottom-color: #c9457f; }
 :root[data-theme="dark"] section.rtab.indplan thead tr th.pname { background: #b8527f; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) section.rtab.indplan thead tr th.pname { background: #b8527f; } }
+
+/* v40: marca ! de Entreno Alineaciones flotante (no desplaza al texto) */
+.alw { position: relative; display: inline-block; }
+.alw .warn { position: absolute; top: -6px; right: -10px; width: 1.25em; height: 1.25em; font-size: .6em; line-height: 1; }
 </style>
 </head>
 <body>
@@ -1245,7 +1249,7 @@ const alChip = tr => {
   const t = alTrn(tr), c = alTrnMap.c[t.v];
   const st = c ? (n => ` style="background:${c};color:${(0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) > 150 ? "#1b2a41" : "#fff"}"`)(parseInt(c.slice(1), 16)) : "";
   const d = alDiff(tr);
-  return `<span class="atrn" data-t="${esc(t.v)}"${st} title="${esc(t.tip)}">${t.v ? esc(t.v) : "—"}</span>${d ? ` <span class="warn" title="${esc(d)}" aria-label="${esc(d)}">!</span>` : ""}`;
+  return `<span class="alw"><span class="atrn" data-t="${esc(t.v)}"${st} title="${esc(t.tip)}">${t.v ? esc(t.v) : "—"}</span>${d ? `<span class="warn" title="${esc(d)}" aria-label="${esc(d)}">!</span>` : ""}</span>`;
 };
 const COMPOS = [["DEF", [1, 4]], ["DEFside", [2, 3, 5]], ["MID", [1, 2, 3, 5]], ["ATT", [1, 2, 6]], ["ATTside", [3, 4, 5]]];   // las cinco columnas del final de la tabla de Plantel (índices de k[])
 const PP_OPTS = ["Ninguna", "Defensor", "Medio", "Atacante"];
@@ -1651,9 +1655,9 @@ function renderPlayer(tr) {
     ? `<span class="edgrp"><span class="lbl" id="edMsg" role="status"></span><button class="btn primary" type="button" data-edsave>Guardar cambios</button><button class="btn" type="button" data-edcancel>Cancelar</button></span>`
     : `<span class="edgrp"><button class="btn edon" type="button" data-edon title="Cambiar a mano cualquier celda de la tabla (con botón para guardar)">Modo Edición</button></span>`;
   const planBtn = `<button class="btn" type="button" data-planbtn aria-pressed="${view.showPlan}">${view.showPlan ? "Ocultar" : "Mostrar"} planificación</button>`;
-  return `<div class="view-title"><h2>${esc(tr.k)}</h2><span class="lbl">Entreno Alineaciones ${alChip(tr)}</span>
-      <label class="lbl ppl">Posición Preferida <select class="pp" data-pp="${esc(tr.k)}" aria-label="Posición Preferida de ${esc(tr.k)}">${PP_OPTS.map(o => `<option value="${o}"${ppOf(tr) === o ? " selected" : ""}>${o}</option>`).join("")}</select></label>
-      <label class="lbl">Entreno actual ${trnSelect(tr.plan, `data-plan="${esc(tr.k)}" aria-label="Entreno actual de ${esc(tr.k)}"`)}</label>
+  return `<div class="view-title"><h2>${esc(tr.k)}</h2><label class="lbl ppl">Posición Preferida <select class="pp" data-pp="${esc(tr.k)}" aria-label="Posición Preferida de ${esc(tr.k)}">${PP_OPTS.map(o => `<option value="${o}"${ppOf(tr) === o ? " selected" : ""}>${o}</option>`).join("")}</select></label>
+      <span class="lbl">Entreno Alineaciones ${alChip(tr)}</span>
+      <span class="lbl">Entreno actual <select class="trn trnro" data-t="${esc(tr.plan || "")}" disabled tabindex="-1" aria-label="Entreno actual: ${esc(tr.plan || "ninguno")}"><option selected>${esc(tr.plan || "—")}</option></select></span>
       <span class="lbl"><i class="cl"></i> Subida Limpia</span>
       ${planBtn}
       <button class="btn rm" type="button" data-rm="${esc(tr.k)}" title="Quitar a este jugador del seguimiento (por ejemplo, si lo vendiste)">Quitar jugador</button>${edBtns}</div>
@@ -1667,14 +1671,8 @@ function renderPlayer(tr) {
 const planLab = f => f ? f.toUpperCase() : "SIN ENTRENO";
 function planChanges(tr) {
   ensureCf(tr);
-  const eff = planEff(tr), base = planEffWith(tr, tr.cf.plan, tr.cf.pl), out = []; let run = null;
-  const flush = () => { if (!run) return; out.push(`${tr.k}: ${planLab(run.from)} cambia a ${planLab(run.to)} ${run.a === run.b ? "en la semana " + run.a : run.b > run.a ? "en las semanas " + run.a + " a " + run.b : "desde la semana " + run.a + " hasta la semana " + run.b}`); run = null; };
-  eff.forEach((w, k) => {
-    const from = base[k].f, sn = (calAt(w.d) || {}).s || k + 1;
-    if (from === w.f) { flush(); return; }
-    if (run && run.from === from && run.to === w.f) run.b = sn; else { flush(); run = { from, to: w.f, a: sn, b: sn }; }
-  });
-  flush(); return out;
+  const eff = planEff(tr), base = planEffWith(tr, tr.cf.plan, tr.cf.pl);
+  return eff.flatMap((w, k) => base[k].f === w.f ? [] : [`${tr.k}: ${planLab(base[k].f)} cambia a ${planLab(w.f)} en la semana ${(calAt(w.d) || {}).s || k + 1}`]);
 }
 const planSaveBtn = (id, n) => `<button class="btn primary plsave" type="button" data-plsave="${esc(id)}" title="Muestra los cambios pendientes de esta tabla para confirmarlos o cancelarlos">Guardar${n ? ` (${n})` : ""}</button>`;
 document.addEventListener("click", e => {

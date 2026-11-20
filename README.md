@@ -264,3 +264,8 @@ Qué tener en cuenta:
 - «Guardar» abre la lista de cambios con dos opciones: «Confirmar y guardar» (sincroniza) y «Cancelar Cambios» (la tabla vuelve a su estado anterior). Cerrar la ventana con Esc deja los cambios pendientes. El botón muestra cuántos hay: «Guardar (2)».
 - Tabla Resumen: la columna Entreno Actual es solo informativa (misma estética).
 - Cada jueves, al avanzar la semana, la planificación confirmada avanza igual que la actual.
+
+### v40
+- Ventana de «Guardar»: una línea por cada cambio y por cada semana.
+- Tabla Resumen, Entreno Alineaciones: la marca «!» ahora flota (más pequeña y más arriba) y ya no desplaza al texto, así que las columnas quedan alineadas.
+- Entrenamiento individual: «Posición Preferida» queda a la izquierda de «Entreno Alineaciones»; «Entreno actual» es solo informativo (misma estética).
