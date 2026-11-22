@@ -274,3 +274,8 @@ Qué tener en cuenta:
 - Entrenamiento: «Semanas Entrenadas», «Subidas Relevantes» y «Subidas en Rango Seleccionado» ahora van en un cuadro con el mismo formato de los demás (con su botón ⧉), sobre la tabla y alineado a la derecha. «Marca dos filas de la tabla» sale como globo de ayuda al tocar el «—».
 - Planificación del Resumen: números de «RESUMEN POR SKILL» más grandes.
 - Juveniles: los botones de batería van a la izquierda, bajo «Buscar».
+
+## v42
+- **Entrenamiento**: el cuadro «Cambios en la planificación» es más ancho y cada cambio se ve en una sola línea.
+- **Alineaciones**: al tocar de nuevo al jugador ya seleccionado en una alineación, queda desmarcado.
+- **Alineaciones**: los jugadores ENT muestran en amarillo su «Porcentaje de Entrenamiento Avanzado» junto al nombre (Base = CO×93/90 + CF×70/90; Formación = Base hasta 93, luego 93+7×(Base−93)/93, tope 100 desde 186; Avanzado = 50 + Formación/2). NT = 0. Solo cuentan los minutos jugados en un puesto cuyo entrenamiento coincide con el del jugador en Entrenamiento. La alineación Copa/Amistoso tiene un selector Copa/Amistoso (por defecto Copa).

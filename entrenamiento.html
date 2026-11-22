@@ -604,6 +604,9 @@ section.rtab.indplan thead tr th.pname { background: #c9457f; color: #fff; font-
 .hlp { position: relative; cursor: help; border-bottom: 1px dotted var(--muted); }
 .hlp.open::after { content: attr(data-help); position: absolute; right: 0; bottom: calc(100% + 8px); z-index: 30; width: max-content; max-width: 16rem; white-space: normal; text-align: left; font-weight: 500; font-size: .8rem; color: var(--ink); background: var(--panel); border: 1px solid var(--ink); border-radius: 6px; padding: 6px 9px; box-shadow: 0 3px 10px rgba(0,0,0,.25); }
 .teamplan tr.cnt td { font-size: 1.1rem; }
+/* v42: la ventana de confirmación de la planificación es ancha: cada cambio cabe en una línea */
+#saveDlg { width: min(46rem, calc(100vw - 24px)); max-width: none; }
+#saveDlg .savelist { white-space: nowrap; overflow-x: auto; }
 </style>
 </head>
 <body>

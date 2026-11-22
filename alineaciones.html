@@ -280,6 +280,8 @@ select.sp { appearance: none; -webkit-appearance: none; cursor: pointer; font: i
 .ptag[data-v="DEF"] { background: #bfe3c4; border-color: #2f7d3b; color: #1b2a41; }
 .ptag[data-v="MID"] { background: #e3b0bf; border-color: #7b1e3a; color: #1b2a41; }
 .ptag[data-v="ATT"] { background: #b5c3e6; border-color: #1b2a63; color: #1b2a41; }
+.adv { flex: none; margin-left: 6px; padding: 0 7px; font-size: .75rem; font-weight: 800; line-height: 1.5; color: #3a2f00; background: #ffd43b; border: 1px solid #c9a100; border-radius: 999px; font-variant-numeric: tabular-nums; }
+select.ct { font: inherit; font-size: .8rem; min-height: 28px; padding: 0 6px; margin-left: 6px; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; }
 .ptag[data-v="ENT"] { background: #e6dcf5; border-color: #8a6cc0; color: #1b2a41; }
 .ptag[data-v="EXT"] { background: #d3eef0; border-color: #4aa3ad; color: #1b2a41; }
 :root[data-theme="dark"] .ptag[data-v] { color: #e6edf1; }
@@ -482,7 +484,7 @@ const CONFIG = {
 const LINEUPS = [
   { name: "Copa Internacional", day: "Viernes" },
   { name: "Liga 1",     day: "Domingo" },
-  { name: "Copa/Amistoso", day: "Lunes" },
+  { name: "Copa/Amistoso", day: "Lunes", ct: true },   // ct: se elige si ese día fue Copa (cuenta como CO) o Amistoso (CF)
   { name: "Liga 2",     day: "Miércoles" },
   { name: "Juveniles",  day: "Martes", jr: true }          // alineación de juveniles: sección aparte, con su propia lista
 ];
@@ -747,7 +749,7 @@ function parseLineup(i) {
   const s = raw.map(x => x.split("+").slice(0, MAXSUB).map(t => { const [pid, m] = t.trim().split(":"); return pid && pid.trim() ? { p: pid.trim(), m: /^\d{1,3}$/.test(m || "") ? String(+m) : "" } : null; }).filter(Boolean));
   let sp = o && typeof o.p === "string" ? o.p.split(",").slice(0, SLOTS).map(x => x.trim()) : null;
   if (!sp || sp.length < SLOTS || sp.some(x => x !== "" && !SLOT_POS_OPTS.includes(x))) sp = SLOT_POS_DEFAULT.slice();
-  return { s, p: sp, w: /^\d{4}-\d{2}-\d{2}$/.test(o && o.w) ? o.w : "", y: DAYS.includes(o && o.y) ? o.y : "", r: String((o && o.r) || "").slice(0, 30), d: /^\d{4}-\d{2}-\d{2}$/.test(o && o.d) ? o.d : "" };
+  return { s, p: sp, w: /^\d{4}-\d{2}-\d{2}$/.test(o && o.w) ? o.w : "", y: DAYS.includes(o && o.y) ? o.y : "", k: o && o.k === "A" ? "A" : "C", r: String((o && o.r) || "").slice(0, 30), d: /^\d{4}-\d{2}-\d{2}$/.test(o && o.d) ? o.d : "" };
 }
 let lu = LINEUPS.map((_, i) => parseLineup(i));
 // La semana de Sokker va de jueves a miércoles. «w» de cada alineación = jueves de la semana de los datos con que se fijó su fecha.
@@ -790,7 +792,7 @@ function saveTrn() {
 function saveLineup(i) {
   const k = LKEY(i), L = lu[i];
   if (!L.w) L.w = dataWeekKey();
-  linMap[k] = { v: JSON.stringify({ w: L.w, s: L.s.map(es => es.map(e => e.m !== "" ? e.p + ":" + e.m : e.p).join("+")).join(","), p: L.p.join(","), r: L.r, d: L.d, ...(LINEUPS[i].jr ? { y: L.y } : {}) }), t: nextT(k) };
+  linMap[k] = { v: JSON.stringify({ w: L.w, s: L.s.map(es => es.map(e => e.m !== "" ? e.p + ":" + e.m : e.p).join("+")).join(","), p: L.p.join(","), r: L.r, d: L.d, ...(LINEUPS[i].jr ? { y: L.y } : {}), ...(LINEUPS[i].ct ? { k: L.k } : {}) }), t: nextT(k) };
   sync.dirty.add(k); saveLin();
   touched.add(k);
   if (CONFIG.estUrl) setSyncState("unsynced");   // solo se sube a la nube con el botón «Guardar Datos»
@@ -987,6 +989,32 @@ function minsArr(es) {
 }
 const entMin = (es, e) => minsArr(es)[es.indexOf(e)];
 const minsOf = pid => lu.reduce((n, L) => n + L.s.reduce((a, es) => a + es.reduce((b, e) => b + (e.p === pid ? entMin(es, e) : 0), 0), 0), 0);
+// Porcentaje de Entrenamiento Avanzado (solo jugadores ENT). CO = minutos en Liga o Copa (la Copa Internacional también; el lunes, si el selector dice «Copa»),
+// CF = minutos en amistosos (el lunes, si el selector dice «Amistoso»), NT = 0 siempre. Solo cuentan los minutos jugados en un puesto donde se entrena lo que figura
+// en la página Entrenamiento (si el jugador no está allí, basta con que el puesto tenga un entrenamiento asignado).
+function advPct(pid) {
+  const plan = entPlan.get(String(pid));
+  let co = 0, cf = 0;
+  lu.forEach((L, i) => {
+    if (LINEUPS[i].jr) return;
+    const friendly = LINEUPS[i].ct && L.k === "A";
+    L.s.forEach((es, j) => es.forEach(e => {
+      if (e.p !== pid) return;
+      const here = L.p[j] ? trn[L.p[j]] : "";
+      if (!here || (plan !== undefined && PLAN_CODE[plan] !== here)) return;   // no jugó en su posición de entreno
+      const m = entMin(es, e); if (friendly) cf += m; else co += m;
+    }));
+  });
+  const base = co * 93 / 90 + cf * 70 / 90;
+  const form = base <= 93 ? base : base < 186 ? 93 + 7 * (base - 93) / 93 : 100;
+  return { pct: 50 + form / 2, co, cf };
+}
+const nfPct = new Intl.NumberFormat("es-CL", { maximumFractionDigits: 1 });
+const advHtml = pid => {
+  if (estPos[pid] !== "ENT") return "";
+  const a = advPct(pid);
+  return `<span class="adv" title="Porcentaje de Entrenamiento Avanzado según los minutos de la semana (CO ${a.co}′ · CF ${a.cf}′ · NT 0′); solo cuentan los minutos jugados en su posición de entreno">${nfPct.format(a.pct)}%</span>`;
+};
 function flags(p) {
   const d = p.injury;
   return (d ? `<span class="flg inj" title="Lesionado: ${d} ${d === 1 ? "día" : "días"}" aria-label="Lesionado, ${d} ${d === 1 ? "día" : "días"}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 2h6v7h7v6h-7v7H9v-7H2V9h7z"/></svg>${d} d</span>` : "")
@@ -1018,7 +1046,7 @@ function renderPool() {
   $("#poolList").innerHTML = rows.length ? rows.map(p => {
     const n = countOf(p.pid);
     return `<div class="pl${n ? "" : " free"}${state.sel === p.pid ? " sel" : ""}" data-pid="${esc(p.pid)}" title="${esc(p.full)} · en ${n} de ${den} ${den === 1 ? "alineación" : "alineaciones"}">
-      ${chipHtml(p)}<span class="sp-fill"></span>${jr ? jInfo(p) : ""}${posTag(p.pid)}
+      ${chipHtml(p)}${jr ? "" : advHtml(p.pid)}<span class="sp-fill"></span>${jr ? jInfo(p) : ""}${posTag(p.pid)}
       <span class="mins${minsOf(p.pid) ? "" : " z"}" title="Minutos acumulados en todas las alineaciones">${minsOf(p.pid)}′</span><span class="cnt${n === 0 ? " z" : n === den ? " full" : ""}" aria-label="En ${n} alineaciones">${n}</span></div>`;
   }).join("") : `<div class="empty">${list.length ? "Ningún jugador coincide." : jr ? "Sin juveniles (falta data/juniors.enc.json)." : "Sin jugadores."}</div>`;
 }
@@ -1036,7 +1064,7 @@ function applyHidden() {
 function buildLineups() {
   const art = (l, i) => `<article class="lu" data-l="${i}">
     <div class="lh"><h2>${esc(l.name)}</h2><span class="n"><span data-n="${i}">0</span>/${SLOTS} <button class="btn" type="button" data-clear="${i}" title="Vaciar esta alineación" style="min-height:28px;padding:2px 8px;margin-left:6px">Vaciar</button>${l.jr ? "" : `<button class="btn" type="button" data-hide="${i}" title="Ocultar esta alineación (la de al lado ocupa su espacio)" style="min-height:28px;padding:2px 8px;margin-left:4px">Ocultar</button>`}</span></div>
-    <div class="meta"><span class="day">${esc(l.day)}</span>
+    <div class="meta"><span class="day">${esc(l.day)}</span>${l.ct ? `<select class="ct" data-ct="${i}" aria-label="Tipo de partido de ${esc(l.name)}" title="Indica si ese día se jugó Copa Chile (sus minutos cuentan como CO) o un Amistoso (cuentan como CF) para el Porcentaje de Entrenamiento Avanzado"><option value="C">Copa</option><option value="A">Amistoso</option></select>` : ""}
       <input class="rival" type="text" maxlength="30" placeholder="Rival" aria-label="Rival de ${esc(l.name)}" data-r="${i}">
       <input class="date" type="date" aria-label="Fecha de ${esc(l.name)}" data-d="${i}"></div>
     <ol class="slots" data-slots="${i}"></ol></article>`;
@@ -1049,6 +1077,8 @@ function syncMeta() {
     const r = document.querySelector(`input[data-r="${i}"]`), d = document.querySelector(`input[data-d="${i}"]`);
     if (r && r !== document.activeElement && r.value !== lu[i].r) r.value = lu[i].r;
     if (d && d !== document.activeElement && d.value !== lu[i].d) d.value = lu[i].d;
+    const ct = document.querySelector(`select[data-ct="${i}"]`);
+    if (ct && ct.value !== lu[i].k) ct.value = lu[i].k;
     const y = document.querySelector(`select[data-y="${i}"]`);
     if (y && y.value !== lu[i].y) y.value = lu[i].y;
   });
@@ -1344,6 +1374,8 @@ function init() {
   });
   $("#lineups").addEventListener("change", e => {
     if (e.target.closest("[data-min]")) { renderAll(); return; }
+    const ct = e.target.closest("[data-ct]");
+    if (ct) { lu[+ct.dataset.ct].k = ct.value === "A" ? "A" : "C"; saveLineup(+ct.dataset.ct); renderPool(); return; }
     const yy = e.target.closest("[data-y]");
     if (yy) { lu[+yy.dataset.y].y = yy.value; saveLineup(+yy.dataset.y); return; }
     const sp = e.target.closest("[data-sp]"); if (!sp) return;
@@ -1386,6 +1418,8 @@ function init() {
     if (e.target.closest("select, input")) return;
     const pb = e.target.closest(".plus");
     if (pb && !state.sel) { toast("Primero selecciona un jugador: toca el espacio a la derecha de su apellido."); return; }
+    const same = e.target.closest(".ent[data-pid]");
+    if (state.sel && same && same.dataset.pid === state.sel && !e.target.closest(".grip, .plus")) { state.sel = ""; renderAll(); return; }   // tocar otra vez al mismo jugador: se desmarca
     if (state.sel && e.target.closest(".slot") && !e.target.closest(".grip")) {   // toque: colocar al jugador seleccionado
       dropAt(e.target, state.sel); renderAll(); return;
     }
