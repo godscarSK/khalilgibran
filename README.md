@@ -286,3 +286,7 @@ Qué tener en cuenta:
 - Si un jugador ENT está alineado en posiciones distintas, en vez del porcentaje aparece una «!» roja («El jugador está alineado en posiciones distintas»).
 - El selector Copa/Amistoso se guarda junto con la alineación del lunes y se sincroniza al pulsar «Guardar Datos».
 - (v44) La marca del Porcentaje de Entrenamiento ahora es texto amarillo claro sobre fondo azul oscuro con borde amarillo, legible en tema claro y oscuro.
+
+## v45
+- **Alineaciones** lee ahora el entrenamiento de cada jugador directamente de la nube (los registros que guarda la página Entrenamiento con «Guardar»), sin necesidad de abrir Entrenamiento antes. Si la nube no responde, usa la copia de este navegador.
+- Nuevo cuadro «ENTRENAMIENTO» en la esquina superior derecha de Alineaciones: lista, en orden alfabético, lo que entrena cada jugador ENT (p. ej. «Andaur - Rapidez»).

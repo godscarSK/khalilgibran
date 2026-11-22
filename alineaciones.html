@@ -280,6 +280,11 @@ select.sp { appearance: none; -webkit-appearance: none; cursor: pointer; font: i
 .ptag[data-v="DEF"] { background: #bfe3c4; border-color: #2f7d3b; color: #1b2a41; }
 .ptag[data-v="MID"] { background: #e3b0bf; border-color: #7b1e3a; color: #1b2a41; }
 .ptag[data-v="ATT"] { background: #b5c3e6; border-color: #1b2a63; color: #1b2a41; }
+.summary { flex: 0 0 auto; min-width: 220px; padding: 10px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; }
+.summary .enth { margin: 0 0 4px; font-family: "Barlow Condensed", "Arial Narrow", sans-serif; font-size: 1.25rem; font-weight: 700; letter-spacing: .02em; }
+.summary ul { margin: 0; padding: 0; list-style: none; font-size: .9rem; }
+.summary li { white-space: nowrap; }
+@media (max-width: 640px) { .summary { width: 100%; } }
 .adv.warn { color: #fff; background: #d62828; border-color: #9d0000; padding: 0 9px; }
 .adv { flex: none; margin-left: 6px; padding: 0 7px; font-size: .8rem; font-weight: 800; line-height: 1.5; color: #ffe066; background: #1c2333; border: 1px solid #ffd43b; border-radius: 999px; font-variant-numeric: tabular-nums; }
 select.ct { font: inherit; font-size: .8rem; min-height: 28px; padding: 0 6px; margin-left: 6px; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; }
@@ -425,6 +430,7 @@ html.cust-ATT :is(.chip, select.trs)[data-t="ATT"] { background: var(--trc-ATT) 
         </div>
         <p class="lede" id="lede">Cargando jugadores…</p>
       </div>
+      <aside class="summary" id="entBox" aria-label="Entrenamiento de los jugadores ENT" hidden></aside>
     </div>
   </header>
 
@@ -834,6 +840,13 @@ async function encV(v) {
   const o = new Uint8Array(12 + ct.length); o.set(iv); o.set(ct, 12);
   return b64u(o);
 }
+const pipeBytes = async (bytes, stream) => new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer());
+async function decRec(s) {   // registros de la página Entrenamiento: JSON comprimido (gzip) y cifrado
+  const o = unb64u(String(s));
+  const gz = new Uint8Array(await crypto.subtle.decrypt({ name: "AES-GCM", iv: o.slice(0, 12) }, sync.key, o.slice(12)));
+  return JSON.parse(new TextDecoder().decode(await pipeBytes(gz, new DecompressionStream("gzip"))));
+}
+let entCloud = null;   // id → { k, pid, plan } leído de la nube (null = aún no se ha leído)
 async function decV(s) {
   if (!s) return "";
   const o = unb64u(String(s));
@@ -893,7 +906,7 @@ async function pullLin() {
   try {
     const j = await estCall({ action: "list" });
     const remote = new Set();
-    let changed = false;
+    let changed = false, entSeen = null;
     for (const it of j.items || []) {
       const k = String(it.pid), t = Number(it.t) || 0;
       if (k === POSCOL_KEY) { try { const m = parsePosCol(await decV(it.v)); if (JSON.stringify(m) !== JSON.stringify(posCol)) { posCol = m; applyPosColors(); } } catch {} continue; }
@@ -904,6 +917,14 @@ async function pullLin() {
       }
       if (/^\d+$/.test(k)) {                       // asignaciones de la página Plantel: solo se leen, para mostrar la posición
         try { const v = await decV(it.v); const w = v === "EXTRA" ? "EXT" : v; if (EST_OPTS.includes(w)) { if (estPos[k] !== w) { estPos[k] = w; changed = true; } } else if (estPos[k]) { delete estPos[k]; changed = true; } } catch {}
+        continue;
+      }
+      const em = /^ent([a-z0-9]{1,36})$/.exec(k);
+      if (em) {                                    // planificación de la página Entrenamiento: solo se lee
+        try {
+          const rec = await decRec(it.v); entSeen = entSeen || {};
+          if (rec && !rec.del && !rec.arch && Array.isArray(rec.rows)) entSeen[em[1]] = { k: rec.k, pid: rec.pid, plan: rec.plan || "" };
+        } catch {}
         continue;
       }
       if (!LKEYS.includes(k)) continue;
@@ -918,6 +939,7 @@ async function pullLin() {
     }
     for (const k of Object.keys(linMap)) if (LKEYS.includes(k) && !remote.has(k)) sync.dirty.add(k);
     saveLin();
+    if (entSeen) { if (JSON.stringify(entSeen) !== JSON.stringify(entCloud)) changed = true; entCloud = entSeen; }
     if (changed) { lu = LINEUPS.map((_, i) => parseLineup(i)); trn = parseTrn(); applyTrnColors(); renderTrn(); renderAll(); }
     sync.pullOk = true;
     setSyncState(sync.dirty.size ? "unsynced" : "loaded");
@@ -1112,11 +1134,12 @@ let entPlan = new Map();   // pid → Entreno Actual
 function readEntrenamiento() {
   entPlan = new Map();
   try {
-    const T = JSON.parse(localStorage.getItem("entrenamiento:v1"));
-    if (!T || !Array.isArray(T.players)) return;
+    // Si ya se leyó la nube, manda lo guardado allí; si no, se usa la copia de este navegador (último plan confirmado).
+    let list;
+    if (entCloud) list = Object.values(entCloud);
+    else { const T = JSON.parse(localStorage.getItem("entrenamiento:v1")); if (!T || !Array.isArray(T.players)) return; list = T.players.filter(q => !q.arch).map(q => ({ k: q.k, pid: q.pid, plan: (q.cf || q).plan || "" })); }
     const strip = x => String(x || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-    for (const tr of T.players) {
-      if (tr.arch) continue;
+    for (const tr of list) {
       let pid = tr.pid != null && byPid.has(String(tr.pid)) ? String(tr.pid) : null;
       if (pid == null) { const hits = state.players.filter(q => strip(q.last) === strip(tr.k)); if (hits.length === 1) pid = String(hits[0].pid); }
       if (pid != null) entPlan.set(pid, tr.plan || "");
@@ -1158,11 +1181,18 @@ function renderTrn() {
     `<span class="trcol"><strong>Colores</strong><span class="tcrow">${TRN_OPTS.map(o => `<label class="tcw"><input type="color" data-tcol="${o}" value="${(trn.c && trn.c[o]) || TRN_DEF[currentTheme() === "dark" ? "dark" : "light"][o]}" aria-label="Color de ${o}">${o}</label>`).join("")}</span></span>
     <span class="trnote">Los jugadores ENT toman el color del entrenamiento de la posición del puesto en que estén. Puedes elegir el color de cada entrenamiento.</span>`;
 }
+function renderEntBox() {
+  const box = $("#entBox"); if (!box) return;
+  const rows = state.players.filter(p => estPos[p.pid] === "ENT").map(p => ({ n: p.label, plan: entPlan.get(String(p.pid)) }))
+    .sort((a, b) => a.n.localeCompare(b.n, "es"));
+  box.hidden = !rows.length;
+  box.innerHTML = rows.length ? `<h2 class="enth">ENTRENAMIENTO</h2><ul>${rows.map(r => `<li>${esc(r.n)} - ${r.plan === undefined ? "sin datos" : esc(r.plan || "Sin plan")}</li>`).join("")}</ul>` : "";
+}
 function renderAll() {
   dropStaleSel();
   const when = state.stamp ? fmtDate(state.stamp) : "";
   $("#lede").innerHTML = `${when ? esc(`Datos al ${when}${when.endsWith(".") ? "" : "."}`) : ""}<span id="syncMsg">${syncText() ? " " + esc(syncText()) : ""}</span>`;
-  renderSlots(); renderPool(); syncMeta();
+  renderSlots(); renderPool(); syncMeta(); renderEntBox();
 }
 
 /* ─────────────── Colocar, quitar y arrastrar ─────────────── */
