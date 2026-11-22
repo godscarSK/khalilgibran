@@ -282,9 +282,42 @@ select.sp { appearance: none; -webkit-appearance: none; cursor: pointer; font: i
 .ptag[data-v="ATT"] { background: #b5c3e6; border-color: #1b2a63; color: #1b2a41; }
 .summary { flex: 0 0 auto; min-width: 220px; padding: 10px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; }
 .summary .enth { margin: 0 0 4px; font-family: "Barlow Condensed", "Arial Narrow", sans-serif; font-size: 1.25rem; font-weight: 700; letter-spacing: .02em; }
-.summary ul { margin: 0; padding: 0; list-style: none; font-size: .9rem; }
-.summary li { white-space: nowrap; }
+:root { --etc-RAP: #1b7fb5; --etc-TEC: #6b3fb5; --etc-PAS: #c2337a; --etc-GK: #9a7a00; --etc-DEF: #c26a0a; --etc-CRE: #c0261f; --etc-ATT: #5f6b73; }
+:root[data-theme="dark"] { --etc-RAP: #6cc4f0; --etc-TEC: #b69af0; --etc-PAS: #f08ab8; --etc-GK: #e6cf5a; --etc-DEF: #f5a85a; --etc-CRE: #f58a85; --etc-ATT: #aab4bb; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --etc-RAP: #6cc4f0; --etc-TEC: #b69af0; --etc-PAS: #f08ab8; --etc-GK: #e6cf5a; --etc-DEF: #f5a85a; --etc-CRE: #f58a85; --etc-ATT: #aab4bb; } }
+html.cust-RAP { --etc-RAP: color-mix(in srgb, var(--trc-RAP) 55%, #000); }
+:root[data-theme="dark"].cust-RAP { --etc-RAP: color-mix(in srgb, var(--trc-RAP) 55%, #fff); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]).cust-RAP { --etc-RAP: color-mix(in srgb, var(--trc-RAP) 55%, #fff); } }
+html.cust-TEC { --etc-TEC: color-mix(in srgb, var(--trc-TEC) 55%, #000); }
+:root[data-theme="dark"].cust-TEC { --etc-TEC: color-mix(in srgb, var(--trc-TEC) 55%, #fff); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]).cust-TEC { --etc-TEC: color-mix(in srgb, var(--trc-TEC) 55%, #fff); } }
+html.cust-PAS { --etc-PAS: color-mix(in srgb, var(--trc-PAS) 55%, #000); }
+:root[data-theme="dark"].cust-PAS { --etc-PAS: color-mix(in srgb, var(--trc-PAS) 55%, #fff); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]).cust-PAS { --etc-PAS: color-mix(in srgb, var(--trc-PAS) 55%, #fff); } }
+html.cust-GK { --etc-GK: color-mix(in srgb, var(--trc-GK) 55%, #000); }
+:root[data-theme="dark"].cust-GK { --etc-GK: color-mix(in srgb, var(--trc-GK) 55%, #fff); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]).cust-GK { --etc-GK: color-mix(in srgb, var(--trc-GK) 55%, #fff); } }
+html.cust-DEF { --etc-DEF: color-mix(in srgb, var(--trc-DEF) 55%, #000); }
+:root[data-theme="dark"].cust-DEF { --etc-DEF: color-mix(in srgb, var(--trc-DEF) 55%, #fff); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]).cust-DEF { --etc-DEF: color-mix(in srgb, var(--trc-DEF) 55%, #fff); } }
+html.cust-CRE { --etc-CRE: color-mix(in srgb, var(--trc-CRE) 55%, #000); }
+:root[data-theme="dark"].cust-CRE { --etc-CRE: color-mix(in srgb, var(--trc-CRE) 55%, #fff); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]).cust-CRE { --etc-CRE: color-mix(in srgb, var(--trc-CRE) 55%, #fff); } }
+html.cust-ATT { --etc-ATT: color-mix(in srgb, var(--trc-ATT) 55%, #000); }
+:root[data-theme="dark"].cust-ATT { --etc-ATT: color-mix(in srgb, var(--trc-ATT) 55%, #fff); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]).cust-ATT { --etc-ATT: color-mix(in srgb, var(--trc-ATT) 55%, #fff); } }
+.summary { text-align: center; }
+.summary ul { margin: 0 auto; padding: 0; list-style: none; font-size: .9rem; font-weight: 600; display: grid; grid-template-columns: auto auto auto; gap: 1px 7px; justify-content: center; }
+.summary li { display: contents; white-space: nowrap; }
+.summary li .en { text-align: left; } .summary li .ep { text-align: left; }
+.summary li[data-t] { color: var(--etc); }
+.summary li[data-t="RAP"] { --etc: var(--etc-RAP); } .summary li[data-t="TEC"] { --etc: var(--etc-TEC); } .summary li[data-t="PAS"] { --etc: var(--etc-PAS); } .summary li[data-t="GK"] { --etc: var(--etc-GK); } .summary li[data-t="DEF"] { --etc: var(--etc-DEF); } .summary li[data-t="CRE"] { --etc: var(--etc-CRE); } .summary li[data-t="ATT"] { --etc: var(--etc-ATT); }
+.summary li .en, .summary li .es, .summary li .ep { color: inherit; }
+.summary li[data-t] > span { color: var(--etc); }
 @media (max-width: 640px) { .summary { width: 100%; } }
+.pl .mins { min-width: 2.9rem; text-align: center; box-sizing: border-box; }
+.pl .adv { margin-left: 0; width: 3.7rem; text-align: center; padding: 0; box-sizing: border-box; }
+.pl .ptag, .pl .jmk { width: 2.6rem; min-width: 0; padding-left: 0; padding-right: 0; box-sizing: border-box; }
 .adv.warn { color: #fff; background: #d62828; border-color: #9d0000; padding: 0 9px; }
 .adv { flex: none; margin-left: 6px; padding: 0 7px; font-size: .8rem; font-weight: 800; line-height: 1.5; color: #ffe066; background: #1c2333; border: 1px solid #ffd43b; border-radius: 999px; font-variant-numeric: tabular-nums; }
 select.ct { font: inherit; font-size: .8rem; min-height: 28px; padding: 0 6px; margin-left: 6px; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; }
@@ -1050,7 +1083,7 @@ const advHtml = pid => {
   const ps = new Set(playLines(pid).filter(x => !x.jr && x.pos !== "—").map(x => x.pos));
   if (ps.size > 1) return `<span class="adv warn" title="El jugador está alineado en posiciones distintas">!</span>`;
   const a = advPct(pid);
-  return `<span class="adv" title="Porcentaje de Entrenamiento Avanzado según los minutos de la semana (CO ${a.co}′ · CF ${a.cf}′ · NT 0′); solo cuentan los minutos jugados en su posición de entreno">${nfPct.format(a.pct)}%</span>`;
+  return `<span class="adv" title="Entrenamiento: ${a.pct.toFixed(1)}%">${nfPct.format(a.pct)}%</span>`;
 };
 function flags(p) {
   const d = p.injury;
@@ -1083,7 +1116,7 @@ function renderPool() {
   $("#poolList").innerHTML = rows.length ? rows.map(p => {
     const n = countOf(p.pid);
     return `<div class="pl${n ? "" : " free"}${state.sel === p.pid ? " sel" : ""}" data-pid="${esc(p.pid)}" title="${esc(p.full)} · en ${n} de ${den} ${den === 1 ? "alineación" : "alineaciones"}">
-      ${chipHtml(p)}${jr ? "" : advHtml(p.pid)}<span class="sp-fill"></span>${jr ? jInfo(p) : ""}${posTag(p.pid)}
+      ${chipHtml(p)}<span class="sp-fill"></span>${jr ? jInfo(p) : advHtml(p.pid)}${posTag(p.pid)}
       <span class="mins${minsOf(p.pid) ? "" : " z"}" title="${esc(minsTitle(p.pid))}">${minsOf(p.pid)}′</span><span class="cnt${n === 0 ? " z" : n === den ? " full" : ""}" aria-label="En ${n} alineaciones">${n}</span></div>`;
   }).join("") : `<div class="empty">${list.length ? "Ningún jugador coincide." : jr ? "Sin juveniles (falta data/juniors.enc.json)." : "Sin jugadores."}</div>`;
 }
@@ -1186,7 +1219,7 @@ function renderEntBox() {
   const rows = state.players.filter(p => estPos[p.pid] === "ENT").map(p => ({ n: p.label, plan: entPlan.get(String(p.pid)) }))
     .sort((a, b) => a.n.localeCompare(b.n, "es"));
   box.hidden = !rows.length;
-  box.innerHTML = rows.length ? `<h2 class="enth">ENTRENAMIENTO</h2><ul>${rows.map(r => `<li>${esc(r.n)} - ${r.plan === undefined ? "sin datos" : esc(r.plan || "Sin plan")}</li>`).join("")}</ul>` : "";
+  box.innerHTML = rows.length ? `<h2 class="enth">ENTRENAMIENTO</h2><ul>${rows.map(r => `<li${PLAN_CODE[r.plan] && r.plan ? ` data-t="${PLAN_CODE[r.plan]}"` : ""}><span class="en">${esc(r.n)}</span><span class="es">-</span><span class="ep">${r.plan === undefined ? "sin datos" : esc(r.plan || "Sin plan")}</span></li>`).join("")}</ul>` : "";
 }
 function renderAll() {
   dropStaleSel();

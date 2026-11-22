@@ -290,3 +290,8 @@ Qué tener en cuenta:
 ## v45
 - **Alineaciones** lee ahora el entrenamiento de cada jugador directamente de la nube (los registros que guarda la página Entrenamiento con «Guardar»), sin necesidad de abrir Entrenamiento antes. Si la nube no responde, usa la copia de este navegador.
 - Nuevo cuadro «ENTRENAMIENTO» en la esquina superior derecha de Alineaciones: lista, en orden alfabético, lo que entrena cada jugador ENT (p. ej. «Andaur - Rapidez»).
+
+## v46
+- Alineaciones: al pasar el cursor por la marca del Porcentaje de Entrenamiento se lee «Entrenamiento: 96.5%».
+- En la lista de jugadores, las marcas de porcentaje, las de posición (GK/DEF/MID/ATT/ENT/EXT), los minutos y el contador quedan alineados en columnas.
+- Cuadro «ENTRENAMIENTO»: texto centrado, nombres y entrenamientos alineados en columnas, y cada línea con el color de su entrenamiento (sigue los colores personalizados y el tema claro/oscuro).
