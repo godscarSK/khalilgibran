@@ -285,3 +285,4 @@ Qué tener en cuenta:
 - Al pasar el cursor sobre los minutos de un jugador se detallan los minutos por alineación y el puesto (p. ej. «90′ AMISTOSO orden DEF»).
 - Si un jugador ENT está alineado en posiciones distintas, en vez del porcentaje aparece una «!» roja («El jugador está alineado en posiciones distintas»).
 - El selector Copa/Amistoso se guarda junto con la alineación del lunes y se sincroniza al pulsar «Guardar Datos».
+- (v44) La marca del Porcentaje de Entrenamiento ahora es texto amarillo claro sobre fondo azul oscuro con borde amarillo, legible en tema claro y oscuro.
