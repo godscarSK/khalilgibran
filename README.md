@@ -295,3 +295,7 @@ Qué tener en cuenta:
 - Alineaciones: al pasar el cursor por la marca del Porcentaje de Entrenamiento se lee «Entrenamiento: 96.5%».
 - En la lista de jugadores, las marcas de porcentaje, las de posición (GK/DEF/MID/ATT/ENT/EXT), los minutos y el contador quedan alineados en columnas.
 - Cuadro «ENTRENAMIENTO»: texto centrado, nombres y entrenamientos alineados en columnas, y cada línea con el color de su entrenamiento (sigue los colores personalizados y el tema claro/oscuro).
+
+## v47
+- Alineaciones: los botones de la lista de jugadores (Sin alinear, posiciones, marcas de juveniles) se guardan en este dispositivo y siguen marcados al recargar.
+- Jugadores sin marca ENT: la marca verde muestra el porcentaje de Formación (Base = CO×93/90 + CF×70/90; hasta 93 igual a la base, luego 93+7×(Base−93)/93, tope 100 desde 186). Solo cuentan los minutos jugados en un puesto igual a su marca (EXT o sin marca: todos). La «!» roja de posiciones distintas se aplica a todos.
