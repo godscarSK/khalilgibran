@@ -279,3 +279,9 @@ Qué tener en cuenta:
 - **Entrenamiento**: el cuadro «Cambios en la planificación» es más ancho y cada cambio se ve en una sola línea.
 - **Alineaciones**: al tocar de nuevo al jugador ya seleccionado en una alineación, queda desmarcado.
 - **Alineaciones**: los jugadores ENT muestran en amarillo su «Porcentaje de Entrenamiento Avanzado» junto al nombre (Base = CO×93/90 + CF×70/90; Formación = Base hasta 93, luego 93+7×(Base−93)/93, tope 100 desde 186; Avanzado = 50 + Formación/2). NT = 0. Solo cuentan los minutos jugados en un puesto cuyo entrenamiento coincide con el del jugador en Entrenamiento. La alineación Copa/Amistoso tiene un selector Copa/Amistoso (por defecto Copa).
+
+## v43
+- **Alineaciones**: el texto del Porcentaje de Entrenamiento Avanzado ahora es blanco (el fondo amarillo no cambia).
+- Al pasar el cursor sobre los minutos de un jugador se detallan los minutos por alineación y el puesto (p. ej. «90′ AMISTOSO orden DEF»).
+- Si un jugador ENT está alineado en posiciones distintas, en vez del porcentaje aparece una «!» roja («El jugador está alineado en posiciones distintas»).
+- El selector Copa/Amistoso se guarda junto con la alineación del lunes y se sincroniza al pulsar «Guardar Datos».

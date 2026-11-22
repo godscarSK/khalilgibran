@@ -280,7 +280,8 @@ select.sp { appearance: none; -webkit-appearance: none; cursor: pointer; font: i
 .ptag[data-v="DEF"] { background: #bfe3c4; border-color: #2f7d3b; color: #1b2a41; }
 .ptag[data-v="MID"] { background: #e3b0bf; border-color: #7b1e3a; color: #1b2a41; }
 .ptag[data-v="ATT"] { background: #b5c3e6; border-color: #1b2a63; color: #1b2a41; }
-.adv { flex: none; margin-left: 6px; padding: 0 7px; font-size: .75rem; font-weight: 800; line-height: 1.5; color: #3a2f00; background: #ffd43b; border: 1px solid #c9a100; border-radius: 999px; font-variant-numeric: tabular-nums; }
+.adv.warn { color: #fff; background: #d62828; border-color: #9d0000; padding: 0 9px; }
+.adv { flex: none; margin-left: 6px; padding: 0 7px; font-size: .75rem; font-weight: 800; line-height: 1.5; color: #fff; background: #ffd43b; border: 1px solid #c9a100; border-radius: 999px; font-variant-numeric: tabular-nums; }
 select.ct { font: inherit; font-size: .8rem; min-height: 28px; padding: 0 6px; margin-left: 6px; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; }
 .ptag[data-v="ENT"] { background: #e6dcf5; border-color: #8a6cc0; color: #1b2a41; }
 .ptag[data-v="EXT"] { background: #d3eef0; border-color: #4aa3ad; color: #1b2a41; }
@@ -1009,9 +1010,23 @@ function advPct(pid) {
   const form = base <= 93 ? base : base < 186 ? 93 + 7 * (base - 93) / 93 : 100;
   return { pct: 50 + form / 2, co, cf };
 }
+// Dónde juega un jugador: una entrada por alineación (con minutos > 0) y el puesto («orden») que ocupa en ella.
+function playLines(pid) {
+  const out = [];
+  lu.forEach((L, i) => L.s.forEach((es, j) => es.forEach(e => {
+    if (e.p !== pid) return;
+    const m = entMin(es, e); if (!m) return;
+    const nm = LINEUPS[i].ct ? (L.k === "A" ? "Amistoso" : "Copa") : LINEUPS[i].name;
+    out.push({ m, nm: nm.toUpperCase(), pos: L.p[j] || "—", jr: !!LINEUPS[i].jr });
+  })));
+  return out;
+}
+const minsTitle = pid => { const a = playLines(pid); return a.length ? a.map(x => `${x.m}′ ${x.nm} orden ${x.pos}`).join("\n") : "Minutos acumulados en todas las alineaciones"; };
 const nfPct = new Intl.NumberFormat("es-CL", { maximumFractionDigits: 1 });
 const advHtml = pid => {
   if (estPos[pid] !== "ENT") return "";
+  const ps = new Set(playLines(pid).filter(x => !x.jr && x.pos !== "—").map(x => x.pos));
+  if (ps.size > 1) return `<span class="adv warn" title="El jugador está alineado en posiciones distintas">!</span>`;
   const a = advPct(pid);
   return `<span class="adv" title="Porcentaje de Entrenamiento Avanzado según los minutos de la semana (CO ${a.co}′ · CF ${a.cf}′ · NT 0′); solo cuentan los minutos jugados en su posición de entreno">${nfPct.format(a.pct)}%</span>`;
 };
@@ -1047,7 +1062,7 @@ function renderPool() {
     const n = countOf(p.pid);
     return `<div class="pl${n ? "" : " free"}${state.sel === p.pid ? " sel" : ""}" data-pid="${esc(p.pid)}" title="${esc(p.full)} · en ${n} de ${den} ${den === 1 ? "alineación" : "alineaciones"}">
       ${chipHtml(p)}${jr ? "" : advHtml(p.pid)}<span class="sp-fill"></span>${jr ? jInfo(p) : ""}${posTag(p.pid)}
-      <span class="mins${minsOf(p.pid) ? "" : " z"}" title="Minutos acumulados en todas las alineaciones">${minsOf(p.pid)}′</span><span class="cnt${n === 0 ? " z" : n === den ? " full" : ""}" aria-label="En ${n} alineaciones">${n}</span></div>`;
+      <span class="mins${minsOf(p.pid) ? "" : " z"}" title="${esc(minsTitle(p.pid))}">${minsOf(p.pid)}′</span><span class="cnt${n === 0 ? " z" : n === den ? " full" : ""}" aria-label="En ${n} alineaciones">${n}</span></div>`;
   }).join("") : `<div class="empty">${list.length ? "Ningún jugador coincide." : jr ? "Sin juveniles (falta data/juniors.enc.json)." : "Sin jugadores."}</div>`;
 }
 const HIDE_KEY = "equipo:alhidden";   // alineaciones ocultas: preferencia de este dispositivo (no se sincroniza)
