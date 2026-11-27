@@ -299,3 +299,8 @@ Qué tener en cuenta:
 ## v47
 - Alineaciones: los botones de la lista de jugadores (Sin alinear, posiciones, marcas de juveniles) se guardan en este dispositivo y siguen marcados al recargar.
 - Jugadores sin marca ENT: la marca verde muestra el porcentaje de Formación (Base = CO×93/90 + CF×70/90; hasta 93 igual a la base, luego 93+7×(Base−93)/93, tope 100 desde 186). Solo cuentan los minutos jugados en un puesto igual a su marca (EXT o sin marca: todos). La «!» roja de posiciones distintas se aplica a todos.
+
+## v48 — Egresados editables (requiere est-sync.gs versión 7)
+- Juveniles → Egresados: nuevos botones **Editar** (nombre, edad final, progreso y fecha; Cancelar para descartar), **Agregar Jugador** y **Guardar** (sube los cambios a la nube). Nivel inicial, nivel final, semanas, Talento Estimado y R2 se recalculan desde el Progreso.
+- Para poder modificar egresados ya guardados hay que **actualizar `est-sync.gs` (versión 7)** y publicarlo como nueva versión de la implementación. Agregar jugadores nuevos funciona aun con la versión 6.
+- Un egresado se archiva solo si, al abrir Juveniles, el jugador aún aparece como «Listo» en los datos y hay conexión con la nube. Si ya no estaba en los datos (por ejemplo, ya fue ascendido antes de abrir la página), hay que agregarlo con «Agregar Jugador».
