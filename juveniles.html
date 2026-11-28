@@ -311,6 +311,15 @@ dialog.egr { width: min(900px, calc(100vw - 24px)); }
 .egr-wrap tbody tr:hover td.c1, .egr-wrap tbody tr:hover td.c2, .egr-wrap tbody tr:hover td.c3 { background-color: color-mix(in srgb, var(--accent) 7%, var(--panel)); }
 .egr-wrap th.c1, .egr-wrap th.c2, .egr-wrap th.c3 { z-index: 3; }
 .egr-wrap td.num, .egr-wrap th.num { text-align: center; }
+<<<<<<< Updated upstream
+=======
+#cmpTable { width: 100%; border-collapse: collapse; font-size: .9rem; }
+pre.cmpraw { max-height: 55vh; overflow: auto; margin: 0 0 12px; padding: 8px; font-size: .78rem; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); white-space: pre-wrap; word-break: break-word; }
+.egr-wrap table.hidep th:nth-child(8), .egr-wrap table.hidep td:nth-child(8) { display: none; }
+.egr-wrap th.srt { cursor: pointer; user-select: none; }
+.egr-wrap th.srt:hover { text-decoration: underline; }
+.egr-wrap th .ar { font-size: .7em; margin-left: 3px; color: var(--accent); }
+>>>>>>> Stashed changes
 .egr-wrap input.egr-in { width: 100%; min-width: 0; box-sizing: border-box; min-height: 30px; padding: 2px 6px; font: inherit; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; }
 .egr-wrap input.egr-in.p { min-width: 260px; }
 .egr-wrap input.egr-in[type=date] { min-width: 135px; }
@@ -368,6 +377,7 @@ dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
       <button class="btn" id="stars" type="button" aria-pressed="false" title="Muestra solo a los juveniles con tres estrellas ★★★">Talentosos</button>
       <button class="btn" id="chgBtn" type="button" aria-pressed="false" title="Muestra solo a los juveniles que subieron o bajaron de Nivel en la última actualización">Cambios</button>
       <button class="btn" id="simplify" type="button" aria-pressed="false" title="Oculta las columnas Tipo, Progreso y Regresión">Simplificar</button>
+      <button class="btn" id="cmpBtn" type="button" title="Estimaciones del DT (endpoint junior/school/comparisons), actualizadas con la actualización semanal">Estimaciones del DT</button>
       <button class="btn" id="egrBtn" type="button" title="Consulta los juveniles que ya terminaron la academia («Listo»), guardados en la nube">Egresados</button>
       <button class="btn" id="calcBtn" type="button" aria-pressed="false" title="Muestra una fila vacía para hacer cálculos; no se guarda ni se sincroniza">Calculadora</button>
       <button class="btn" id="forgetPw" type="button" hidden title="Olvidar la contraseña en este navegador">Bloquear</button>
@@ -404,10 +414,25 @@ dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
 <dialog id="egrDlg" class="dlg egr" aria-labelledby="egrTitle" tabindex="-1" autofocus>
   <h2 id="egrTitle">Egresados</h2>
   <p class="hint" id="egrHint">Juveniles que llegaron a «Listo». Se guarda su nombre, la edad final, el nivel inicial, el nivel final (el que tenían al quedar «Listo») y su Progreso; las semanas entrenadas, el Talento Estimado y R2 se calculan desde el Progreso al abrir esta ventana.</p>
+<<<<<<< Updated upstream
   <div class="field"><input id="egrQ" type="search" placeholder="Buscar por nombre" autocomplete="off" aria-label="Buscar egresado"></div>
   <div class="egr-wrap"><table id="egrTable"><thead><tr><th class="c1">Nombre</th><th class="c2">Edad Final</th><th class="c3">Nivel Final</th><th>Nivel Inicial</th><th>Semanas Entrenadas</th><th>Talento Estimado</th><th>R2</th><th>Progreso</th><th>Fecha</th><th></th></tr></thead><tbody id="egrBody"></tbody></table></div>
   <p class="msg" id="egrMsg" role="status"></p>
   <div class="actions"><button class="btn" id="egrEdit" type="button" aria-pressed="false" title="Editar nombre, edad final, progreso y fecha de los egresados">Editar</button><button class="btn" id="egrAdd" type="button" title="Agregar un egresado a mano">Agregar Jugador</button><button class="btn" id="egrSave" type="button" disabled title="Guardar en la nube los cambios">Guardar</button><button class="btn" id="egrCopy" type="button">Copiar</button><button class="btn primary" id="egrClose" type="button">Cerrar</button></div>
+=======
+  <div class="field"><input id="egrQ" type="search" placeholder="Buscar por nombre o fecha (DD-MM-AAAA, MM-AAAA o AAAA)" autocomplete="off" aria-label="Buscar egresado por nombre o fecha"></div>
+  <div class="egr-wrap"><table id="egrTable" class="hidep"><thead><tr><th class="c1 srt" data-k="n">Nombre</th><th class="c2 srt" data-k="a">Edad Final</th><th class="c3 srt" data-k="f">Nivel Final</th><th class="srt" data-k="i">Nivel Inicial</th><th class="srt" data-k="sem">Semanas Entrenadas</th><th class="srt" data-k="te">Talento Estimado</th><th class="srt" data-k="r2">R2</th><th class="srt colp" data-k="p">Progreso</th><th class="srt" data-k="d">Fecha</th><th></th></tr></thead><tbody id="egrBody"></tbody></table></div>
+  <p class="msg" id="egrMsg" role="status"></p>
+  <div class="actions"><button class="btn" id="egrProg" type="button" aria-pressed="false" title="Muestra u oculta la columna Progreso">Mostrar Progreso</button><button class="btn" id="egrEdit" type="button" aria-pressed="false" title="Editar nombre, edad final, progreso y fecha de los egresados">Editar</button><button class="btn" id="egrAdd" type="button" title="Agregar un egresado a mano">Agregar Jugador</button><button class="btn" id="egrSave" type="button" disabled title="Guardar en la nube los cambios">Guardar</button><button class="btn" id="egrCopy" type="button">Copiar</button><button class="btn primary" id="egrClose" type="button">Cerrar</button></div>
+</dialog>
+
+<dialog id="cmpDlg" class="dlg egr" aria-labelledby="cmpTitle" tabindex="-1" autofocus>
+  <h2 id="cmpTitle">Estimaciones del DT</h2>
+  <p class="hint" id="cmpHint"></p>
+  <div class="egr-wrap"><table id="cmpTable"><thead id="cmpHead"></thead><tbody id="cmpBody"></tbody></table></div>
+  <pre id="cmpRaw" class="cmpraw" hidden></pre>
+  <div class="actions"><button class="btn" id="cmpRawBtn" type="button" aria-pressed="false">Ver datos originales</button><button class="btn" id="cmpCopy" type="button">Copiar</button><button class="btn primary" id="cmpClose" type="button">Cerrar</button></div>
+>>>>>>> Stashed changes
 </dialog>
 
 <noscript>Esta página necesita JavaScript para mostrar la tabla.</noscript>
@@ -753,6 +778,50 @@ function refreshProgInputs() {
 const WK_KEY = "j2000000000007";
 const ymd = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const weekKeyOf = t => { const d = new Date(t), back = (d.getDay() - 4 + 7) % 7; return ymd(new Date(d.getFullYear(), d.getMonth(), d.getDate() - back)); };
+/* ─────────────── Estimaciones del DT ───────────────
+   fetch-team.mjs guarda la respuesta de GET /junior/school/comparisons dentro de juniors.enc.json (se renueva solo con la actualización semanal).
+   Como no conozco su estructura, se muestra de forma genérica: si trae una lista de registros, una fila por registro (con una columna por campo);
+   si no, una tabla campo/valor. Con «Ver datos originales» se ve el JSON completo. */
+function cmpFlatten(o, path = "", out = {}, d = 0) {
+  if (o == null) { if (path) out[path] = ""; return out; }
+  if (Array.isArray(o)) { if (o.every(x => x == null || typeof x !== "object")) out[path] = o.join(", "); else if (d > 3) out[path] = JSON.stringify(o); else o.forEach((x, i) => cmpFlatten(x, `${path}[${i}]`, out, d + 1)); return out; }
+  if (typeof o === "object") { if (d > 4) { out[path] = JSON.stringify(o); return out; } for (const [k, v] of Object.entries(o)) cmpFlatten(v, path ? `${path}.${k}` : k, out, d + 1); return out; }
+  out[path] = o; return out;
+}
+function cmpRows(data) {
+  let arr = Array.isArray(data) ? data : null, key = "";
+  if (!arr && data && typeof data === "object") { for (const k of ["items", "comparisons", "data", "results", "collection", "list"]) if (Array.isArray(data[k])) { arr = data[k]; key = k; break; } if (!arr) { const e = Object.entries(data).find(([, v]) => Array.isArray(v) && v.length && typeof v[0] === "object"); if (e) { arr = e[1]; key = e[0]; } } }
+  return { arr, key };
+}
+let cmpText = "";
+function cmpOpen() {
+  const dlg = $("#cmpDlg"); if (!dlg.open) dlg.showModal();
+  if (document.activeElement && document.activeElement !== dlg) document.activeElement.blur();
+  const c = state.cmp, head = $("#cmpHead"), body = $("#cmpBody"), hint = $("#cmpHint"), raw = $("#cmpRaw");
+  raw.hidden = true; $("#cmpRawBtn").setAttribute("aria-pressed", "false"); $("#cmpRawBtn").textContent = "Ver datos originales"; dlg.querySelector(".egr-wrap").hidden = false;
+  head.innerHTML = ""; cmpText = "";
+  if (!c) { hint.textContent = "Todavía no hay estimaciones guardadas."; body.innerHTML = `<tr><td>Ejecuta la versión nueva de <code>node fetch-team.mjs</code> y sube <code>juniors.enc.json</code> a la carpeta <code>data</code>: ahí se descargan las estimaciones del DT.</td></tr>`; return; }
+  const when = c.fetchedAt ? new Date(c.fetchedAt).toLocaleString("es-CL", { dateStyle: "short", timeStyle: "short" }) : "—";
+  hint.textContent = `Actualizadas el ${when} (junior/school/comparisons). Se renuevan con la actualización semanal del jueves.`;
+  raw.textContent = JSON.stringify(c.error ? { error: c.error } : c.data, null, 2);
+  if (c.error) { body.innerHTML = `<tr><td>No se pudieron descargar: ${esc(c.error)}</td></tr>`; return; }
+  const { arr } = cmpRows(c.data);
+  const byId = new Map(state.players.filter(p => p.id != null).map(p => [String(p.id), p]));
+  if (arr && arr.length) {
+    const flat = arr.map(x => (x && typeof x === "object") ? cmpFlatten(x) : { valor: x });
+    const cols = []; flat.forEach(f => Object.keys(f).forEach(k => { if (!cols.includes(k)) cols.push(k); }));
+    const idCol = cols.find(k => /(^|\.)(junior(_)?id|junior\.id|id)$/i.test(k) && flat.some(f => byId.has(String(f[k]))));
+    const shown = cols.slice(0, 40);
+    head.innerHTML = `<tr>${idCol ? "<th>Juvenil</th>" : ""}${shown.map(k => `<th>${esc(k)}</th>`).join("")}</tr>`;
+    body.innerHTML = flat.map(f => `<tr>${idCol ? `<td>${esc((byId.get(String(f[idCol])) || {}).name || "")}</td>` : ""}${shown.map(k => `<td>${esc(f[k] ?? "")}</td>`).join("")}</tr>`).join("");
+    cmpText = [(idCol ? ["Juvenil"] : []).concat(shown).join("\t"), ...flat.map(f => (idCol ? [(byId.get(String(f[idCol])) || {}).name || ""] : []).concat(shown.map(k => String(f[k] ?? ""))).join("\t"))].join("\n");
+  } else {
+    const flat = cmpFlatten(c.data), ks = Object.keys(flat);
+    head.innerHTML = `<tr><th>Campo</th><th>Valor</th></tr>`;
+    body.innerHTML = ks.length ? ks.map(k => `<tr><td>${esc(k)}</td><td>${esc(flat[k])}</td></tr>`).join("") : `<tr><td colspan="2">La API no devolvió datos.</td></tr>`;
+    cmpText = ks.map(k => k + "\t" + flat[k]).join("\n");
+  }
+}
 /* ─────────────── Egresados ───────────────
    Cuando un juvenil llega a «Listo» se guarda una vez, en una pestaña aparte de tu hoja (EGRESADOS), con: nombre, edad final, nivel inicial,
    nivel final (el que tenía en ese momento) y Progreso. No se descarga al abrir la página: solo al pulsar «Egresados». */
@@ -795,6 +864,7 @@ function egrCalc(r) {
 }
 const egrRowTSV = r => { const c = egrCalc(r); return [r.n, r.a, r.f, r.i, c.sem, c.te == null ? "" : nf2.format(c.te), c.r2 == null ? "" : nf3.format(c.r2), r.p, r.d].join("\t"); };
 const EGR_HEAD = "Nombre\tEdad Final\tNivel Final\tNivel Inicial\tSemanas Entrenadas\tTalento Estimado\tR2\tProgreso\tFecha";
+<<<<<<< Updated upstream
 let egrEditing = false;
 const egrLastItem = t => { const a = String(t || "").split(",").map(v => v.trim()).filter(v => v !== ""); return a.length ? a[a.length - 1] : ""; };
 const egrDirty = () => egrRows.some(r => r._chg);
@@ -803,6 +873,48 @@ function egrRender() {
   const q = $("#egrQ").value.trim().toLowerCase();
   const rows = egrRows.filter(r => !q || String(r.n).toLowerCase().includes(q) || r._new);
   egrSyncBtns();
+=======
+let egrEditing = false, egrShowProg = false, egrSort = null;   // egrSort = { k, dir }
+const egrNumKeys = new Set(["a", "f", "i", "sem", "te", "r2"]);
+// Búsqueda: por nombre o por fecha (DD-MM-AAAA, MM-AAAA o AAAA; también con «/» o «.»).
+function egrMatch(r, q) {
+  if (!q) return true;
+  if (r._new) return true;
+  if (String(r.n).toLowerCase().includes(q)) return true;
+  const t = q.replace(/[\/.]/g, "-"), d = String(r.d || "");
+  let m;
+  if ((m = /^(\d{1,2})-(\d{1,2})-(\d{4})$/.exec(t))) return d === `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
+  if ((m = /^(\d{1,2})-(\d{4})$/.exec(t))) return d.startsWith(`${m[2]}-${m[1].padStart(2, "0")}-`);
+  if (/^\d{4}$/.test(t)) return d.startsWith(t + "-");
+  return false;
+}
+const egrVal = (r, k) => { if (k === "sem" || k === "te" || k === "r2") { const c = egrCalc(r); return k === "sem" ? c.sem : c[k]; } const v = r[k]; return egrNumKeys.has(k) ? (String(v ?? "").trim() === "" || !Number.isFinite(Number(v)) ? null : Number(v)) : String(v ?? ""); };
+function egrFiltered() {
+  const q = $("#egrQ").value.trim().toLowerCase();
+  const rows = egrRows.filter(r => egrMatch(r, q));
+  if (!egrSort) return rows;
+  const { k, dir } = egrSort;
+  return rows.map((r, i) => [r, i]).sort((x, y) => {
+    if (x[0]._new !== y[0]._new) return x[0]._new ? -1 : 1;
+    const a = egrVal(x[0], k), b = egrVal(y[0], k);
+    if (a == null && b == null) return x[1] - y[1];
+    if (a == null) return 1; if (b == null) return -1;                                   // los vacíos siempre al final
+    const c = typeof a === "number" ? a - b : a.localeCompare(b, "es", { numeric: true });
+    return c ? c * dir : x[1] - y[1];
+  }).map(x => x[0]);
+}
+function egrHead() {
+  $("#egrTable").classList.toggle("hidep", !egrShowProg);
+  $("#egrProg").setAttribute("aria-pressed", String(egrShowProg)); $("#egrProg").textContent = egrShowProg ? "Ocultar Progreso" : "Mostrar Progreso";
+  document.querySelectorAll("#egrTable th.srt").forEach(th => { const on = egrSort && egrSort.k === th.dataset.k; th.querySelector(".ar")?.remove(); th.removeAttribute("aria-sort"); if (on) { th.insertAdjacentHTML("beforeend", `<span class="ar">${egrSort.dir > 0 ? "▲" : "▼"}</span>`); th.setAttribute("aria-sort", egrSort.dir > 0 ? "ascending" : "descending"); } });
+}
+const egrLastItem = t => { const a = String(t || "").split(",").map(v => v.trim()).filter(v => v !== ""); return a.length ? a[a.length - 1] : ""; };
+const egrDirty = () => egrRows.some(r => r._chg);
+function egrSyncBtns() { $("#egrEdit").setAttribute("aria-pressed", String(egrEditing)); $("#egrEdit").textContent = egrEditing ? "Cancelar" : "Editar"; $("#egrSave").disabled = !egrDirty(); }
+function egrRender() {
+  const rows = egrFiltered();
+  egrSyncBtns(); egrHead();
+>>>>>>> Stashed changes
   if (egrEditing) {
     $("#egrBody").innerHTML = rows.length ? rows.map(r => { const c = egrCalc(r); return `<tr data-id="${esc(r.id)}"${r._chg ? ' class="chg"' : ""}><td class="egr-n c1"><input class="egr-in" data-e="n" value="${esc(r.n)}" aria-label="Nombre" placeholder="Nombre"></td><td class="num c2"><input class="egr-in" data-e="a" value="${esc(r.a)}" inputmode="numeric" aria-label="Edad final"></td><td class="num c3" data-d="f">${esc(r.f)}</td><td class="num" data-d="i">${esc(r.i)}</td><td class="num" data-d="sem">${c.sem}</td><td class="num" data-d="te">${c.te == null ? "—" : nf2.format(c.te)}</td><td class="num" data-d="r2">${c.r2 == null ? "—" : nf3.format(c.r2)}</td><td><input class="egr-in p" data-e="p" value="${esc(r.p)}" aria-label="Progreso" placeholder="Ej.: 8,9,11,12"></td><td><input class="egr-in" type="date" data-e="d" value="${esc(r.d)}" aria-label="Fecha"></td><td></td></tr>`; }).join("") : `<tr><td colspan="10">Sin coincidencias.</td></tr>`;
     return;
@@ -811,7 +923,11 @@ function egrRender() {
   $("#egrHint").dataset.n = rows.length;
 }
 function egrStartEdit() {
+<<<<<<< Updated upstream
   egrEditing = true; egrRows.forEach(r => { r._orig = { n: r.n, a: r.a, p: r.p, d: r.d, i: r.i, f: r.f }; });
+=======
+  egrEditing = true; egrShowProg = true; egrRows.forEach(r => { r._orig = { n: r.n, a: r.a, p: r.p, d: r.d, i: r.i, f: r.f }; });
+>>>>>>> Stashed changes
   $("#egrMsg").textContent = "Modo edición: cambia nombre, edad final, progreso o fecha y pulsa «Guardar» para subirlos a la nube."; egrRender();
 }
 function egrCancelEdit() {
@@ -865,7 +981,11 @@ async function egrSave() {
 }
 async function egrOpen() {
   const dlg = $("#egrDlg"); if (!dlg.open) dlg.showModal();
+<<<<<<< Updated upstream
   egrEditing = false; $("#egrMsg").textContent = ""; egrSyncBtns();
+=======
+  egrEditing = false; egrShowProg = false; $("#egrMsg").textContent = ""; egrSyncBtns(); egrHead();
+>>>>>>> Stashed changes
   if (document.activeElement && document.activeElement !== dlg) document.activeElement.blur();   // que no se enfoque el buscador (en móvil abriría el teclado)
   $("#egrBody").innerHTML = `<tr><td colspan="10">Cargando…</td></tr>`;
   if (!CONFIG.estUrl || !sync.key) { $("#egrBody").innerHTML = `<tr><td colspan="10">No hay conexión con la nube.</td></tr>`; return; }
@@ -1142,6 +1262,7 @@ async function load() {
   state.teamName = st.team?.name || "";
   state.calendar = st.calendar || null;
   state.school = st.school || null;
+  state.cmp = st.comparisons || null;
   state.stamp = st.generatedAt ? Date.parse(st.generatedAt) : null;
   state.players = (st.items || []).map(normalize);
 
@@ -1554,8 +1675,17 @@ function init() {
   });
   $("#q").addEventListener("input", e => { state.q = e.target.value; render(); });
   $("#egrBtn").addEventListener("click", egrOpen);
+  $("#cmpBtn").addEventListener("click", cmpOpen);
+  $("#cmpClose").addEventListener("click", () => $("#cmpDlg").close());
+  $("#cmpRawBtn").addEventListener("click", () => { const on = $("#cmpRaw").hidden; $("#cmpRaw").hidden = !on; $("#cmpDlg .egr-wrap").hidden = on; $("#cmpRawBtn").setAttribute("aria-pressed", String(on)); $("#cmpRawBtn").textContent = on ? "Ver tabla" : "Ver datos originales"; });
+  $("#cmpCopy").addEventListener("click", async () => { await copyText($("#cmpRaw").hidden ? cmpText : $("#cmpRaw").textContent); toast("Copiado"); });
   $("#egrClose").addEventListener("click", () => $("#egrDlg").close());
   $("#egrQ").addEventListener("input", egrRender);
+<<<<<<< Updated upstream
+=======
+  $("#egrProg").addEventListener("click", () => { egrShowProg = !egrShowProg; egrHead(); });
+  $("#egrTable thead").addEventListener("click", ev => { const th = ev.target.closest("th.srt"); if (!th) return; const k = th.dataset.k; egrSort = egrSort && egrSort.k === k ? { k, dir: -egrSort.dir } : { k, dir: 1 }; egrRender(); });
+>>>>>>> Stashed changes
   $("#egrEdit").addEventListener("click", () => { if (egrEditing) egrCancelEdit(); else egrStartEdit(); });
   $("#egrAdd").addEventListener("click", egrAddRow);
   $("#egrSave").addEventListener("click", egrSave);
@@ -1568,8 +1698,7 @@ function init() {
     await copyText(egrRowTSV(r)); toast("Copiado: " + r.n);
   });
   $("#egrCopy").addEventListener("click", async () => {
-    const q = $("#egrQ").value.trim().toLowerCase();
-    const rows = egrRows.filter(r => !q || String(r.n).toLowerCase().includes(q));
+    const rows = egrFiltered();
     const txt = [EGR_HEAD, ...rows.map(egrRowTSV)].join("\n");
     try { await navigator.clipboard.writeText(txt); toast("Egresados copiados"); } catch { toast("No se pudo copiar"); }
   });

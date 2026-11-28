@@ -304,3 +304,11 @@ Qué tener en cuenta:
 - Juveniles → Egresados: nuevos botones **Editar** (nombre, edad final, progreso y fecha; Cancelar para descartar), **Agregar Jugador** y **Guardar** (sube los cambios a la nube). Nivel inicial, nivel final, semanas, Talento Estimado y R2 se recalculan desde el Progreso.
 - Para poder modificar egresados ya guardados hay que **actualizar `est-sync.gs` (versión 7)** y publicarlo como nueva versión de la implementación. Agregar jugadores nuevos funciona aun con la versión 6.
 - Un egresado se archiva solo si, al abrir Juveniles, el jugador aún aparece como «Listo» en los datos y hay conexión con la nube. Si ya no estaba en los datos (por ejemplo, ya fue ascendido antes de abrir la página), hay que agregarlo con «Agregar Jugador».
+<<<<<<< Updated upstream
+=======
+
+## v49 — Estimaciones del DT y mejoras de Egresados
+- `fetch-team.mjs` descarga `GET /junior/school/comparisons` y lo guarda dentro de `data/juniors.enc.json`. Solo se vuelve a pedir la primera vez que se ejecuta el script cada semana (jueves a miércoles). Como el archivo actual aún no lo trae, la primera ejecución con esta versión lo descarga de inmediato (la actualización extra de esta semana). Con la variable `SOKKER_FORCE_CMP=1` se fuerza una actualización.
+- Juveniles → botón **Estimaciones del DT**: muestra lo guardado (tabla genérica y «Ver datos originales»). Si el endpoint trae el id del juvenil, se agrega una columna con su nombre.
+- Egresados: botón **Mostrar/Ocultar Progreso** (siempre oculta al abrir; se muestra sola al pulsar Editar/Agregar), orden al tocar cualquier encabezado (▲▼) y el buscador acepta fechas en DD-MM-AAAA, MM-AAAA y AAAA además del nombre.
+>>>>>>> Stashed changes

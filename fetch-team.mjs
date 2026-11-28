@@ -183,6 +183,7 @@ async function readCalendar(me) {
 let junMeta = null;   // respuesta de /junior cuando no es una lista simple (puede traer datos de la escuela)
 // Datos de la escuela de juveniles (plazas, nivel promedio, valor, entrenador y su salario). No conozco el endpoint exacto, así que se junta
 // todo lo escalar que entreguen /junior (sin la lista de juveniles) y algunos endpoints candidatos; la página busca por nombre de campo.
+
 async function readSchool(teamId, currencyHint) {
   const fields = [], ok = [];
   const walk = (o, src, path = "", d = 0, arrays = false) => {
@@ -202,6 +203,25 @@ async function readSchool(teamId, currencyHint) {
     try { walk(await getJson(ep), ep.replace(/^\//, ""), "", 0, /coach|trainer|staff/i.test(ep)); ok.push(ep); } catch {}
   }
   return { fields, ok, currency: currencyHint || "" };
+}
+
+// «Estimaciones del DT»: GET /junior/school/comparisons. Solo se vuelve a pedir la primera vez que se ejecuta el script cada semana
+// (jueves a miércoles); el resto de las ejecuciones de esa semana conservan lo ya guardado. Si el archivo anterior aún no tiene este dato
+// (primera vez con esta versión), se pide de inmediato aunque ya haya pasado el jueves. Con SOKKER_FORCE_CMP=1 se fuerza la actualización.
+async function readComparisons(prev, weekStart) {
+  const keep = prev && prev.comparisons && prev.comparisons.fetchedAt && !prev.comparisons.error;
+  if (keep && Date.parse(prev.comparisons.fetchedAt) >= weekStart && !process.env.SOKKER_FORCE_CMP) {
+    console.log("  Estimaciones del DT: ya actualizadas esta semana; se conservan.");
+    return prev.comparisons;
+  }
+  try {
+    const data = await getJson("/junior/school/comparisons");
+    console.log("  Estimaciones del DT: actualizadas.");
+    return { fetchedAt: new Date().toISOString(), path: "/junior/school/comparisons", data };
+  } catch (e) {
+    console.warn(`  Aviso: no pude leer las estimaciones del DT (${e.message}).`);
+    return keep ? prev.comparisons : { fetchedAt: new Date().toISOString(), path: "/junior/school/comparisons", error: String(e.message) };
+  }
 }
 
 async function readJuniors() {
@@ -321,10 +341,9 @@ async function main() {
     if (!school.fields.length) console.warn("  Aviso: no encontré datos de la escuela; el cuadro resumen de Juveniles quedará con «—» en esas filas.");
     const jout = { generatedAt: out.generatedAt, team: out.team, calendar, school, items };
     // Respaldo semanal de los juveniles (mismas reglas que el del plantel: se renueva el primer día de cada semana, de jueves a miércoles).
-    let jold = null;
+    let jold = null, joldData = null;
     try { jold = JSON.parse(await readFile(JFILE, "utf8")); } catch {}
     if (jold) {
-      let joldData = null;
       try { joldData = await decrypt(jold, sitePw); } catch {}
       if (!joldData) console.warn("Aviso: el archivo anterior de juveniles no se pudo leer con esta contraseña; esta semana no habrá flechas ▲▼ en Juveniles.");
       else {
@@ -337,6 +356,9 @@ async function main() {
         }
       }
     }
+    console.log("Leyendo las estimaciones del DT…");
+    { const now = new Date(), back = (now.getDay() - 4 + 7) % 7;
+      jout.comparisons = await readComparisons(joldData, new Date(now.getFullYear(), now.getMonth(), now.getDate() - back).getTime()); }
     await writeFile(JFILE, JSON.stringify(await encrypt(jout, sitePw)));
     jCount = items.length;
   } catch (e) { console.warn(`  Aviso: no pude leer los juveniles (${e.message}); la página «Juveniles» no se actualizará.`); }
