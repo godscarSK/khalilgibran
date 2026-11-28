@@ -309,3 +309,7 @@ Qué tener en cuenta:
 - `fetch-team.mjs` descarga `GET /junior/school/comparisons` y lo guarda dentro de `data/juniors.enc.json`. Solo se vuelve a pedir la primera vez que se ejecuta el script cada semana (jueves a miércoles). Como el archivo actual aún no lo trae, la primera ejecución con esta versión lo descarga de inmediato (la actualización extra de esta semana). Con la variable `SOKKER_FORCE_CMP=1` se fuerza una actualización.
 - Juveniles → botón **Estimaciones del DT**: muestra lo guardado (tabla genérica y «Ver datos originales»). Si el endpoint trae el id del juvenil, se agrega una columna con su nombre.
 - Egresados: botón **Mostrar/Ocultar Progreso** (siempre oculta al abrir; se muestra sola al pulsar Editar/Agregar), orden al tocar cualquier encabezado (▲▼) y el buscador acepta fechas en DD-MM-AAAA, MM-AAAA y AAAA además del nombre.
+
+## v50
+- Estimaciones del DT: la tabla muestra solo Semana, Juvenil A, Juvenil B, RES y DT.
+- Tabla de Juveniles: los juveniles que aparecen en las Estimaciones llevan un asterisco amarillo junto a su Talento Estimado (no mueve el número); al pasar el cursor (o tocarlo en el celular) se ve una tabla con Juvenil A, Juvenil B y RES.

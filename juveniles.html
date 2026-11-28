@@ -311,6 +311,10 @@ dialog.egr { width: min(900px, calc(100vw - 24px)); }
 .egr-wrap tbody tr:hover td.c1, .egr-wrap tbody tr:hover td.c2, .egr-wrap tbody tr:hover td.c3 { background-color: color-mix(in srgb, var(--accent) 7%, var(--panel)); }
 .egr-wrap th.c1, .egr-wrap th.c2, .egr-wrap th.c3 { z-index: 3; }
 .egr-wrap td.num, .egr-wrap th.num { text-align: center; }
+.c-reg .te { position: relative; display: inline-block; cursor: help; }
+.c-reg .cmpstar { position: absolute; left: 100%; top: -.3em; margin-left: 1px; color: #f5c400; font-weight: 900; font-size: 1.5em; line-height: 1; text-shadow: 0 0 1px #7a5f00, 0 0 1px #7a5f00; }
+.cmptip { position: fixed; z-index: 1000; background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; padding: 4px 8px; box-shadow: 0 4px 14px rgba(0,0,0,.3); font-size: .85rem; pointer-events: none; }
+.cmptip table { border-collapse: collapse; } .cmptip th, .cmptip td { padding: 2px 8px; text-align: left; white-space: nowrap; } .cmptip th { border-bottom: 1px solid var(--line); }
 #cmpTable { width: 100%; border-collapse: collapse; font-size: .9rem; }
 pre.cmpraw { max-height: 55vh; overflow: auto; margin: 0 0 12px; padding: 8px; font-size: .78rem; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); white-space: pre-wrap; word-break: break-word; }
 .egr-wrap table.hidep th:nth-child(8), .egr-wrap table.hidep td:nth-child(8) { display: none; }
@@ -416,6 +420,8 @@ dialog.dlg .actions { display: flex; justify-content: flex-end; gap: 10px; }
   <p class="msg" id="egrMsg" role="status"></p>
   <div class="actions"><button class="btn" id="egrProg" type="button" aria-pressed="false" title="Muestra u oculta la columna Progreso">Mostrar Progreso</button><button class="btn" id="egrEdit" type="button" aria-pressed="false" title="Editar nombre, edad final, progreso y fecha de los egresados">Editar</button><button class="btn" id="egrAdd" type="button" title="Agregar un egresado a mano">Agregar Jugador</button><button class="btn" id="egrSave" type="button" disabled title="Guardar en la nube los cambios">Guardar</button><button class="btn" id="egrCopy" type="button">Copiar</button><button class="btn primary" id="egrClose" type="button">Cerrar</button></div>
 </dialog>
+
+<div id="cmpTip" class="cmptip" role="tooltip" hidden></div>
 
 <dialog id="cmpDlg" class="dlg egr" aria-labelledby="cmpTitle" tabindex="-1" autofocus>
   <h2 id="cmpTitle">Estimaciones del DT</h2>
@@ -749,7 +755,7 @@ function refreshProgInputs() {
   document.querySelectorAll("#body td[data-reg]").forEach(td => {
     const e = progMap[progKey(td.dataset.reg)];
     const rc = regCol(td.dataset.f, e && typeof e.v === "string" ? e.v : ""), t = rc.t;
-    td.textContent = t || "—"; td.classList.toggle("dim", !t); td.classList.toggle("hi", !!rc.hi);
+    td.innerHTML = regInner(td.dataset.f, t, td.dataset.reg); td.classList.toggle("dim", !t); td.classList.toggle("hi", !!rc.hi);
   });
   document.querySelectorAll("#body td[data-nm]").forEach(td => {
     const p = state.players.find(q => String(q.id) === td.dataset.nm); if (p) td.innerHTML = nameHtml(p);
@@ -783,28 +789,64 @@ function cmpRows(data) {
   if (!arr && data && typeof data === "object") { for (const k of ["items", "comparisons", "data", "results", "collection", "list"]) if (Array.isArray(data[k])) { arr = data[k]; key = k; break; } if (!arr) { const e = Object.entries(data).find(([, v]) => Array.isArray(v) && v.length && typeof v[0] === "object"); if (e) { arr = e[1]; key = e[0]; } } }
   return { arr, key };
 }
-let cmpText = "";
+let cmpText = "", cmpIdx = { ok: false, rows: [], by: new Map() };
+// Estimaciones del DT en forma de tabla fija: Semana (week), Juvenil A (tu juvenil, por su id), Juvenil B (juniorB.fullName.full), RES (result) y DT (coach.level).
+function cmpBuild() {
+  cmpIdx = { ok: false, rows: [], by: new Map() };
+  const c = state.cmp; if (!c || c.error) return;
+  const { arr } = cmpRows(c.data); if (!arr || !arr.length) return;
+  const byId = new Map(state.players.filter(p => p.id != null).map(p => [String(p.id), p]));
+  const flat = arr.map(x => (x && typeof x === "object") ? cmpFlatten(x) : {});
+  const cols = []; flat.forEach(f => Object.keys(f).forEach(k => { if (!cols.includes(k)) cols.push(k); }));
+  const idCol = cols.find(k => /(^|\.)(junior(_)?id|junior\.id|id)$/i.test(k) && flat.some(f => byId.has(String(f[k]))));
+  cmpIdx.rows = flat.map(f => { const id = idCol ? String(f[idCol]) : ""; return { id, week: f.week ?? "", a: (byId.get(id) || {}).name || "", b: f["juniorB.fullName.full"] ?? "", res: f.result ?? "", dt: f["coach.level"] ?? "" }; });
+  cmpIdx.rows.forEach(r => { if (!r.id) return; if (!cmpIdx.by.has(r.id)) cmpIdx.by.set(r.id, []); cmpIdx.by.get(r.id).push(r); });
+  cmpIdx.ok = true;
+}
+// Contenido de las celdas de regresión; en «Talento Estimado» lleva un asterisco amarillo (sin mover el número) si el juvenil está en las Estimaciones del DT.
+function regInner(key, t, id) {
+  if (!t) return "—";
+  if (key === "treal" && id != null && cmpIdx.by.has(String(id))) return `<span class="te" data-cmp="${esc(String(id))}">${esc(t)}<span class="cmpstar" aria-hidden="true">*</span></span>`;
+  return esc(t);
+}
+function cmpTipShow(el) {
+  const rows = cmpIdx.by.get(el.dataset.cmp); if (!rows) return;
+  const tip = $("#cmpTip");
+  tip.innerHTML = `<table><thead><tr><th>Juvenil A</th><th>Juvenil B</th><th>RES</th></tr></thead><tbody>${rows.map(r => `<tr><td>${esc(r.a)}</td><td>${esc(r.b)}</td><td>${esc(r.res)}</td></tr>`).join("")}</tbody></table>`;
+  tip.hidden = false;
+  const b = el.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = Math.min(Math.max(8, b.left + b.width / 2 - w / 2), window.innerWidth - w - 8), y = b.bottom + 6;
+  if (y + h > window.innerHeight - 8) y = Math.max(8, b.top - h - 6);
+  tip.style.left = x + "px"; tip.style.top = y + "px";
+}
+const cmpTipHide = () => { const t = $("#cmpTip"); if (t) t.hidden = true; };
 function cmpOpen() {
   const dlg = $("#cmpDlg"); if (!dlg.open) dlg.showModal();
   if (document.activeElement && document.activeElement !== dlg) document.activeElement.blur();
   const c = state.cmp, head = $("#cmpHead"), body = $("#cmpBody"), hint = $("#cmpHint"), raw = $("#cmpRaw");
   raw.hidden = true; $("#cmpRawBtn").setAttribute("aria-pressed", "false"); $("#cmpRawBtn").textContent = "Ver datos originales"; dlg.querySelector(".egr-wrap").hidden = false;
-  head.innerHTML = ""; cmpText = "";
+  head.innerHTML = ""; cmpText = ""; cmpBuild();
   if (!c) { hint.textContent = "Todavía no hay estimaciones guardadas."; body.innerHTML = `<tr><td>Ejecuta la versión nueva de <code>node fetch-team.mjs</code> y sube <code>juniors.enc.json</code> a la carpeta <code>data</code>: ahí se descargan las estimaciones del DT.</td></tr>`; return; }
   const when = c.fetchedAt ? new Date(c.fetchedAt).toLocaleString("es-CL", { dateStyle: "short", timeStyle: "short" }) : "—";
   hint.textContent = `Actualizadas el ${when} (junior/school/comparisons). Se renuevan con la actualización semanal del jueves.`;
   raw.textContent = JSON.stringify(c.error ? { error: c.error } : c.data, null, 2);
   if (c.error) { body.innerHTML = `<tr><td>No se pudieron descargar: ${esc(c.error)}</td></tr>`; return; }
+  if (cmpIdx.ok) {
+    const H = ["Semana", "Juvenil A", "Juvenil B", "RES", "DT"];
+    head.innerHTML = `<tr>${H.map(h => `<th>${h}</th>`).join("")}</tr>`;
+    body.innerHTML = cmpIdx.rows.map(r => `<tr><td>${esc(r.week)}</td><td>${esc(r.a)}</td><td>${esc(r.b)}</td><td>${esc(r.res)}</td><td>${esc(r.dt)}</td></tr>`).join("");
+    cmpText = [H.join("\t"), ...cmpIdx.rows.map(r => [r.week, r.a, r.b, r.res, r.dt].join("\t"))].join("\n");
+    return;
+  }
   const { arr } = cmpRows(c.data);
   const byId = new Map(state.players.filter(p => p.id != null).map(p => [String(p.id), p]));
   if (arr && arr.length) {
     const flat = arr.map(x => (x && typeof x === "object") ? cmpFlatten(x) : { valor: x });
     const cols = []; flat.forEach(f => Object.keys(f).forEach(k => { if (!cols.includes(k)) cols.push(k); }));
-    const idCol = cols.find(k => /(^|\.)(junior(_)?id|junior\.id|id)$/i.test(k) && flat.some(f => byId.has(String(f[k]))));
     const shown = cols.slice(0, 40);
-    head.innerHTML = `<tr>${idCol ? "<th>Juvenil</th>" : ""}${shown.map(k => `<th>${esc(k)}</th>`).join("")}</tr>`;
-    body.innerHTML = flat.map(f => `<tr>${idCol ? `<td>${esc((byId.get(String(f[idCol])) || {}).name || "")}</td>` : ""}${shown.map(k => `<td>${esc(f[k] ?? "")}</td>`).join("")}</tr>`).join("");
-    cmpText = [(idCol ? ["Juvenil"] : []).concat(shown).join("\t"), ...flat.map(f => (idCol ? [(byId.get(String(f[idCol])) || {}).name || ""] : []).concat(shown.map(k => String(f[k] ?? ""))).join("\t"))].join("\n");
+    head.innerHTML = `<tr>${shown.map(k => `<th>${esc(k)}</th>`).join("")}</tr>`;
+    body.innerHTML = flat.map(f => `<tr>${shown.map(k => `<td>${esc(f[k] ?? "")}</td>`).join("")}</tr>`).join("");
+    cmpText = [shown.join("\t"), ...flat.map(f => shown.map(k => String(f[k] ?? "")).join("\t"))].join("\n");
   } else {
     const flat = cmpFlatten(c.data), ks = Object.keys(flat);
     head.innerHTML = `<tr><th>Campo</th><th>Valor</th></tr>`;
@@ -1236,6 +1278,7 @@ async function load() {
   state.cmp = st.comparisons || null;
   state.stamp = st.generatedAt ? Date.parse(st.generatedAt) : null;
   state.players = (st.items || []).map(normalize);
+  cmpBuild();
 
   // Respaldo de la semana anterior (opcional): marca con ▲▼ los cambios de Nivel.
   state.prevStamp = null;
@@ -1513,7 +1556,7 @@ function cellHtml(c, p, rowIdx) {
     return `<td class="c-chk"><select class="chk" data-chk="${esc(String(p.id))}" data-v="${v}" aria-label="Marca de ${esc(p.name)}"><option value=""${v === "" ? " selected" : ""}></option>${CHK_OPTS.map(o => `<option value="${o}" style="color:${CHK_COLOR[o]}"${v === o ? " selected" : ""}>${CHK_LABEL[o] || o}</option>`).join("")}</select></td>`;
   }
   if (c.key === "name") return `<td class="l c-name" ${p.calc ? "" : `data-nm="${esc(String(p.id ?? ""))}"`}>${nameHtml(p)}</td>`;
-    if (REG_KEYS.includes(c.key)) { const rc = regCol(c.key, progOf(p)), t = rc.t; return `<td class="c-reg${t ? "" : " dim"}${rc.hi ? " hi" : ""}" ${p.calc ? "" : `data-reg="${esc(String(p.id ?? ""))}"`} data-f="${c.key}">${t ? esc(t) : "—"}</td>`; }
+    if (REG_KEYS.includes(c.key)) { const rc = regCol(c.key, progOf(p)), t = rc.t; return `<td class="c-reg${t ? "" : " dim"}${rc.hi ? " hi" : ""}" ${p.calc ? "" : `data-reg="${esc(String(p.id ?? ""))}"`} data-f="${c.key}">${regInner(c.key, t, p.calc ? null : p.id)}</td>`; }
     if (c.key === "progN") return `<td class="c-progn" ${p.calc ? "" : `data-cnt="${esc(String(p.id ?? ""))}"`} data-wi="${p.weeksIn ?? ""}">${cntHtml(countItems(progOf(p)), p.weeksIn)}</td>`;
     if (c.key === "lvlFinal") { const l = lfCell(p); return `<td class="c-lf${l.t ? "" : " dim"}" ${p.calc ? "" : `data-lf="${esc(String(p.id ?? ""))}"`}${l.tip ? ` title="${l.tip}"` : ""}>${l.h || "—"}</td>`; }
   if (c.key === "exitWeek") {
@@ -1647,6 +1690,9 @@ function init() {
   $("#q").addEventListener("input", e => { state.q = e.target.value; render(); });
   $("#egrBtn").addEventListener("click", egrOpen);
   $("#cmpBtn").addEventListener("click", cmpOpen);
+  $("#body").addEventListener("mouseover", ev => { const el = ev.target.closest(".te[data-cmp]"); if (el) cmpTipShow(el); });
+  $("#body").addEventListener("mouseout", ev => { if (ev.target.closest(".te[data-cmp]")) cmpTipHide(); });
+  $("#body").addEventListener("click", ev => { const el = ev.target.closest(".te[data-cmp]"); if (el) { if ($("#cmpTip").hidden) cmpTipShow(el); else cmpTipHide(); } else cmpTipHide(); });
   $("#cmpClose").addEventListener("click", () => $("#cmpDlg").close());
   $("#cmpRawBtn").addEventListener("click", () => { const on = $("#cmpRaw").hidden; $("#cmpRaw").hidden = !on; $("#cmpDlg .egr-wrap").hidden = on; $("#cmpRawBtn").setAttribute("aria-pressed", String(on)); $("#cmpRawBtn").textContent = on ? "Ver tabla" : "Ver datos originales"; });
   $("#cmpCopy").addEventListener("click", async () => { await copyText($("#cmpRaw").hidden ? cmpText : $("#cmpRaw").textContent); toast("Copiado"); });
@@ -1686,7 +1732,7 @@ function init() {
     else state.calcP[k] = t.value;
     calcRefresh();
   });
-  $("#body").addEventListener("input", ev => { const t = ev.target; if (t && t.dataset && t.dataset.jid) { normProgInput(t); setProg(t.dataset.jid, t.value); renderSummary(); t.closest("tr").querySelectorAll("td[data-reg]").forEach(rg => { const rc = regCol(rg.dataset.f, t.value), x = rc.t; rg.textContent = x || "—"; rg.classList.toggle("dim", !x); rg.classList.toggle("hi", !!rc.hi); }); const nm = t.closest("tr").querySelector("td[data-nm]"); if (nm) { const pl = state.players.find(q => String(q.id) === nm.dataset.nm); if (pl) nm.innerHTML = nameHtml(pl); } const lf = t.closest("tr").querySelector("td[data-lf]"); if (lf) { const pl = state.players.find(q => String(q.id) === lf.dataset.lf); if (pl) { const l = lfCell(pl); lf.innerHTML = l.h || "—"; lf.classList.toggle("dim", !l.t); lf.title = l.tip; } } const td = t.closest("tr").querySelector("td[data-cnt]"); if (td) td.innerHTML = cntHtml(countItems(t.value), td.dataset.wi === "" ? null : Number(td.dataset.wi)); } });
+  $("#body").addEventListener("input", ev => { const t = ev.target; if (t && t.dataset && t.dataset.jid) { normProgInput(t); setProg(t.dataset.jid, t.value); renderSummary(); t.closest("tr").querySelectorAll("td[data-reg]").forEach(rg => { const rc = regCol(rg.dataset.f, t.value), x = rc.t; rg.innerHTML = regInner(rg.dataset.f, x, rg.dataset.reg); rg.classList.toggle("dim", !x); rg.classList.toggle("hi", !!rc.hi); }); const nm = t.closest("tr").querySelector("td[data-nm]"); if (nm) { const pl = state.players.find(q => String(q.id) === nm.dataset.nm); if (pl) nm.innerHTML = nameHtml(pl); } const lf = t.closest("tr").querySelector("td[data-lf]"); if (lf) { const pl = state.players.find(q => String(q.id) === lf.dataset.lf); if (pl) { const l = lfCell(pl); lf.innerHTML = l.h || "—"; lf.classList.toggle("dim", !l.t); lf.title = l.tip; } } const td = t.closest("tr").querySelector("td[data-cnt]"); if (td) td.innerHTML = cntHtml(countItems(t.value), td.dataset.wi === "" ? null : Number(td.dataset.wi)); } });
   $("#pwForm").addEventListener("submit", ev => {
     ev.preventDefault();
     const pw = $("#pwInput").value;
